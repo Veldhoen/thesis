@@ -6,9 +6,10 @@ from nltk.tree import Tree
 from Node import *
 from numericalGradient import *
 from getEmbeddings import *
+from readCorpus import *
 
 def initializeReal():
-    print 'initializing...'
+    print 'Initializing...'
     global Wc, bc, Wr, br, L, vocabulary
     L,vocabulary = getSennaEmbs()
     v,d = np.shape(L)
@@ -17,7 +18,7 @@ def initializeReal():
     Wr = np.random.rand(2*d,d)   #reconstruction weights
     br = np.random.rand(2*d)     #reconstruction bias
 
-    print v,'words, dimensionality:',d
+    print 'Done.', v,'words, dimensionality:',d
 
 def initialize(d, words):
     global Wc, bc, Wr, br, L, vocabulary
@@ -47,7 +48,7 @@ def parseSentence(sent):
         word = sent[index]
         if word in vocabulary: wordIndex = vocabulary[word]
         else:                  wordIndex = vocabulary['UNK']
-        newLeaf = Node([], index, index, vocabulary[wordIndex])
+        newLeaf = Node([], index, index, wordIndex)
         newLeaf.forwardPass(Wc,bc,Wr,br,L,True)
         nodes[index] = newLeaf
     candidates = dict()
@@ -100,19 +101,37 @@ def trySentence(sentence):
 
 #    gradWc,gradBc,gradWr,gradBr = parse.backprop(np.zeros(d),Wc,bc,Wr,br,L)
 
+def epoch(trees):
+    print 'start training'
+    delta = np.zeros(d)
+    alpha = 0.1
+    grads = []
+    global Wc, bc, Wr, br
+    for tree in trees:
+        print 'training', tree
+        tree.forwardPass(Wc,bc,Wr,br,L,)
+        grads.append(tree.backprop(delta, Wc,bc,Wr,br,L))
+    DWc, DBc, DWr, DBr = sum(grads)
+
+    Wc -= alpha * (DWc/len(trees))
+    bc -= alpha * (DBc/len(trees))
+    Wr -= alpha * (DWr/len(trees))
+    br -= alpha * (DBr/len(trees))
+
 def main():
     global d
-    d = 9
+    d = 50
     words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
-#    initialize(d,words)
+    initialize(d,words)
     initializeReal()
-    trySentence(['the','dog','chases', 'the','cat','that','chases','the','mouse'])
-    trySentence(['the','dog','chases', 'the','cat'])
-    trySentence(['the','dog','chases'])
-    trySentence(['the','dog'])
+#    trySentence(['the','dog','chases', 'the','cat','that','chases','the','mouse'])
+#    trySentence(['the','dog','chases', 'the','cat'])
+#    trySentence(['the','dog','chases'])
+#    trySentence(['the','dog'])
 #    trySentence(['the'])
 
-
+    trees = readC(L,vocabulary)
+    epoch(trees)
     #print M1, b1
 
 if __name__ == "__main__":

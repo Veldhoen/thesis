@@ -2,6 +2,7 @@ import numpy as np
 
 
 def getSennaEmbs():
+    print '\tObtaining embeddings...'
     senna = 'C:/Users/Sara/AI/thesisData/senna'
     d = 50
     v = 130000
@@ -18,6 +19,6 @@ def getSennaEmbs():
                 L[i] = np.array(e.strip().split())
                 i+=1
     L[i] = np.random.rand(len(L[i-1]))
-    voc[i] = 'UNK'
+    voc['UNK'] = i
     return L,voc
-getEmbs()
+#getEmbs()

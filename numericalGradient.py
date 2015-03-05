@@ -31,7 +31,7 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         b = numgrad[i]
         if abs(a - b)>0.00000001:
            wrong += bit# + str(i)+', '
-#            print i, abs(a-b)
+           print i, abs(a-b), a, b
     print wrong
     if np.array_equal(numgrad,grad): return 0
     else: return np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
