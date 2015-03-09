@@ -4,7 +4,7 @@ from nltk import tree
 from Node import *
 from getEmbeddings import *
 
-def readC(L,vocabulary):
+def readC(vocabulary):
     print 'Reading corpus...'
 
 #    words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
@@ -33,16 +33,19 @@ def readC(L,vocabulary):
 
 def treeToNN(thistree, start, end):
 #    print thistree, len(thistree)
+    word = thistree.label().strip()
+
     if len(thistree) > 0:
         wordIndex = None
         children = [treeToNN(child, start, end) for child in thistree]
     else:
-       word = thistree.label().strip()
+
 #       print word
        if word in voc: wordIndex = voc[word]
        else:           wordIndex = voc['UNK']
        children = []
     parent = Node(children, start, end, wordIndex)
+    parent.setWord(word)
     return parent
 
 def stringToNetwork(sent):

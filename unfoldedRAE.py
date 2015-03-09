@@ -2,6 +2,8 @@ from __future__ import division
 import numpy as np
 #import nltk
 from nltk.tree import Tree
+import warnings
+
 
 from Node import *
 from numericalGradient import *
@@ -13,6 +15,7 @@ def initializeReal():
     global Wc, bc, Wr, br, L, vocabulary
     L,vocabulary = getSennaEmbs()
     v,d = np.shape(L)
+    # todo: normal distribution around 0 with 0.01 stdd
     Wc = np.random.rand(d, 2*d)  #construction weights
     bc = np.random.rand(d)       #construction bias
     Wr = np.random.rand(2*d,d)   #reconstruction weights
@@ -22,11 +25,11 @@ def initializeReal():
 
 def initialize(d, words):
     global Wc, bc, Wr, br, L, vocabulary
-    Wc = np.random.rand(d, 2*d)  #construction weights
-    bc = np.random.rand(d)       #construction bias
-    Wr = np.random.rand(2*d,d)   #reconstruction weights
-    br = np.random.rand(2*d)     #reconstruction bias
-    L = np.random.rand(len(words),d)
+    Wc = np.random.rand(d, 2*d)*2-1  #construction weights
+    bc = np.random.rand(d)*2-1       #construction bias
+    Wr = np.random.rand(2*d,d)*2-1   #reconstruction weights
+    br = np.random.rand(2*d)*2-1     #reconstruction bias
+    L = np.random.rand(len(words),d)*2-1
     vocabulary = {key: value for (key, value) in zip(words,range(len(words)))}
     return vocabulary
 
@@ -75,8 +78,8 @@ def parseSentence(sent):
         # Update nodes and candidates
         newNode = bestCandidate[0]
 
-        newNode.children[0].setLeft(True)
-        newNode.children[1].setLeft(False)
+#        newNode.children[0].setLeft(True)
+#        newNode.children[1].setLeft(False)
 #        print newNode
 
         index = newNode.start
@@ -88,7 +91,6 @@ def parseSentence(sent):
         if nextIndex in candidates: # remove candidate belonging to right Child (if any)
            del candidates[nextIndex]
 
-    nodes[0].setLeft(True)
     return nodes[0]
 
 
@@ -102,36 +104,83 @@ def trySentence(sentence):
 #    gradWc,gradBc,gradWr,gradBr = parse.backprop(np.zeros(d),Wc,bc,Wr,br,L)
 
 def epoch(trees):
-    print 'start training'
+    warnings.filterwarnings("error")
+
+    print '\t Start training'
+    global Wc, bc, Wr, br
     delta = np.zeros(d)
     alpha = 0.1
-    grads = []
-    global Wc, bc, Wr, br
-    for tree in trees:
-        print 'training', tree
-        tree.forwardPass(Wc,bc,Wr,br,L,)
-        grads.append(tree.backprop(delta, Wc,bc,Wr,br,L))
-    DWc, DBc, DWr, DBr = sum(grads)
+    DWc = np.zeros_like(Wc)
+    DBc = np.zeros_like(bc)
+    DWr = np.zeros_like(Wr)
+    DBr = np.zeros_like(br)
 
-    Wc -= alpha * (DWc/len(trees))
-    bc -= alpha * (DBc/len(trees))
-    Wr -= alpha * (DWr/len(trees))
-    br -= alpha * (DBr/len(trees))
+
+    for tree in trees:
+#        print 'training', tree
+        tree.forwardPass(Wc,bc,Wr,br,L,)
+        try:
+            grWc, grBc, grWr, grBr = tree.backprop(delta, Wc,bc,Wr,br,L)
+            DWc += grWc/len(trees)
+            DBc += grBc/len(trees)
+            DWr += grWr/len(trees)
+            DBr += grBr/len(trees)
+        except: 
+            grWc, grBc, grWr, grBr = tree.backprop(delta, Wc,bc,Wr,br,L, True)
+            break
+
+    print '\t Update parameters'
+    Wc -= alpha * (DWc)
+    bc -= alpha * (DBc)
+    Wr -= alpha * (DWr)
+    br -= alpha * (DBr)
 
 def main():
     global d
-    d = 50
+
+    d = 3
     words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
     initialize(d,words)
-    initializeReal()
+
+    print  'Wc:', Wc
+    print  'bc:', bc
+    print  'Wr:', Wr
+    print  'br:', br
+    print  'L:', L
+    print  'voc:', vocabulary
+#
 #    trySentence(['the','dog','chases', 'the','cat','that','chases','the','mouse'])
 #    trySentence(['the','dog','chases', 'the','cat'])
-#    trySentence(['the','dog','chases'])
+    trySentence(['the','dog','chases'])
 #    trySentence(['the','dog'])
-#    trySentence(['the'])
+#     trySentence(['the'])
 
-    trees = readC(L,vocabulary)
-    epoch(trees)
+
+#     d=50
+#     initializeReal()
+#     trees = readC(vocabulary)
+#
+#     for example in trees:
+#         print example.toString(vocabulary)
+#         example.forwardPass(Wc,bc,Wr,br,L)
+#         diff = numericalGradient(example,Wc,bc,Wr,br,L)
+#         print diff
+#         break
+
+
+
+#     [tree.forwardPass(Wc,bc,Wr,br,L) for tree in trees]
+#     error = sum([tree.reconstructionError(Wc,bc,Wr,br,L) for tree in trees])
+#     print 'Error:', error
+#
+#     for i in range(10):
+#         print 'epoch', i
+#         epoch(trees)
+#         error = sum([tree.reconstructionError(Wc,bc,Wr,br,L) for tree in trees])
+#         print 'Error:', error
+
+
+
     #print M1, b1
 
 if __name__ == "__main__":

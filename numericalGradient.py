@@ -1,13 +1,20 @@
 import numpy as np
 
 def numericalGradient(tree,Wc,bc,Wr,br,words):
-    # compute the numerical gradients
     global d,L
     d = len(bc)
     L = words
     epsilon = 0.0001
+
+
+    tree.forwardPass(Wc,bc,Wr,br,L,True,True)
+   # compute the analytical gradients
+    gradWc,gradBc,gradWr,gradBr = tree.backprop(np.zeros(d),Wc,bc,Wr,br,L, True)
+    grad = np.concatenate([np.reshape(gradWc,-1),gradBc,np.reshape(gradWr,-1),gradBr])
     theta = np.concatenate([np.reshape(W, -1) for W in [Wc,bc,Wr,br]])
 #    print error(tree, theta, True)
+
+    # compute the numerical gradients
     numgrad = np.zeros_like(theta)
     for i in range(len(theta)):
         old = theta[i]
@@ -18,9 +25,7 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         # reset theta[i]
         theta[i] = old
         numgrad[i] = (errorPlus-errorMin)/(2*epsilon)
-    # compute the analytical gradients
-    gradWc,gradBc,gradWr,gradBr = tree.backprop(np.zeros(d),Wc,bc,Wr,br,L)
-    grad = np.concatenate([np.reshape(gradWc,-1),gradBc,np.reshape(gradWr,-1),gradBr])
+
     wrong = ''
     bit = 'Wc'
     for i in range(len(grad)):
@@ -29,12 +34,25 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         if bit == 'Wc' and i> 409: bit = 'Br'
         a = grad[i]
         b = numgrad[i]
-        if abs(a - b)>0.00000001:
+        if abs(a - b)>0.00001:
            wrong += bit# + str(i)+', '
-           print i, abs(a-b), a, b
-    print wrong
+           #print i, abs(a-b), a, b
+#    print wrong
     if np.array_equal(numgrad,grad): return 0
-    else: return np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
+    else:
+        left = 0
+        right = left + d*2*d
+        print 'Wc diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
+        left = right
+        right = left + d
+        print 'bc diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
+        left = right
+        right = left + 2*d*d
+        print 'Wr diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
+        left = right
+        right = left + 2*d
+        print 'br diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
+        return np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
 
 def error(tree, theta, verbose= False):
     # Retrieve Wc, bc, Wr, br from flat theta
