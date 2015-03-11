@@ -1,187 +1,228 @@
 from __future__ import division
+
+from nltk import tree
 import numpy as np
-#import nltk
-from nltk.tree import Tree
-import warnings
-
-
-from Node import *
 from numericalGradient import *
-from getEmbeddings import *
-from readCorpus import *
+'''
+there are two kinds of nodes. Both node types have (0 or 2) children. There is no explicit link to a parent.
+ - class Node: node in the RNN
+   each parent node has a corresponding reconstruction, with the same activation.
+ - class Reconstruction: node in the reconstruction of a tree
+   if the original node is a parent, the reconstruction is also a parent.
+   The children are reconstructions that again copy the structure of their 'original'
 
-def initializeReal():
-    print 'Initializing...'
-    global Wc, bc, Wr, br, L, vocabulary
-    L,vocabulary = getSennaEmbs()
-    v,d = np.shape(L)
-    # todo: normal distribution around 0 with 0.01 stdd
-    Wc = np.random.rand(d, 2*d)  #construction weights
-    bc = np.random.rand(d)       #construction bias
-    Wr = np.random.rand(2*d,d)   #reconstruction weights
-    br = np.random.rand(2*d)     #reconstruction bias
+A Node keeps track of its span in the sentence (start and end).
+This is only useful for the parsing bit, and it may be better to place this information outside of the class.
 
-    print 'Done.', v,'words, dimensionality:',d
+When activated, each Node and Reconstruction has values:
+- z, its representation
+- a, its activation f(z)
+- ad, the derivative of its activation  f'(z)
+ the function activate(vector) returns a and ad (either tanh or sigmoid, there is also a function activateIdentity(vector))
 
-def initialize(d, words):
-    global Wc, bc, Wr, br, L, vocabulary
-    Wc = np.random.rand(d, 2*d)*2-1  #construction weights
-    bc = np.random.rand(d)*2-1       #construction bias
+A forward pass can be called for the root, with the weights and biases Wc, bc, Wr, br and word matrix L.
+The root's offspring is recursively activated, until the represenation of the root is computed.
+The activation of any parent node causes its reconstruction to activate its 'offspring' as well.
+
+A backward pass can be called for the root, with a zero delta vector of length d.
+The delta of any parent node is the sum of the error backpropagated by its parent, and the error from its reconstruction.
+The backward pass yields the gradients for gradWc, gradBc, gradWr, gradBr.
+'''
+
+class Node:
+    def __init__(self, children, start, end, wordIndex = None):
+        self.children = children
+        self.start = start
+        self.end = end
+        self.wordIndex = wordIndex
+        self.word = None # the field word is for pretty printing
+        if len(self.children) > 0:
+            self.reconstruction = Reconstruction(self)
+
+    # create a network from an nltk tree object
+    @classmethod
+    def fromTree(self,thistree, voc,start = 0, end = 0):
+        print thistree
+        word = thistree.label().strip()
+        if len(thistree) > 0:
+            wordIndex = None
+            children = [Node.fromTree(child, voc, start, end) for child in thistree]
+        else:
+            if word in voc: wordIndex = voc[word]
+            else:           wordIndex = voc['UNK']
+            children = []
+        parent = Node(children, start, end, wordIndex)
+        parent.setWord(word)
+        return parent
+
+
+    def forwardPass(self,Wc,bc,Wr,br,L,recalculate = True, verbose = False):
+        if len(self.children)>0:
+            if recalculate: childrena = [child.forwardPass(Wc,bc,Wr,br,L,recalculate,verbose) for child in self.children]
+            else:           childrena = [child.a for child in self.children]
+            self.z = Wc.dot(np.concatenate(childrena))+bc
+            self.reconstruction.forwardPass(self.z,Wc,bc,Wr,br,L, verbose)
+            self.a,self.ad = activate(self.z)
+        else: #leaf
+            self.z = L[self.wordIndex]
+            self.a, self.ad = activateIdentity(self.z)
+        if verbose: print 'forward comp:',self#,self.a
+        return self.a
+
+    def backprop(self, delta,Wc,bc,Wr,br,L, verbose=False):
+        if len(self.children)>0:
+            # compute gradWr and gradBr and delta for this node's reconstruction
+            gradWr, gradBr,recDelta = self.reconstruction.backprop(Wr,br,verbose)
+            # increment delta with reconstruction delta
+            delta += recDelta
+
+            # compute gradWc and gradBc for this node's construction
+            # (from this delta and the children's activation)
+            gradWc = np.outer(delta, np.concatenate([child.a for child in self.children]))
+            gradBc = delta
+
+            # compute delta to backpropagate (i.e. children's deltas)
+            childrenads = np.concatenate([child.ad for child in self.children])
+            backpropdelta = np.split(np.multiply(np.transpose(Wc).dot(delta),childrenads),2)
+            # compute gradWc,gradBc,gradWr,gradBr for children
+            gradWcL,gradBcL,gradWrL,gradBrL = self.children[0].backprop(backpropdelta[0],Wc,bc,Wr,br,L, verbose)
+            gradWcR,gradBcR,gradWrR,gradBrR = self.children[1].backprop(backpropdelta[1],Wc,bc,Wr,br,L, verbose)
+            # add gradients from children
+            gradWc += gradWcL + gradWcR
+            gradBc += gradBcL + gradBcR
+            gradWr += gradWrL + gradWrR
+            gradBr += gradBrL + gradBrR
+        else: #leaf
+            gradWc = np.zeros_like(Wc)
+            gradBc = np.zeros_like(bc)
+            gradWr = np.zeros_like(Wr)
+            gradBr = np.zeros_like(br)
+        if verbose:
+           print 'composition backprop', str(self)
+#           print delta
+#           print gradWc[0], gradBc, gradWr[0], gradBr, delta
+        return gradWc,gradBc,gradWr,gradBr
+
+    def originalLeafs(self):
+        if len(self.children)>0: return np.concatenate([child.originalLeafs() for child in self.children])
+        else:                    return self.a
+
+    # compute reconstruction error for this node: predict leafs and see how different they are from the actual leafs
+    def reconstructionError(self,Wc,bc,Wr,br,L, verbose = False):
+        if len(self.children) == 0:
+           return 0
+        self.forwardPass(Wc,bc,Wr,br,L,recalculate = True)
+        original = self.originalLeafs()
+        reconstruction = self.reconstruction.predictLeafs()
+        if verbose:
+#           print 'activation:', self.a
+#           print 'original:', original
+#           print 'reconstruction:', reconstruction
+           print 'reconstruction error, difference:' ,original - reconstruction
+        length = np.linalg.norm(original-reconstruction)
+        return .5*length*length
+
+    def setWord(self, word):
+        self.word = word
+    def __str__(self):
+        if len(self.children) > 0:
+            childrenStrings = [str(child) for child in self.children]
+            return '['+childrenStrings[0]+','+childrenStrings[1]+']'
+        else:
+            if self.word: return self.word
+            else:         return str(self.wordIndex)
+
+class Reconstruction:
+    def __init__(self,original):
+        self.original = original
+        self.children = [Reconstruction(child) for child in original.children]
+
+    def forwardPass(self,z,Wc,bc,Wr,br,L, verbose=False):
+        # determine this node's representation (z) and activation (and derivative thereof)
+        self.z = z
+        self.a, self.ad = activate(self.z)
+
+        # activate successors ('children')
+        if len(self.children) > 0:
+            reconstructions = np.split(Wr.dot(self.a)+br,2)
+            self.children[0].forwardPass(reconstructions[0], Wc,bc,Wr,br,L,verbose)
+            self.children[1].forwardPass(reconstructions[1], Wc,bc,Wr,br,L,verbose)
+        if verbose: print 'forward Rec:', self#, self.a
+
+    def backprop(self,Wr,br, verbose):
+        if len(self.children) > 0:
+            # call the children for backpropagation of gradients and deltas
+            gradWrL,gradBrL, deltaL = self.children[0].backprop(Wr,br, verbose)
+            gradWrR,gradBrR, deltaR = self.children[1].backprop(Wr,br, verbose)
+            deltas = np.concatenate([deltaL, deltaR])
+
+            # compute gradients
+            gradWr = np.outer(deltas,self.a) + gradWrL + gradWrR
+            gradBr = deltas + gradBrL + gradBrR
+
+            # compute this node's delta
+            delta = np.multiply(np.transpose(Wr).dot(deltas),self.ad)
+        else: #leaf
+            # gradients Wr and br: zeros, there is no reconstruction in this node
+            gradWr = np.zeros_like(Wr)
+            gradBr = np.zeros_like(br)
+            # determine delta: difference with original node*activation derivative
+            # TODO: scale original to appropriate range
+            delta = np.multiply(-(self.original.a-self.a),self.ad)
+
+        if verbose:
+           print 'reconstruction backprop', str(self)
+#           print delta
+#            if len(self.children) >0:
+#               print gradWr[0], gradBr, delta
+#            else:
+#               print self.z, self.original.a, delta
+        return gradWr, gradBr, delta
+
+    def predictLeafs(self):
+        if len(self.children) > 0 : return np.concatenate([child.predictLeafs() for child in self.children])
+        else:                       return self.a
+
+    def __str__(self):
+        if len(self.children) > 0:
+            childrenStrings = [str(child) for child in self.children]
+            return '['+childrenStrings[0]+','+childrenStrings[1]+']'
+        else: return str(self.original)+'\''
+
+def activateIdentity(vector):
+    return vector, np.ones_like(vector)
+
+## sigmoid:
+# def activate(vector):
+#     act =  1/(1+np.exp(-1*vector))
+#     der = np.multiply(act,1-act)
+#     return act, der
+
+#tanh:
+def activate(vector):
+    act = np.tanh(vector)
+    der = 1- np.multiply(act,act)
+    return act, der
+
+def main():
+    d = 3
+    words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
+    Wc = np.random.rand(d, 2*d)*2-1  #composition weights
+    bc = np.random.rand(d)*2-1       #composition bias
     Wr = np.random.rand(2*d,d)*2-1   #reconstruction weights
     br = np.random.rand(2*d)*2-1     #reconstruction bias
     L = np.random.rand(len(words),d)*2-1
     vocabulary = {key: value for (key, value) in zip(words,range(len(words)))}
-    return vocabulary
 
-def initializeOnes(d, words):
-    global Wc, bc, Wr, br, L, vocabulary
-    Wc = np.ones([d, 2*d],np.float32)  #construction weights
-    bc = np.ones(d,np.float32)       #construction bias
-    Wr = np.ones([2*d,d],np.float32)   #reconstruction weights
-    br = np.ones(2*d,np.float32)     #reconstruction bias
-    L = np.ones([len(words),d],np.float32)
-    vocabulary = {key: value for (key, value) in zip(words,range(len(words)))}
-    return vocabulary
+#     sentence = "(the)"
+#     sentence = "((the) (dog))"
+    sentence = "(((the) (dog)) (chases) )"
+#     sentence = "(((the) (dog)) (chases ((the)(cat))))"
+#     sentence = "(((the) (dog)) (chases ((the)(cat)((that)((chases)((the) (mous)))))))"
 
+    thistree = tree.Tree.fromstring(sentence)
+    network = Node.fromTree(thistree,vocabulary)
 
+    numericalGradient(network,Wc,bc,Wr,br,L)
 
-def parseSentence(sent):
-    nodes = dict()
-    for index in range(len(sent)):
-        word = sent[index]
-        if word in vocabulary: wordIndex = vocabulary[word]
-        else:                  wordIndex = vocabulary['UNK']
-        newLeaf = Node([], index, index, wordIndex)
-        newLeaf.forwardPass(Wc,bc,Wr,br,L,True)
-        nodes[index] = newLeaf
-    candidates = dict()
-    while len(nodes) > 1:
-
-#        print 'new iteration, ', nodes.keys()
-        # Update candidate list
-        for index, node in nodes.iteritems():
-#            print index, 'spans:',node.startAt(), node.endAt()
-            if node.end+1 in nodes.keys():
-                sibling = nodes[node.end+1]
-                parent = Node([node,sibling], node.start, sibling.end)
-                error = parent.reconstructionError(Wc,bc,Wr,br,L)
-                candidates[index] = (parent, error)
-
-        # Find the candidate with the least error:
-        bestCandidate = None
-        for index, candidate in candidates.iteritems():
-            if bestCandidate is None: bestCandidate = candidate
-            else:
-                if candidate[1] < bestCandidate[1]:
-                    bestCandidate = candidate
-
-        # Update nodes and candidates
-        newNode = bestCandidate[0]
-
-#        newNode.children[0].setLeft(True)
-#        newNode.children[1].setLeft(False)
-#        print newNode
-
-        index = newNode.start
-        nextIndex = newNode.children[1].start
-#        print 'create new node spanning',index, newNode.rightChild.endAt()
-        nodes[index] = newNode      # replace left child with new parent
-        del nodes[nextIndex]        # delete right child
-        del candidates[index]       # remove candidate belonging to left Child
-        if nextIndex in candidates: # remove candidate belonging to right Child (if any)
-           del candidates[nextIndex]
-
-    return nodes[0]
-
-
-def trySentence(sentence):
-    print sentence
-    parse = parseSentence(sentence)
-    print parse
-    diff =  numericalGradient(parse,Wc,bc,Wr,br,L)
-    print 'difference numerical/ analytical:', diff
-
-#    gradWc,gradBc,gradWr,gradBr = parse.backprop(np.zeros(d),Wc,bc,Wr,br,L)
-
-def epoch(trees):
-    warnings.filterwarnings("error")
-
-    print '\t Start training'
-    global Wc, bc, Wr, br
-    delta = np.zeros(d)
-    alpha = 0.1
-    DWc = np.zeros_like(Wc)
-    DBc = np.zeros_like(bc)
-    DWr = np.zeros_like(Wr)
-    DBr = np.zeros_like(br)
-
-
-    for tree in trees:
-#        print 'training', tree
-        tree.forwardPass(Wc,bc,Wr,br,L,)
-        try:
-            grWc, grBc, grWr, grBr = tree.backprop(delta, Wc,bc,Wr,br,L)
-            DWc += grWc/len(trees)
-            DBc += grBc/len(trees)
-            DWr += grWr/len(trees)
-            DBr += grBr/len(trees)
-        except: 
-            grWc, grBc, grWr, grBr = tree.backprop(delta, Wc,bc,Wr,br,L, True)
-            break
-
-    print '\t Update parameters'
-    Wc -= alpha * (DWc)
-    bc -= alpha * (DBc)
-    Wr -= alpha * (DWr)
-    br -= alpha * (DBr)
-
-def main():
-    global d
-
-    d = 3
-    words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
-    initialize(d,words)
-
-    print  'Wc:', Wc
-    print  'bc:', bc
-    print  'Wr:', Wr
-    print  'br:', br
-    print  'L:', L
-    print  'voc:', vocabulary
-#
-#    trySentence(['the','dog','chases', 'the','cat','that','chases','the','mouse'])
-#    trySentence(['the','dog','chases', 'the','cat'])
-    trySentence(['the','dog','chases'])
-#    trySentence(['the','dog'])
-#     trySentence(['the'])
-
-
-#     d=50
-#     initializeReal()
-#     trees = readC(vocabulary)
-#
-#     for example in trees:
-#         print example.toString(vocabulary)
-#         example.forwardPass(Wc,bc,Wr,br,L)
-#         diff = numericalGradient(example,Wc,bc,Wr,br,L)
-#         print diff
-#         break
-
-
-
-#     [tree.forwardPass(Wc,bc,Wr,br,L) for tree in trees]
-#     error = sum([tree.reconstructionError(Wc,bc,Wr,br,L) for tree in trees])
-#     print 'Error:', error
-#
-#     for i in range(10):
-#         print 'epoch', i
-#         epoch(trees)
-#         error = sum([tree.reconstructionError(Wc,bc,Wr,br,L) for tree in trees])
-#         print 'Error:', error
-
-
-
-    #print M1, b1
-
-if __name__ == "__main__":
-   main()
+main()

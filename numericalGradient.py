@@ -6,13 +6,12 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
     L = words
     epsilon = 0.0001
 
-
+    # activate all nodes in the tree
     tree.forwardPass(Wc,bc,Wr,br,L,True,True)
    # compute the analytical gradients
     gradWc,gradBc,gradWr,gradBr = tree.backprop(np.zeros(d),Wc,bc,Wr,br,L, True)
     grad = np.concatenate([np.reshape(gradWc,-1),gradBc,np.reshape(gradWr,-1),gradBr])
     theta = np.concatenate([np.reshape(W, -1) for W in [Wc,bc,Wr,br]])
-#    print error(tree, theta, True)
 
     # compute the numerical gradients
     numgrad = np.zeros_like(theta)
@@ -26,20 +25,11 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         theta[i] = old
         numgrad[i] = (errorPlus-errorMin)/(2*epsilon)
 
-    wrong = ''
-    bit = 'Wc'
-    for i in range(len(grad)):
-        if bit == 'Wc' and i> 199: bit = 'Bc'
-        if bit == 'Bc' and i> 209: bit = 'Wr'
-        if bit == 'Wc' and i> 409: bit = 'Br'
-        a = grad[i]
-        b = numgrad[i]
-        if abs(a - b)>0.00001:
-           wrong += bit# + str(i)+', '
-           #print i, abs(a-b), a, b
-#    print wrong
-    if np.array_equal(numgrad,grad): return 0
+    if np.array_equal(numgrad,grad): print 'numerical and analytical gradients are equal.'
     else:
+        print 'Difference numerical and analytical gradients:', np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
+        # decompose numerical and anlytical gradients
+        # back into Wc, bc, Wr and br
         left = 0
         right = left + d*2*d
         print 'Wc diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
@@ -52,7 +42,6 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         left = right
         right = left + 2*d
         print 'br diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
-        return np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
 
 def error(tree, theta, verbose= False):
     # Retrieve Wc, bc, Wr, br from flat theta
@@ -72,10 +61,8 @@ def error(tree, theta, verbose= False):
     right = left + 2*d
     brP = theta[left:right]
 #    print 'br',left,right
-    # compute error
+    # compute and return error
     return recurseError(tree,WcP,bcP,WrP,brP, verbose)
-#    rootError = tree.reconstructionError(WcP,bcP,WrP,brP,L)
-#    return rootError + sum([child.reconstructionError(WcP,bcP,WrP,brP,L) for child in tree.children])
 
 def recurseError(tree,WcP,bcP,WrP,brP, verbose = False):
     rootError = tree.reconstructionError(WcP,bcP,WrP,brP,L, verbose)

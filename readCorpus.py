@@ -1,7 +1,7 @@
 import os, os.path
 import re
 from nltk import tree
-from Node import *
+from UnfoldedRAE import *
 from getEmbeddings import *
 
 def readC(vocabulary):
