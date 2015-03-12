@@ -7,9 +7,9 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
     epsilon = 0.0001
 
     # activate all nodes in the tree
-    tree.forwardPass(Wc,bc,Wr,br,L,True,True)
+    tree.forwardPass(Wc,bc,Wr,br,L,True)
    # compute the analytical gradients
-    gradWc,gradBc,gradWr,gradBr = tree.backprop(np.zeros(d),Wc,bc,Wr,br,L, True)
+    gradWc,gradBc,gradWr,gradBr = tree.backprop(np.zeros(d),Wc,bc,Wr,br,L)
     grad = np.concatenate([np.reshape(gradWc,-1),gradBc,np.reshape(gradWr,-1),gradBr])
     theta = np.concatenate([np.reshape(W, -1) for W in [Wc,bc,Wr,br]])
 
@@ -43,7 +43,7 @@ def numericalGradient(tree,Wc,bc,Wr,br,words):
         right = left + 2*d
         print 'br diff:', np.linalg.norm(numgrad[left:right]-grad[left:right])/np.linalg.norm(numgrad[left:right]+grad[left:right])
 
-def error(tree, theta, verbose= False):
+def error(tree, theta):
     # Retrieve Wc, bc, Wr, br from flat theta
     left = 0
     right = left + d*2*d
@@ -62,8 +62,8 @@ def error(tree, theta, verbose= False):
     brP = theta[left:right]
 #    print 'br',left,right
     # compute and return error
-    return recurseError(tree,WcP,bcP,WrP,brP, verbose)
+    return recurseError(tree,WcP,bcP,WrP,brP)
 
-def recurseError(tree,WcP,bcP,WrP,brP, verbose = False):
-    rootError = tree.reconstructionError(WcP,bcP,WrP,brP,L, verbose)
-    return rootError + sum([recurseError(child,WcP,bcP,WrP,brP, verbose) for child in tree.children])
+def recurseError(tree,WcP,bcP,WrP,brP):
+    rootError = tree.reconstructionError(WcP,bcP,WrP,brP,L)
+    return rootError + sum([recurseError(child,WcP,bcP,WrP,brP) for child in tree.children])

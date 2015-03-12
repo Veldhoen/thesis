@@ -2,7 +2,7 @@ from __future__ import division
 
 from nltk import tree
 import numpy as np
-from numericalGradient import *
+from numericalGradient2 import *
 '''
 there are two kinds of nodes. Both node types have (0 or 2) children. There is no explicit link to a parent.
  - class Node: node in the RNN
@@ -55,24 +55,24 @@ class Node:
         parent.setWord(word)
         return parent
 
-
-    def forwardPass(self,Wc,bc,Wr,br,L,recalculate = True, verbose = False):
+    def forward(self,theta,recalculate = True):
+        Wc, bc, Wr, br, L = unwrap(theta)
         if len(self.children)>0:
-            if recalculate: childrena = [child.forwardPass(Wc,bc,Wr,br,L,recalculate,verbose) for child in self.children]
+            if recalculate: childrena = [child.forward(theta,recalculate) for child in self.children]
             else:           childrena = [child.a for child in self.children]
             self.z = Wc.dot(np.concatenate(childrena))+bc
-            self.reconstruction.forwardPass(self.z,Wc,bc,Wr,br,L, verbose)
+            self.reconstruction.forward(self.z,Wr,br)
             self.a,self.ad = activate(self.z)
         else: #leaf
             self.z = L[self.wordIndex]
             self.a, self.ad = activateIdentity(self.z)
-        if verbose: print 'forward comp:',self#,self.a
         return self.a
 
-    def backprop(self, delta,Wc,bc,Wr,br,L, verbose=False):
+
+    def backprop(self, delta,Wc,bc,Wr,br,L):
         if len(self.children)>0:
             # compute gradWr and gradBr and delta for this node's reconstruction
-            gradWr, gradBr,recDelta = self.reconstruction.backprop(Wr,br,verbose)
+            gradWr, gradBr,recDelta = self.reconstruction.backprop(Wr,br)
             # increment delta with reconstruction delta
             delta += recDelta
 
@@ -85,8 +85,8 @@ class Node:
             childrenads = np.concatenate([child.ad for child in self.children])
             backpropdelta = np.split(np.multiply(np.transpose(Wc).dot(delta),childrenads),2)
             # compute gradWc,gradBc,gradWr,gradBr for children
-            gradWcL,gradBcL,gradWrL,gradBrL = self.children[0].backprop(backpropdelta[0],Wc,bc,Wr,br,L, verbose)
-            gradWcR,gradBcR,gradWrR,gradBrR = self.children[1].backprop(backpropdelta[1],Wc,bc,Wr,br,L, verbose)
+            gradWcL,gradBcL,gradWrL,gradBrL = self.children[0].backprop(backpropdelta[0],Wc,bc,Wr,br,L)
+            gradWcR,gradBcR,gradWrR,gradBrR = self.children[1].backprop(backpropdelta[1],Wc,bc,Wr,br,L)
             # add gradients from children
             gradWc += gradWcL + gradWcR
             gradBc += gradBcL + gradBcR
@@ -97,28 +97,24 @@ class Node:
             gradBc = np.zeros_like(bc)
             gradWr = np.zeros_like(Wr)
             gradBr = np.zeros_like(br)
-        if verbose:
-           print 'composition backprop', str(self)
-#           print delta
-#           print gradWc[0], gradBc, gradWr[0], gradBr, delta
         return gradWc,gradBc,gradWr,gradBr
 
     def originalLeafs(self):
         if len(self.children)>0: return np.concatenate([child.originalLeafs() for child in self.children])
         else:                    return self.a
 
+    def error(self,theta,target = None):
+        self.forward(theta, True)
+        rootError = self.reconstructionError(theta)
+        return rootError + sum([child.error(theta) for child in self.children])
+
     # compute reconstruction error for this node: predict leafs and see how different they are from the actual leafs
-    def reconstructionError(self,Wc,bc,Wr,br,L, verbose = False):
+    def reconstructionError(self,theta, recalculate = True):
         if len(self.children) == 0:
            return 0
-        self.forwardPass(Wc,bc,Wr,br,L,recalculate = True)
+        self.forward(theta,recalculate)
         original = self.originalLeafs()
         reconstruction = self.reconstruction.predictLeafs()
-        if verbose:
-#           print 'activation:', self.a
-#           print 'original:', original
-#           print 'reconstruction:', reconstruction
-           print 'reconstruction error, difference:' ,original - reconstruction
         length = np.linalg.norm(original-reconstruction)
         return .5*length*length
 
@@ -137,7 +133,7 @@ class Reconstruction:
         self.original = original
         self.children = [Reconstruction(child) for child in original.children]
 
-    def forwardPass(self,z,Wc,bc,Wr,br,L, verbose=False):
+    def forward(self,z,Wr,br):
         # determine this node's representation (z) and activation (and derivative thereof)
         self.z = z
         self.a, self.ad = activate(self.z)
@@ -145,15 +141,14 @@ class Reconstruction:
         # activate successors ('children')
         if len(self.children) > 0:
             reconstructions = np.split(Wr.dot(self.a)+br,2)
-            self.children[0].forwardPass(reconstructions[0], Wc,bc,Wr,br,L,verbose)
-            self.children[1].forwardPass(reconstructions[1], Wc,bc,Wr,br,L,verbose)
-        if verbose: print 'forward Rec:', self#, self.a
+            self.children[0].forward(reconstructions[0], Wr,br)
+            self.children[1].forward(reconstructions[1], Wr,br)
 
-    def backprop(self,Wr,br, verbose):
+    def backprop(self,Wr,br):
         if len(self.children) > 0:
             # call the children for backpropagation of gradients and deltas
-            gradWrL,gradBrL, deltaL = self.children[0].backprop(Wr,br, verbose)
-            gradWrR,gradBrR, deltaR = self.children[1].backprop(Wr,br, verbose)
+            gradWrL,gradBrL, deltaL = self.children[0].backprop(Wr,br)
+            gradWrR,gradBrR, deltaR = self.children[1].backprop(Wr,br)
             deltas = np.concatenate([deltaL, deltaR])
 
             # compute gradients
@@ -169,14 +164,6 @@ class Reconstruction:
             # determine delta: difference with original node*activation derivative
             # TODO: scale original to appropriate range
             delta = np.multiply(-(self.original.a-self.a),self.ad)
-
-        if verbose:
-           print 'reconstruction backprop', str(self)
-#           print delta
-#            if len(self.children) >0:
-#               print gradWr[0], gradBr, delta
-#            else:
-#               print self.z, self.original.a, delta
         return gradWr, gradBr, delta
 
     def predictLeafs(self):
@@ -204,7 +191,44 @@ def activate(vector):
     der = 1- np.multiply(act,act)
     return act, der
 
+def wrap(parameters):
+    return np.concatenate([np.reshape(par, -1) for par in parameters])
+
+def unwrap(theta):
+    # Retrieve Wc, bc, Wr, br from flat theta
+    left = 0
+    right = left + d*2*d
+    Wc = np.reshape(theta[left:right],(d,2*d))
+    left = right
+    right = left + d
+    bc = theta[left:right]
+    left = right
+    right = left + 2*d*d
+    Wr = np.reshape(theta[left:right],(2*d,d))
+    left = right
+    right = left + 2*d
+    br = theta[left:right]
+    left = right
+    L = np.reshape(theta[left:],((len(theta)-left)//d,d))
+    return Wc, bc, Wr, br,L
+
+def compare(grad,numgrad):
+    if np.array_equal(numgrad,grad):
+       print 'numerical and analytical gradients are equal.'
+       return None
+    print 'Difference numerical and analytical gradients:', np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
+
+    names = ['Wc','bc', 'Wr','br','L']
+    pairedGrads = zip(unwrap(numgrad),unwrap(grad))
+
+    for i in range(len(names)):
+        a,b = pairedGrads[i]
+        a = np.reshape(a,-1)
+        b = np.reshape(b,-1)
+        print 'Difference '+names[i]+' :', np.linalg.norm(a-b)/np.linalg.norm(a+b)
+
 def main():
+    global d
     d = 3
     words = ['dog', 'cat', 'chases', 'the','that', 'mouse']
     Wc = np.random.rand(d, 2*d)*2-1  #composition weights
@@ -213,6 +237,7 @@ def main():
     br = np.random.rand(2*d)*2-1     #reconstruction bias
     L = np.random.rand(len(words),d)*2-1
     vocabulary = {key: value for (key, value) in zip(words,range(len(words)))}
+    theta = wrap((Wc,bc,Wr,br,L))
 
 #     sentence = "(the)"
 #     sentence = "((the) (dog))"
@@ -222,7 +247,9 @@ def main():
 
     thistree = tree.Tree.fromstring(sentence)
     network = Node.fromTree(thistree,vocabulary)
-
-    numericalGradient(network,Wc,bc,Wr,br,L)
+    network.forward(theta, True)
+    grad = wrap(network.backprop(np.zeros(d),Wc,bc,Wr,br,L)+(np.zeros_like(L),))
+    numgrad = numericalGradient(network, theta, None)
+    compare(grad,numgrad)
 
 main()
