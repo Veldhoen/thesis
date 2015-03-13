@@ -21,6 +21,7 @@ def numericalGradient(network,theta, target=None):
         old = theta[i]
         theta[i] = old + epsilon
         errorPlus = network.error(theta,target)
+
         theta[i] = old - epsilon
         errorMin = network.error(theta,target)
         # reset theta[i]

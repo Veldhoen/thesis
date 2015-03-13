@@ -31,6 +31,17 @@ def gradientCheck(network, theta, target):
 #       for j in range(len(a)):
 #         print a[j], b[j]
   return globaldiff
+  
+def initialize(nwords, nrel):
+  M1 = np.random.rand(dwords, 2*dwords)*.02-.01  #composition weights
+  b1 = np.random.rand(dwords)*.02-.01       #composition bias
+  M2 = np.random.rand(dcomparison,2*dwords)*.02-.01
+  b2 = np.random.rand(dcomparison)*.02-.01       #composition bias
+  M3 = np.random.rand(nrel,dcomparison)
+  b3 = np.random.rand(nrel)*.02-.01       #composition bias
+  V = np.random.rand(nwords,dwords)*.02-.01
+  theta = wrap((M1,b1,V,M2,b2,M3,b3))
+  return theta
 
 def getData(relations):
   print 'Reading corpus...'
@@ -59,29 +70,40 @@ def getData(relations):
   print 'Done.'
   return networks, vocabulary
 
-def train(alpha, epochs, theta, examples):
+def batchtrain(alpha, lambdaL2, epochs, theta, examples):
+  print 'Start batch training'
+  print 'Theta norm:', np.linalg.norm(theta)
   for i in range(epochs):
-    print 'Start epoch',i
-    grads = np.zeros_like(theta)
-    error = 0
-    for (network, target) in examples:
-      network.forward(theta)
-      grads += network.backprop(theta,target)
-      error += network.error(theta, target)
-    print 'Done, average error:', error/len(examples)
-    theta -= alpha/len(examples) * grads
+    print '\tStart epoch',i
+    grads, error = epoch(theta, examples)
+    theta -= alpha/len(examples) * (grads + lambdaL2*theta)
+    print '\tDone, average error:', error/len(examples), ', theta norm:', np.linalg.norm(theta)
+  print 'Done.'
+  return theta
 
-def initialize(nwords, nrel):
-  M1 = np.random.rand(dwords, 2*dwords)*.02-.01  #composition weights
-  b1 = np.random.rand(dwords)*.02-.01       #composition bias
-  M2 = np.random.rand(dcomparison,2*dwords)*.02-.01
-  b2 = np.random.rand(dcomparison)*.02-.01       #composition bias
-  M3 = np.random.rand(nrel,dcomparison)
-  b3 = np.random.rand(nrel)*.02-.01       #composition bias
-  V = np.random.rand(nwords,dwords)*.02-.01
-  theta = wrap((M1,b1,V,M2,b2,M3,b3))
-  return theta 
+def epoch(theta, examples):
+  grads = np.zeros_like(theta)
+  error = 0
+  for (network, target) in examples:
+    network.forward(theta)
+    grads += network.backprop(theta,target)
+    error += network.error(theta, target)
+  return grads, error
 
+def adagrad(master_stepsize, fudge_factor, epochs,theta, examples):
+  print 'Start adagrad training'
+  print 'Theta norm:', np.linalg.norm(theta)
+  historical_grad = np.zeros_like(theta)
+  #while not converged:
+  for i in range(epochs):
+    print '\tStart epoch',i
+    grad, error = epoch(theta, examples)
+    historical_grad += np.multiply(grad,grad)
+    adjusted_grad = np.divide(grad,fudge_factor + np.sqrt(historical_grad))
+    theta = theta - master_stepsize*adjusted_grad
+    print '\tDone, average error:', error/len(examples), ', theta norm:', np.linalg.norm(theta)
+  print 'Done.'
+  return theta
 
 global dwords, dcomparison
 relations = ['<','>','=','|','^','v','#']
@@ -89,10 +111,14 @@ dwords = 16
 dcomparison = 45
 examples,vocabulary = getData(relations)
 theta = initialize(len(vocabulary),len(relations))
-alpha = 1#0.01
+alpha = 0.3
+lambdaL2 = 0.01
+stepsize = 1e-2 #for example
+fudge = 1e-6 #for numerical stability
+
 epochs = 3
 
-#train(alpha, epochs, theta, examples)
-
-network,target = examples[0]
-gradientCheck(network,theta, target)
+thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), examples)
+thetaAda = adagrad(stepsize, fudge, epochs, np.copy(theta), examples)
+#network,target = examples[0]
+#gradientCheck(network,theta, target)
