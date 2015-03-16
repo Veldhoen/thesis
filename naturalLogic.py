@@ -43,11 +43,10 @@ def initialize(nwords, nrel):
   theta = wrap((M1,b1,V,M2,b2,M3,b3))
   return theta
 
-def getData(relations):
+def getData(corpusdir, relations):
   print 'Reading corpus...'
   examples = []
   vocabulary = ['UNK']
-  corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-ICLR14-R1'
   for root, _, files in os.walk(corpusdir+'/data-4'):
     for f in files:
       with open(os.path.join(root,f),'r') as f:
@@ -71,54 +70,78 @@ def getData(relations):
   return networks, vocabulary
 
 def batchtrain(alpha, lambdaL2, epochs, theta, examples):
+  summederror = 0
   print 'Start batch training'
   print 'Theta norm:', np.linalg.norm(theta)
   for i in range(epochs):
     print '\tStart epoch',i
-    grads, error = epoch(theta, examples)
-    theta -= alpha/len(examples) * (grads + lambdaL2*theta)
-    print '\tDone, average error:', error/len(examples), ', theta norm:', np.linalg.norm(theta)
+    grads, error = epoch(theta, examples, lambdaL2)
+    summederror += error
+    theta -= alpha/len(examples) * grads
+    print '\tDone, average error:', summederror/len(examples), ', theta norm:', np.linalg.norm(theta)
   print 'Done.'
   return theta
 
-def epoch(theta, examples):
+def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
   error = 0
   for (network, target) in examples:
     network.forward(theta)
     grads += network.backprop(theta,target)
     error += network.error(theta, target)
+  error += lambdaL2/2 * np.linalg.norm(theta)
+#  error += lambdaL2/2 * np.multiply(theta,theta) #regularization
+  grads += lambdaL2*theta
   return grads, error
 
-def adagrad(master_stepsize, fudge_factor, epochs,theta, examples):
+def adagrad(lambdaL2, startRate, fudge_factor, epochs,theta, examples):
   print 'Start adagrad training'
   print 'Theta norm:', np.linalg.norm(theta)
   historical_grad = np.zeros_like(theta)
+  summederror = 0
   #while not converged:
   for i in range(epochs):
     print '\tStart epoch',i
-    grad, error = epoch(theta, examples)
+    grad, error = epoch(theta, examples, lambdaL2)
+    summederror += error
     historical_grad += np.multiply(grad,grad)
     adjusted_grad = np.divide(grad,fudge_factor + np.sqrt(historical_grad))
-    theta = theta - master_stepsize*adjusted_grad
-    print '\tDone, average error:', error/len(examples), ', theta norm:', np.linalg.norm(theta)
+    theta = theta - startRate*adjusted_grad
+    print '\tDone, average error:', summederror/len(examples), ', theta norm:', np.linalg.norm(theta)
   print 'Done.'
   return theta
 
-global dwords, dcomparison
-relations = ['<','>','=','|','^','v','#']
-dwords = 16
-dcomparison = 45
-examples,vocabulary = getData(relations)
-theta = initialize(len(vocabulary),len(relations))
-alpha = 0.3
-lambdaL2 = 0.01
-stepsize = 1e-2 #for example
-fudge = 1e-6 #for numerical stability
+def main(args):
+  if len(args)== 0:
+    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-ICLR14-R1'
+  else:
+    corpusdir = args[0]
+  if not os.path.isdir(corpusdir):
+    print 'no data found at', corpusdir
+    sys.exit()
 
-epochs = 3
+  # set hyperparameters
+  global dwords, dcomparison
+  dwords = 16
+  dcomparison = 45
+  alpha = 0.2
+  lambdaL2 = 0.0002
+  fudge = 1e-6 #for numerical stability adagrad
+  epochs = 1#50
 
-thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), examples)
-thetaAda = adagrad(stepsize, fudge, epochs, np.copy(theta), examples)
-#network,target = examples[0]
-#gradientCheck(network,theta, target)
+
+  relations = ['<','>','=','|','^','v','#']
+  examples,vocabulary = getData(corpusdir, relations)
+  np.random.shuffle(examples)
+  nTest = len(examples)//5
+  trainData = examples[:nTest]
+  testData = examples[nTest:]
+
+  theta = initialize(len(vocabulary),len(relations))
+
+  thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
+  thetaAda = adagrad(lambdaL2, alpha, fudge, epochs, np.copy(theta), trainData)
+  #network,target = examples[0]
+  #gradientCheck(network,theta, target)
+if __name__ == "__main__":
+   main(sys.argv[1:])
