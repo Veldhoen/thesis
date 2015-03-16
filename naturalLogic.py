@@ -89,7 +89,7 @@ def adagrad(lambdaL2, alpha, epochs,theta, examples):
   for i in range(epochs):
     grad, error = epoch(theta, examples, lambdaL2)
     historical_grad += np.multiply(grad,grad)
-    adjusted_grad = np.divide(grad,np.sqrt(historical_grad)+1e-6)
+    adjusted_grad = np.divide(grad,np.sqrt(historical_grad)+0.001)
     theta = theta - alpha*adjusted_grad
     print '\tEpoch',i, ', average error:', error, ', theta norm:', np.linalg.norm(theta)
   print 'Done.'
@@ -111,13 +111,14 @@ def SGD(lambdaL2, alpha, epochs, theta, data):
 
 def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
+  regularization = lambdaL2/2 * np.linalg.norm(theta, axis = -1)**2
   error = 0
   for (network, target) in examples:
     network.forward(theta)
     grads += network.backprop(theta,target)
     error += network.error(theta, target)
-  error = error/ len(examples) + lambdaL2/2 * np.linalg.norm(theta)
-  grads += lambdaL2*theta
+  error = error/ len(examples) + regularization
+  grads = grads/len(examples)  + lambdaL2*theta
   return grads, error
 
 
