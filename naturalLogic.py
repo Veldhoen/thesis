@@ -31,7 +31,7 @@ def gradientCheck(network, theta, target):
 #       for j in range(len(a)):
 #         print a[j], b[j]
   return globaldiff
-  
+
 def initialize(nwords, nrel):
   M1 = np.random.rand(dwords, 2*dwords)*.02-.01  #composition weights
   b1 = np.random.rand(dwords)*.02-.01       #composition bias
@@ -70,10 +70,11 @@ def getData(corpusdir, relations):
   return networks, vocabulary
 
 def batchtrain(alpha, lambdaL2, epochs, theta, examples):
-  summederror = 0
+
   print 'Start batch training'
   print 'Theta norm:', np.linalg.norm(theta)
   for i in range(epochs):
+    summederror = 0
     print '\tStart epoch',i
     grads, error = epoch(theta, examples, lambdaL2)
     summederror += error
@@ -114,11 +115,12 @@ def adagrad(lambdaL2, startRate, fudge_factor, epochs,theta, examples):
 
 def evaluate(theta, testData):
   true = 0
-  for (network, target) in examples:
+  for (network, target) in testData:
     prediction = network.predict(theta)
     if prediction == target:
       true +=1
-  print 'Accuracy:', true/len(testdata)
+  print 'Accuracy:', true/len(testData)
+  return true/len(testData)
 
 def main(args):
   if len(args)== 0:
@@ -136,7 +138,7 @@ def main(args):
   alpha = 0.2
   lambdaL2 = 0.0002
   fudge = 1e-6 #for numerical stability adagrad
-  epochs = 1#50
+  epochs = 5#50
 
 
   relations = ['<','>','=','|','^','v','#']
@@ -149,10 +151,10 @@ def main(args):
   theta = initialize(len(vocabulary),len(relations))
 
   thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
-  evaluate(thetaBatch)
+  evaluate(thetaBatch,testData)
 
   thetaAda = adagrad(lambdaL2, alpha, fudge, epochs, np.copy(theta), trainData)
-  evaluate(thetaAda)
+  evaluate(thetaAda,testData)
   #network,target = examples[0]
   #gradientCheck(network,theta, target)
 if __name__ == "__main__":

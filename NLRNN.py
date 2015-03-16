@@ -32,9 +32,9 @@ class Network:
   def fromTrees(self,trees,words):
     return Network(Comparisonlayer([RNN(tree, words) for tree in trees]))
 
-  def predict(theta):
+  def predict(self,theta):
     self.forward(theta)
-    return a.argmax(axis=0)
+    return self.a.argmax(axis=0)
 
   def forward(self, theta):
     M1,b1,V,M2,b2, M3, b3 = unwrap(theta)
