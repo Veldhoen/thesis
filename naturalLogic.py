@@ -21,6 +21,7 @@ def gradientCheck(network, theta, target):
 
   names = ['M1','b1','V','M2','b2','M3','b3']
   pairedGrads = zip(unwrap(numgrad),unwrap(grad))
+  pars = unwrap(theta)
 
   for i in range(len(names)):
     a,b = pairedGrads[i]
@@ -28,46 +29,59 @@ def gradientCheck(network, theta, target):
     b = np.reshape(b,-1)
     diff = np.linalg.norm(a-b)/np.linalg.norm(a+b)
     print 'Difference '+names[i]+' :', diff
-#     if diff > 0.0001:
-#       for j in range(len(a)):
-#         print a[j], b[j]
+#    if diff > 0.0001:
+#      par = pars[i]
+#      for j in range(len(a)):
+#        print a[j], b[j], par[j]
+#      sys.exit()
   return globaldiff
 
 def initialize(nwords, nrel):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
-  M1 = np.random.rand(dwords, 2*dwords)*.02-.01  #composition weights
-  b1 = np.random.rand(dwords)*.02-.01       #composition bias
-  M2 = np.random.rand(dcomparison,2*dwords)*.02-.01
-  b2 = np.random.rand(dcomparison)*.02-.01       #composition bias
-  M3 = np.random.rand(nrel,dcomparison)
-  b3 = np.random.rand(nrel)*.02-.01       #composition bias
-  V = np.random.rand(nwords,dwords)*.02-.01
+  M1 = np.random.rand(dwords, 2*dwords)*.02-.01     # composition weights
+  b1 = np.random.rand(dwords)*.02-.01               # composition bias
+  V = np.random.rand(nwords,dwords)*.02-.01         # Word matrix
+  M2 = np.random.rand(dcomparison,2*dwords)*.02-.01 # comparison weights
+  b2 = np.random.rand(dcomparison)*.02-.01          # comparison bias
+  M3 = np.random.rand(nrel,dcomparison)             # softmax weights
+  b3 = np.random.rand(nrel)*.02-.01                 # softmax bias
   theta = wrap((M1,b1,V,M2,b2,M3,b3))
   return theta
 
 def getData(corpusdir, relations):
   print 'Reading corpus...'
+  if os.path.isdir(corpusdir):
+#    root, _, files = os.walk(corpusdir)
+#    toOpen = [os.path.join(root,f) for root, f in zip(root, files)]
+    toOpen = [os.path.join(corpusdir,f) for f in os.listdir(corpusdir)]
+    toOpen = [f for f in toOpen if os.path.isfile(f)]
+  elif os.path.isfile(corpusdir): toOpen = [corpusdir]
+
+
   examples = []
   vocabulary = ['UNK']
-  for root, _, files in os.walk(corpusdir+'/data-4'):
-    for f in files:
-      with open(os.path.join(root,f),'r') as f:
-        for line in f:
-          bits = line.split('\t')
-          if len(bits) == 3:
-            relation, s1, s2 = bits
-            # add unknown words to vocabulary
-            for word in s1.split()+s2.split():
-              if word !=')' and word != '(' and word not in vocabulary:
-                vocabulary.append(word)
-            # add training example to set
-            examples.append(([tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(\1)", s)+')') for s in [s1,s2]],relations.index(relation)))
+  for f in toOpen:
+    kinds = f.split('-')
+    with open(f,'r') as f:
+      for line in f:
+        bits = line.split('\t')
+        if len(bits) == 3:
+          relation, s1, s2 = bits
+          # add unknown words to vocabulary
+          for word in s1.split()+s2.split():
+            if word !=')' and word != '(' and word not in vocabulary:
+              vocabulary.append(word)
+          # add training example to set
+          examples.append(([tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(\1)", s)+')') for s in [s1,s2]],relations.index(relation)))
   # Now that the vocabulary is established, create neural networks from the examples
   networks = []
   for (trees, target) in examples:
-    nw = Network.fromTrees(trees,vocabulary)
-    nw.sethyperparams(len(vocabulary), dwords, dcomparison,len(relations))
-    networks.append((nw,target))
+    try:
+      nw = Network.fromTrees(trees,vocabulary)
+      nw.sethyperparams(len(vocabulary), dwords, dcomparison,len(relations))
+      networks.append((nw,target))
+    except:
+      print 'problem with trees', trees
   print 'Done.'
   return networks, vocabulary
 
@@ -128,16 +142,19 @@ def evaluate(theta, testData):
     prediction = network.predict(theta)
     if prediction == target:
       true +=1
+    else: print 'mistake in (', network, '), true:',target
   print 'Accuracy:', true/len(testData)
   return true/len(testData)
 
 def main(args):
   if len(args)== 0:
-    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-ICLR14-R1'
+    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-ICLR14-R1/data-4'
+#    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-Winter2015-R1/vector-entailment-W15/R1/grammars/data'
+
   else:
     corpusdir = args[0]
-  if not os.path.isdir(corpusdir):
-    print 'no data found at', corpusdir
+  if not os.path.exists(corpusdir):
+    print 'No data found at', corpusdir
     sys.exit()
 
   # set hyperparameters
@@ -150,7 +167,8 @@ def main(args):
 
 
   relations = ['<','>','=','|','^','v','#']
-  examples,vocabulary = getData(corpusdir, relations)
+#  relations = ['NEUTRAL', 'ENTAILMENT', 'CONTRADICTION']
+  examples,vocabulary = getData(corpusdir.strip(), relations)
   np.random.shuffle(examples)
   nTest = len(examples)//5
   trainData = examples[:nTest]
@@ -158,17 +176,19 @@ def main(args):
 
   theta = initialize(len(vocabulary),len(relations))
   print 'Parameters initialized. Theta norm:', np.linalg.norm(theta)
+#
+# #  thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
+# #  evaluate(thetaBatch,testData)
+#
+# #  thetaAda = adagrad(lambdaL2, alpha, epochs, np.copy(theta), trainData)
+# #  evaluate(thetaAda,testData)
+#
+#   thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
+#   evaluate(thetaSGD,testData)
+  testcases = random.sample(examples, 1)
+  for network, target in testcases:
+    print network
+    gradientCheck(network,theta, target)
 
-  thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
-  evaluate(thetaBatch,testData)
-
-  thetaAda = adagrad(lambdaL2, alpha, epochs, np.copy(theta), trainData)
-  evaluate(thetaAda,testData)
-
-  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
-  evaluate(thetaSGD,testData)
-
-  #network,target = examples[0]
-  #gradientCheck(network,theta, target)
 if __name__ == "__main__":
    main(sys.argv[1:])

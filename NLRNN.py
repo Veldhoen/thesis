@@ -14,13 +14,14 @@ Functions for the outside world:
 - forward(theta):          activates the entire network with the given parameters
 - backprop(theta, target): computes and backpropagates the error,
                            returns the gradients in the same shape as theta
-- error (theta, target):   return the error of the network with given parameters
+- error (theta, target):   returns the error of the network with given parameters
+- predict(theta):          returns the predicted class (integer) with given parameters
+- str():                   returns a string representation of the network + its prediction (if activated)
 '''
 
 class Network:
   def __init__(self, comparisonlayer):
     self.comparison = comparisonlayer #
-
   def sethyperparams(self, nw, dw, dc, nr):
     global nwords, dwords, dcomparison,numrel
     nwords = nw
@@ -59,10 +60,19 @@ class Network:
     self.forward(theta)
     return -np.log(self.a[trueRelation])
 
+  def __str__(self):
+    rels = ['<','>','=','|','^','v','#']
+    st = str(self.comparison)
+    try: st += ', pred: '+ rels[self.a.argmax(axis=0)]
+    except : True
+    return st
 
 class RNN:
   def __init__(self,tree,words):
-    self.children = [RNN(child,words) for child in tree]
+    if len(tree) == 1 and tree.height > 2:
+      self.children = [RNN(child,words) for child in tree[0]]
+    else: self.children = [RNN(child,words) for child in tree]
+    self.word = tree.label()
     try:    self.index = words.index(tree.label())  # Word index in V
     except: self.index = 0                          # Not a leaf or unknown word
   def forward(self, M,b,V):
@@ -94,6 +104,13 @@ class RNN:
       gradV = np.zeros_like(V)
       gradV[self.index] = delta
     return gradM, gradb, gradV
+  def __str__(self):
+    if len(self.children) > 0:
+      return '['+','.join([str(child) for child in self.children])+']'
+    else:
+      if self.word: return self.word
+      else:         return str(self.wordIndex)
+
 
 class Comparisonlayer:
   def __init__(self,rnns):
@@ -118,6 +135,10 @@ class Comparisonlayer:
     gradb1 = grad0b1 + grad1b1
     gradV  = grad0V  + grad1V
     return gradM1, gradb1, gradV, gradM2, gradb2
+  def __str__(self):
+    return 't1: '+str(self.rnns[0])+', t2: '+str(self.rnns[1])
+
+
 
 # activation functions:
 def identity(vector):
