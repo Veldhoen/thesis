@@ -3,6 +3,7 @@ from __future__ import division
 import os, os.path
 from nltk import tree
 import numpy as np
+import random
 import re
 from NLRNN import *
 import numericalGradient2 as ng
@@ -33,6 +34,7 @@ def gradientCheck(network, theta, target):
   return globaldiff
 
 def initialize(nwords, nrel):
+  # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   M1 = np.random.rand(dwords, 2*dwords)*.02-.01  #composition weights
   b1 = np.random.rand(dwords)*.02-.01       #composition bias
   M2 = np.random.rand(dcomparison,2*dwords)*.02-.01
@@ -72,16 +74,40 @@ def getData(corpusdir, relations):
 def batchtrain(alpha, lambdaL2, epochs, theta, examples):
 
   print 'Start batch training'
-  print 'Theta norm:', np.linalg.norm(theta)
   for i in range(epochs):
-    summederror = 0
-    print '\tStart epoch',i
     grads, error = epoch(theta, examples, lambdaL2)
-    summederror += error
     theta -= alpha/len(examples) * grads
-    print '\tDone, average error:', summederror/len(examples), ', theta norm:', np.linalg.norm(theta)
+    print '\tEpoch',i, ', average error:', error, ', theta norm:', np.linalg.norm(theta)
   print 'Done.'
   return theta
+
+def adagrad(lambdaL2, alpha, epochs,theta, examples):
+  print 'Start adagrad training'
+  historical_grad = np.zeros_like(theta)
+
+  #while not converged:
+  for i in range(epochs):
+    grad, error = epoch(theta, examples, lambdaL2)
+    historical_grad += np.multiply(grad,grad)
+    adjusted_grad = np.divide(grad,np.sqrt(historical_grad)+1e-6)
+    theta = theta - alpha*adjusted_grad
+    print '\tEpoch',i, ', average error:', error, ', theta norm:', np.linalg.norm(theta)
+  print 'Done.'
+  return theta
+
+def SGD(lambdaL2, alpha, epochs, theta, data):
+  print 'Start SGD training with minibatches'
+  historical_grad = np.zeros_like(theta)
+#  while not converged:
+  for i in range(epochs):
+    minibatch = random.sample(data, 32)
+    grad, error = epoch(theta, minibatch, lambdaL2)
+    historical_grad += np.multiply(grad,grad)
+    adjusted_grad = np.divide(grad,np.sqrt(historical_grad)+1e-6)
+    theta = theta - alpha*adjusted_grad
+    print '\tIteration', i, ', average error:', error, ', theta norm:', np.linalg.norm(theta)
+  return theta
+
 
 def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
@@ -90,28 +116,10 @@ def epoch(theta, examples, lambdaL2):
     network.forward(theta)
     grads += network.backprop(theta,target)
     error += network.error(theta, target)
-  error += lambdaL2/2 * np.linalg.norm(theta)
-#  error += lambdaL2/2 * np.multiply(theta,theta) #regularization
+  error = error/ len(examples) + lambdaL2/2 * np.linalg.norm(theta)
   grads += lambdaL2*theta
   return grads, error
 
-def adagrad(lambdaL2, startRate, fudge_factor, epochs,theta, examples):
-  print 'Start adagrad training'
-  print 'Theta norm:', np.linalg.norm(theta)
-  historical_grad = np.zeros_like(theta)
-
-  #while not converged:
-  for i in range(epochs):
-    summederror = 0
-    print '\tStart epoch',i
-    grad, error = epoch(theta, examples, lambdaL2)
-    summederror += error
-    historical_grad += np.multiply(grad,grad)
-    adjusted_grad = np.divide(grad,fudge_factor + np.sqrt(historical_grad))
-    theta = theta - startRate*adjusted_grad
-    print '\tDone, average error:', summederror/len(examples), ', theta norm:', np.linalg.norm(theta)
-  print 'Done.'
-  return theta
 
 def evaluate(theta, testData):
   true = 0
@@ -137,7 +145,6 @@ def main(args):
   dcomparison = 45
   alpha = 0.2
   lambdaL2 = 0.0002
-  fudge = 1e-6 #for numerical stability adagrad
   epochs = 5#50
 
 
@@ -149,12 +156,17 @@ def main(args):
   testData = examples[nTest:]
 
   theta = initialize(len(vocabulary),len(relations))
+  print 'Parameters initialized. Theta norm:', np.linalg.norm(theta)
 
   thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
   evaluate(thetaBatch,testData)
 
-  thetaAda = adagrad(lambdaL2, alpha, fudge, epochs, np.copy(theta), trainData)
+  thetaAda = adagrad(lambdaL2, alpha, epochs, np.copy(theta), trainData)
   evaluate(thetaAda,testData)
+
+  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
+  evaluate(thetaSGD,testData)
+
   #network,target = examples[0]
   #gradientCheck(network,theta, target)
 if __name__ == "__main__":
