@@ -98,9 +98,10 @@ def adagrad(lambdaL2, startRate, fudge_factor, epochs,theta, examples):
   print 'Start adagrad training'
   print 'Theta norm:', np.linalg.norm(theta)
   historical_grad = np.zeros_like(theta)
-  summederror = 0
+
   #while not converged:
   for i in range(epochs):
+    summederror = 0
     print '\tStart epoch',i
     grad, error = epoch(theta, examples, lambdaL2)
     summederror += error
@@ -110,6 +111,14 @@ def adagrad(lambdaL2, startRate, fudge_factor, epochs,theta, examples):
     print '\tDone, average error:', summederror/len(examples), ', theta norm:', np.linalg.norm(theta)
   print 'Done.'
   return theta
+
+def evaluate(theta, testData):
+  true = 0
+  for (network, target) in examples:
+    prediction = network.predict(theta)
+    if prediction == target:
+      true +=1
+  print 'Accuracy:', true/len(testdata)
 
 def main(args):
   if len(args)== 0:
@@ -140,7 +149,10 @@ def main(args):
   theta = initialize(len(vocabulary),len(relations))
 
   thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
+  evaluate(thetaBatch)
+
   thetaAda = adagrad(lambdaL2, alpha, fudge, epochs, np.copy(theta), trainData)
+  evaluate(thetaAda)
   #network,target = examples[0]
   #gradientCheck(network,theta, target)
 if __name__ == "__main__":

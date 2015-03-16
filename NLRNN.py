@@ -14,7 +14,7 @@ Functions for the outside world:
 - forward(theta):          activates the entire network with the given parameters
 - backprop(theta, target): computes and backpropagates the error,
                            returns the gradients in the same shape as theta
-- error (theta, target):   return the error of the network with given parameters                           
+- error (theta, target):   return the error of the network with given parameters
 '''
 
 class Network:
@@ -32,7 +32,9 @@ class Network:
   def fromTrees(self,trees,words):
     return Network(Comparisonlayer([RNN(tree, words) for tree in trees]))
 
-
+  def predict(theta):
+    self.forward(theta)
+    return a.argmax(axis=0)
 
   def forward(self, theta):
     M1,b1,V,M2,b2, M3, b3 = unwrap(theta)
