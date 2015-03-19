@@ -150,7 +150,8 @@ def tanh(vector):
   der = 1- np.multiply(act,act)
   return act, der
 def ReLU(vector):
-  act = np.array([max(x,0) for x in vector])
+  act = np.array([max(x,0)+0.01*min(x,0) for x in vector])
+#  act = np.array([max(x,0) for x in vector])
   der = np.array([1*(x>=0) for x in vector])
   return act, der
 

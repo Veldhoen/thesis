@@ -142,7 +142,7 @@ def evaluate(theta, testData):
     prediction = network.predict(theta)
     if prediction == target:
       true +=1
-    else: print 'mistake in (', network, '), true:',target
+#    else: print 'mistake in (', network, '), true:',target
   print 'Accuracy:', true/len(testData)
   return true/len(testData)
 
@@ -163,7 +163,7 @@ def main(args):
   dcomparison = 45
   alpha = 0.2
   lambdaL2 = 0.0002
-  epochs = 5#50
+  epochs = 100
 
 
   relations = ['<','>','=','|','^','v','#']
@@ -183,12 +183,12 @@ def main(args):
 # #  thetaAda = adagrad(lambdaL2, alpha, epochs, np.copy(theta), trainData)
 # #  evaluate(thetaAda,testData)
 #
-#   thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
-#   evaluate(thetaSGD,testData)
-  testcases = random.sample(examples, 1)
-  for network, target in testcases:
-    print network
-    gradientCheck(network,theta, target)
+  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
+  evaluate(thetaSGD,testData)
+#   testcases = random.sample(examples, 1)
+#   for network, target in testcases:
+#     print network
+#     gradientCheck(network,theta, target)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
