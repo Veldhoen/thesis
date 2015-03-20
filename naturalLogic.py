@@ -19,7 +19,7 @@ def gradientCheck(network, theta, target):
   globaldiff = np.linalg.norm(numgrad-grad)/np.linalg.norm(numgrad+grad)
   print 'Difference numerical and analytical gradients:', globaldiff
 
-  names = ['M1','b1','V','M2','b2','M3','b3']
+  names = ['M1','b1','V','Mw','M2','b2','M3','b3']
   pairedGrads = zip(unwrap(numgrad),unwrap(grad))
   pars = unwrap(theta)
 
@@ -36,16 +36,21 @@ def gradientCheck(network, theta, target):
 #      sys.exit()
   return globaldiff
 
-def initialize(nwords, nrel):
+def initialize(nwords,dwords, dcomparison, nrel, V = None):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
+
   M1 = np.random.rand(dwords, 2*dwords)*.02-.01     # composition weights
   b1 = np.random.rand(dwords)*.02-.01               # composition bias
-  V = np.random.rand(nwords,dwords)*.02-.01         # Word matrix
+  if V is None:
+    V = np.random.rand(nwords,dwords)*.02-.01       # Word matrix
+    Mw = np.ones(dwords,dwords)                     # word compression
+  else:
+    Mw = np.random.rand(dwords,len(V[0]))*.02-.01
   M2 = np.random.rand(dcomparison,2*dwords)*.02-.01 # comparison weights
   b2 = np.random.rand(dcomparison)*.02-.01          # comparison bias
   M3 = np.random.rand(nrel,dcomparison)             # softmax weights
   b3 = np.random.rand(nrel)*.02-.01                 # softmax bias
-  theta = wrap((M1,b1,V,M2,b2,M3,b3))
+  theta = wrap((M1,b1,V,Mw, M2,b2,M3,b3))
   return theta
 
 def getData(corpusdir, relations):
@@ -129,7 +134,9 @@ def epoch(theta, examples, lambdaL2):
   error = 0
   for (network, target) in examples:
     network.forward(theta)
-    grads += network.backprop(theta,target)
+    dgrads = network.backprop(theta,target)
+    print np.shape(theta), np.shape(grads), np.shape(dgrads)
+    grads += dgrads
     error += network.error(theta, target)
   error = error/ len(examples) + regularization
   grads = grads/len(examples)  + lambdaL2*theta
@@ -174,7 +181,7 @@ def main(args):
   trainData = examples[:nTest]
   testData = examples[nTest:]
 
-  theta = initialize(len(vocabulary),len(relations))
+  theta = initialize(len(vocabulary),dwords,dcomparison,len(relations))#nwords,dwords, dcomparison, nrel, V = None))
   print 'Parameters initialized. Theta norm:', np.linalg.norm(theta)
 #
 # #  thetaBatch = batchtrain(alpha, lambdaL2, epochs, np.copy(theta), trainData)
