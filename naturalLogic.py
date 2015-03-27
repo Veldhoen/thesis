@@ -2,11 +2,13 @@ from __future__ import division
 
 import sys, os, re
 from nltk import tree
+from collections import defaultdict
 import numpy as np
 import random
+
 from NN import *
 from training import *
-
+from getEmbeddings import *
 
 def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
@@ -53,18 +55,17 @@ def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
 
 
 def artData(source, relations):
-  print 'Reading corpus...'
+
   # make a list of files to open
   if os.path.isdir(source):
     toOpen = [os.path.join(source,f) for f in os.listdir(source)]
     toOpen = [f for f in toOpen if os.path.isfile(f)]
-  elif os.path.isfile(corpusdir): toOpen = [source]
+  elif os.path.isfile(source): toOpen = [source]
 
 
   examples = []
   vocabulary = ['UNK']
   for f in toOpen:
-    kinds = f.split('-')
     with open(f,'r') as f:
       for line in f:
         bits = line.split('\t')
@@ -79,41 +80,65 @@ def artData(source, relations):
   # Now that the vocabulary is established, create neural networks from the examples
   networks = []
   for (trees, target) in examples:
-#    try:
-#      [nltk.treetransforms.chomsky_normal_form(t) for t in trees]
-#      [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in trees]
-
-      nw = Top([Node([rnnFromTree(tree, vocabulary) for tree in trees],'comparison','tanh')],'classify','softmax')
-      networks.append((nw,target))
-#    except:
-#      print 'problem with trees', trees
+    nw = Top([Node([rnnFromTree(tree, vocabulary) for tree in trees],'comparison','tanh')],'classify','softmax')
+    networks.append((nw,target))
   np.random.shuffle(networks)
   nTest = len(networks)//5
   trainData = networks[:4*nTest]
   testData = networks[4*nTest:]
   trialData = []
 
-  print 'Done. Retrieved ',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
+
   return trainData, testData, trialData, vocabulary
 
-def sickData():
-  True
+def sickData(source, relations):
 
-
+  # make a list of files to open
+  if os.path.isdir(source):
+    toOpen = [os.path.join(source,f) for f in os.listdir(source)]
+    toOpen = [f for f in toOpen if os.path.isfile(f)]
+  elif os.path.isfile(source): toOpen = [source]
+  examples = []
+  vocabulary = ['UNK']
+  for f in toOpen:
+    with open(f,'r') as f:
+      next(f) # skip header
+      for line in f:
+        bits = line.split('\t')
+        s1 = bits[2]
+        s2 = bits[4]
+        relation = bits[5]
+        kind = bits[-1].strip()
+        for word in s1.split()+s2.split():
+          if word !=')' and word != '(' and word not in vocabulary:
+            vocabulary.append(word)
+          # add training example to set
+        examples.append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relations.index(relation),kind))
+  print len(examples)
+  # Now that the vocabulary is established, create neural networks from the examples
+  networks = defaultdict(list)
+  for (trees, target,kind) in examples:
+    try:
+      [nltk.treetransforms.chomsky_normal_form(t) for t in trees]
+      [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in trees]
+      nw = Top([Node([rnnFromTree(tree, vocabulary,wordReduction=True) for tree in trees],'comparison','tanh')],'classify','softmax')
+      networks[kind].append((nw,target))
+    except:
+      print 'problem with trees', trees
+  print networks.keys()
+  return networks['TRAIN'], networks['TEST'], networks['TRIAL'], vocabulary
 
 
 
 def main(args):
-  if len(args)== 0:
-    kind = 'artData'
-#    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-ICLR14-R1/data-4'
-    corpusdir = 'C:/Users/Sara/AI/thesisData/vector-entailment-Winter2015-R1/vector-entailment-W15-R1/grammars/data'
-
-  else:
-    kind = args[0]
-    corpusdir = args[1]
-  if not os.path.exists(corpusdir):
-    print 'No data found at', corpusdir
+  kind = args[0]
+  if kind == 'sickData':
+    source = './data/sick/SICKcorpusSample.txt'
+    embSrc = './data/senna'
+  if kind == 'artData':
+    source = './data/bowman15'
+  if not os.path.exists(source):
+    print 'No data found at', source
     sys.exit()
 
 
@@ -128,26 +153,28 @@ def main(args):
   epochs = 2
 
 
+
+  print 'Reading corpus...'
   if kind == 'artData':
     relations = ['<','>','=','|','^','v','#']
-    trainData, testData, trialData, vocabulary = artData(corpusdir, relations)
+    trainData, testData, trialData, vocabulary = artData(source, relations)
     V = None
   else:
     relations = ['NEUTRAL', 'ENTAILMENT', 'CONTRADICTION']
-    trainData, testData, trialData, vocabulary = sickData(corpusdir, relations, vocabulary)
-    V = getSennaEmb(vocabulary)
+    trainData, testData, trialData, vocabulary = sickData(source, relations)
+    V,voc = getSennaEmbs(embSrc, vocabulary)
 
-
+  print 'Done. Retrieved ',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
   theta = initialize(dwords,dint,dcomp,len(relations),len(vocabulary), V)#dwords, dint, dcomp, nrel, nwords = 1, V = None
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
 
-  testcases = random.sample(trainData, 1)
-  for network, target in testcases:
-    print network
-    gradientCheck(theta,network, target)
+#  testcases = random.sample(trainData, 1)
+#  for network, target in testcases:
+#    print network
+#    gradientCheck(theta,network, target)
 
-  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
-  evaluate(thetaSGD,testData)
+#  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
+#  evaluate(thetaSGD,testData)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

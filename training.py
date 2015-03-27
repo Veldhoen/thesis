@@ -57,17 +57,12 @@ def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
   regularization = lambdaL2/2 * thetaNorm(theta)**2
   error = 0
-  nans = ''
   for (network, target) in examples:
     network.forward(theta)
-    e = network.error(theta, target, recompute = False)
+    error += network.error(theta, target, recompute = False)
     dgrads = network.backprop(theta,target)
     for name in grads.dtype.names:
       grads[name] += dgrads[name]
-
-    if np.isnan(e): nans += str(target)
-    else: error += e
-  print 'nans:',nans
   error = error/ len(examples) + regularization
   for name in grads.dtype.names:
     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name]
