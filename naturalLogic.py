@@ -80,7 +80,7 @@ def artData(source, relations):
   # Now that the vocabulary is established, create neural networks from the examples
   networks = []
   for (trees, target) in examples:
-    nw = Top([Node([rnnFromTree(tree, vocabulary) for tree in trees],'comparison','tanh')],'classify','softmax')
+    nw = Top([Node([rnnFromTree(tree, vocabulary) for tree in trees],'comparison','ReLU')],'classify','softmax')
     networks.append((nw,target))
   np.random.shuffle(networks)
   nTest = len(networks)//5
@@ -125,7 +125,6 @@ def sickData(source, relations):
       networks[kind].append((nw,target))
     except:
       print 'problem with trees', trees
-  print networks.keys()
   return networks['TRAIN'], networks['TEST'], networks['TRIAL'], vocabulary
 
 
@@ -150,8 +149,11 @@ def main(args):
   # training hyperparameters
   alpha = 0.2
   lambdaL2 = 0.0002
-  epochs = 2
 
+
+  epochs = 20
+  batches = 10
+  rounds = epochs//batches
 
 
   print 'Reading corpus...'
@@ -172,9 +174,12 @@ def main(args):
 #  for network, target in testcases:
 #    print network
 #    gradientCheck(theta,network, target)
-
-#  thetaSGD = SGD(lambdaL2, alpha, epochs, np.copy(theta), trainData)
-#  evaluate(thetaSGD,testData)
-
+  for i in range(rounds):
+    print 'Training round', i
+    thetaSGD = SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = 32)
+    accuracy, confusion = evaluate(thetaSGD,testData)
+    print '\tAccuracy:', accuracy
+  print confusionString(confusion, relations)
+  print '\tAccuracy:', accuracy
 if __name__ == "__main__":
    main(sys.argv[1:])
