@@ -114,7 +114,6 @@ def sickData(source, relations):
             vocabulary.append(word)
           # add training example to set
         examples.append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relations.index(relation),kind))
-  print len(examples)
   # Now that the vocabulary is established, create neural networks from the examples
   networks = defaultdict(list)
   for (trees, target,kind) in examples:
@@ -180,6 +179,6 @@ def main(args):
     accuracy, confusion = evaluate(thetaSGD,testData)
     print '\tAccuracy:', accuracy
   print confusionString(confusion, relations)
-  print '\tAccuracy:', accuracy
+  print 'Accuracy:', accuracy
 if __name__ == "__main__":
    main(sys.argv[1:])
