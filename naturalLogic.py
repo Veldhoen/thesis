@@ -177,7 +177,7 @@ def main(args):
   rounds = epochs//batches
   for i in range(rounds):
     print 'Training round', i
-    SGD(lambdaL2, alpha, batches, theta, trainData, batchsize = bsize)
+    SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = bsize)
     accuracy, confusion = evaluate(theta,testData)
     print '\tAccuracy:', accuracy
   print confusionString(confusion, relations)

@@ -61,7 +61,6 @@ def SGD(lambdaL2, alpha, epochs, theta, data, batchsize = 0):
       historical_grad[name] += np.square(grad[name])
       theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
     print '\tIteration', i, ', average error:', error, ', theta norm:', thetaNorm(theta)
-  return theta
 
 def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
