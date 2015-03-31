@@ -10,6 +10,9 @@ from NN import *
 from training import *
 from getEmbeddings import *
 
+from params import *
+
+
 def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   types = []
@@ -120,43 +123,41 @@ def sickData(source, relations):
     try:
       [nltk.treetransforms.chomsky_normal_form(t) for t in trees]
       [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in trees]
-      nw = Top([Node([rnnFromTree(tree, vocabulary,wordReduction=True) for tree in trees],'comparison','tanh')],'classify','softmax')
+      nw = Top([Node([rnnFromTree(tree, vocabulary,wordReduction=True) for tree in trees],'comparison','ReLU')],'classify','softmax')
       networks[kind].append((nw,target))
     except:
       print 'problem with trees', trees
   return networks['TRAIN'], networks['TEST'], networks['TRIAL'], vocabulary
 
-
+def printParams():
+  print 'Network hyperparameters:'
+  print '\tword size:', dwords
+  print '\tinternal representation size:', dint
+  print '\tdcomparison size:', dcomp
+  print '\tgrammarbased:', grammarBased
+  print 'Training hyperparameters:'
+  print '\talpha :', alpha
+  print '\tlambdaL2 :', lambdaL2
+  print'\tbatch size :',bsize
+  print '\tnumber of epochs :', epochs
 
 def main(args):
   kind = args[0]
   if kind == 'sickData':
     source = './data/sick/SICKcorpusSample.txt'
     embSrc = './data/senna'
-  if kind == 'artData':
+  if kind == 'artData15':
     source = './data/bowman15'
+  if kind == 'artData14':
+    source = './data/bowman14'
+
   if not os.path.exists(source):
     print 'No data found at', source
     sys.exit()
 
-
-# network hyperparameters
-  dwords = 16
-  dint = 16
-  dcomp = 45
-  grammarBased = False
-  # training hyperparameters
-  alpha = 0.2
-  lambdaL2 = 0.0002
-
-
-  epochs = 20
-  batches = 10
-  rounds = epochs//batches
-
-
+  printParams()
   print 'Reading corpus...'
-  if kind == 'artData':
+  if kind == 'artData14' or kind == 'artData15':
     relations = ['<','>','=','|','^','v','#']
     trainData, testData, trialData, vocabulary = artData(source, relations)
     V = None
@@ -170,15 +171,17 @@ def main(args):
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
 
 #  testcases = random.sample(trainData, 1)
-#  for network, target in testcases:
-#    print network
-#    gradientCheck(theta,network, target)
+#   for network, target in testcases:
+#     print network
+#     gradientCheck(theta,network, target)
+  rounds = epochs//batches
   for i in range(rounds):
     print 'Training round', i
-    thetaSGD = SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = 32)
-    accuracy, confusion = evaluate(thetaSGD,testData)
+    SGD(lambdaL2, alpha, batches, theta, trainData, batchsize = bsize)
+    accuracy, confusion = evaluate(theta,testData)
     print '\tAccuracy:', accuracy
   print confusionString(confusion, relations)
   print 'Accuracy:', accuracy
+
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    main(sys.argv[1:])
