@@ -1,7 +1,7 @@
 # network hyperparameters
 dwords = 25
 dint = 25
-dcomp = 45
+dcomp = 75
 grammarBased = False
 
 # training hyperparameters

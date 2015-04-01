@@ -169,19 +169,22 @@ def main(args):
   print 'Done. Retrieved ',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
   theta = initialize(dwords,dint,dcomp,len(relations),len(vocabulary), V)#dwords, dint, dcomp, nrel, nwords = 1, V = None
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
-
+#   accuracy, confusion = evaluate(theta,testData)
+#   print confusionString(confusion, relations)
 #  testcases = random.sample(trainData, 1)
 #   for network, target in testcases:
 #     print network
 #     gradientCheck(theta,network, target)
-  rounds = epochs//batches
-  for i in range(rounds):
-    print 'Training round', i
-    SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = bsize)
-    accuracy, confusion = evaluate(theta,testData)
-    print '\tAccuracy:', accuracy
-  print confusionString(confusion, relations)
-  print 'Accuracy:', accuracy
+  bowmanSGD(lambdaL2, alpha, batches, np.copy(theta), trainData, testData,batchsize = bsize)
+
+#   rounds = epochs//batches
+#   for i in range(rounds):
+#     print 'Training round', i
+#     SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = bsize)
+#     accuracy, confusion = evaluate(theta,testData)
+#     print '\tAccuracy:', accuracy
+#   print confusionString(confusion, relations)
+#   print 'Accuracy:', accuracy
 
 if __name__ == "__main__":
     main(sys.argv[1:])
