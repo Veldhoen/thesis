@@ -66,11 +66,9 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, batchsize = 0):
 #  print 'Start SGD training with minibatches'
   historical_grad = np.zeros_like(theta)
 #  while not converged:
+  accuracy, confusion = evaluate(theta,testData)
+  print '\tAccuracy:', accuracy
   for i in range(epochs):
-    if i%25 == 0:
-      accuracy, confusion = evaluate(theta,testData)
-      print '\tAccuracy:', accuracy
-    print 'Iteration', i
     random.shuffle(data)
     for batch in range(len(data)//batchsize):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
@@ -79,8 +77,10 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, batchsize = 0):
         historical_grad[name] += np.square(grad[name])
         theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
       print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
-
+    accuracy, confusion = evaluate(theta,testData)
+    print 'Iteration', i ,', Accuracy:', accuracy
   accuracy, confusion = evaluate(theta,testData)
+  print confusionString(confusion, relations)
   print '\tAccuracy:', accuracy
 
 
