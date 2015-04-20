@@ -161,13 +161,13 @@ def main(args):
     relations = ['<','>','=','|','^','v','#']
     trainData, testData, trialData, vocabulary = artData(source, relations)
     V = None
-  else:
+  else: # train on sick data, use pretrained word embeddings
     relations = ['NEUTRAL', 'ENTAILMENT', 'CONTRADICTION']
     trainData, testData, trialData, vocabulary = sickData(source, relations)
     V,voc = getSennaEmbs(embSrc, vocabulary)
 
   print 'Done. Retrieved ',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
-  theta = initialize(dwords,dint,dcomp,len(relations),len(vocabulary), V)#dwords, dint, dcomp, nrel, nwords = 1, V = None
+  theta = initialize(dwords,dint,dcomp,len(relations),len(vocabulary), V)
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
 #   accuracy, confusion = evaluate(theta,testData)
 #   print confusionString(confusion, relations)
@@ -175,16 +175,7 @@ def main(args):
 #   for network, target in testcases:
 #     print network
 #     gradientCheck(theta,network, target)
-  bowmanSGD(lambdaL2, alpha, batches, np.copy(theta), trainData, testData,batchsize = bsize)
-
-#   rounds = epochs//batches
-#   for i in range(rounds):
-#     print 'Training round', i
-#     SGD(lambdaL2, alpha, batches, np.copy(theta), trainData, batchsize = bsize)
-#     accuracy, confusion = evaluate(theta,testData)
-#     print '\tAccuracy:', accuracy
-#   print confusionString(confusion, relations)
-#   print 'Accuracy:', accuracy
+  bowmanSGD(lambdaL2, alpha, epochs, np.copy(theta), trainData, testData,relations,batchsize = bsize)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
