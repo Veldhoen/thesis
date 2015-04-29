@@ -1,7 +1,7 @@
 import pickle, os
 import nltk, re
 import numpy as np
-
+import random
 
 def getSennaEmbs(source, voc = ['UNK']):
   print '\tObtaining embeddings...'
@@ -55,6 +55,7 @@ def artData(name):
           # add training example to set
 
           examples.append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relation))
+  random.shuffle(examples)
   nTest = len(examples)//5
   trainData = examples[:4*nTest]
   testData = examples[4*nTest:]
@@ -89,13 +90,21 @@ def sickData(name):
   with open(os.path.join('data',name+'.pik'), 'wb') as f:
     pickle.dump([examples['TRAIN'],examples['TEST'],examples['TRIAL'],vocabulary], f, -1)
 
-source = 'data/senna'
-getSennaEmbs(source)
-with open('data/sennaV.pik', 'wb') as f:
-  V, voc =   pickle.load(f)
 
-for i in range(10):
-  print voc[i], V[i]
+name = 'bowman14'
+artData(name)
+
+name = 'bowman15'
+artData(name)
+
+
+# source = 'data/senna'
+# getSennaEmbs(source)
+# with open('data/sennaV.pik', 'wb') as f:
+#   V, voc =   pickle.load(f)
+# 
+# for i in range(10):
+#   print voc[i], V[i]
 
 
 # name = 'sickSample'
