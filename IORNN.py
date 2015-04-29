@@ -198,28 +198,50 @@ def compareGrad(numgrad,grad):
     numgradflat = np.append(numgradflat,ngr)
   print 'Difference overall:', np.linalg.norm(numgradflat-gradflat)/(np.linalg.norm(numgradflat)+np.linalg.norm(gradflat))
 
-def trainPredict(nw, theta,vocabulary,gradients):
-  print 'training:', nw
+# def testPredict(nw,theta):
+#   if isinstance(nw,Leaf):
+#     nwords = len(theta[word])
+#     scorew = nw.score(theta, False)
+#     for n in range(3):
+#       anGrad = np.zeros_like(theta)
+#       # create candidate index unlike the observed one
+#       x = random.randint(0,nwords-1)
+#       while x == nw.index:
+#         x = random.randint(0,nwords-1)
+#
+#       # if the candidate scores too high: backpropagate error
+#       scorex = nw.score(theta, x, False)
+#       c = 1 - scorew+scorex
+#       print 'random guess', n, 'c:',c
+#       if c>1: # scorew<scorex
+#         numGrad = numericalGradient(theta, nw)
+#         delta = np.array([1])
+#         nw.children[0].children[0].backpropOuter(delta, theta, anGrad)
+#         compareGrad(numGrad,anGrad)
+#   [testPredict(child, theta, vocabulary, gradients) for child in nw.children]
+
+def trainPredict(nw, theta,gradients):
+#  print 'training:', nw
 
   if isinstance(nw,Leaf):
-
+    nwords = len(theta['wordIM'])
     scorew = nw.score(theta, False)
     for n in range(3):
       anGrad = np.zeros_like(theta)
       # create candidate index unlike the observed one
-      x = random.randint(0,len(vocabulary)-1)
+      x = random.randint(0,nwords-1)
       while x == nw.index:
-        x = random.randint(0,len(vocabulary)-1)
+        x = random.randint(0,nwords-1)
 
       # if the candidate scores too high: backpropagate error
       scorex = nw.score(theta, x, False)
       c = 1 - scorew+scorex
-      print 'random guess', n, 'c:',c
+#      print 'random guess', n, 'c:',c
       if c>1: # scorew<scorex
-        numGrad = numericalGradient(theta, nw)
+#        numGrad = numericalGradient(theta, nw)
         delta = np.array([1])
         nw.children[0].children[0].backpropOuter(delta, theta, anGrad)
-        compareGrad(numGrad,anGrad)
+#        compareGrad(numGrad,anGrad)
 
     # update (or instantiate) variable gradients
 #    if gradients is None:
@@ -228,5 +250,5 @@ def trainPredict(nw, theta,vocabulary,gradients):
 #    else:
     for name in gradients.dtype.names:
       gradients[name] += anGrad[name]
-  [trainPredict(child, theta, vocabulary, gradients) for child in nw.children]
+  [trainPredict(child, theta, gradients) for child in nw.children]
 #  return gradients

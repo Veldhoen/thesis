@@ -1,16 +1,24 @@
 from __future__ import division
 
 import sys, os, re
+import pickle
 from nltk import tree
 from collections import defaultdict
 import numpy as np
 import random
 
-from IORNN3 import *
+from IORNN import *
 from training import *
 from getEmbeddings import *
 
 from params import *
+
+def glueNW(trees,rel,voc):
+  nws = [iornnFromTree(t, voc) for t in trees]
+  relLeaf = Leaf('word',voc.index(rel), 'tanh',rel)
+  cat = 'composition'
+  im = Node([nws[0],relLeaf],cat,'tanh','tanh')
+  return Node([im,nws[1]],cat,'tanh','tanh')
 
 def iornnFromTree(tree, vocabulary, grammarBased = False):
   if tree.height() > 2:
@@ -18,8 +26,6 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
     else: cat = 'composition'
     children = [iornnFromTree(child,vocabulary, grammarBased) for child in tree]
     parent = Node(children,cat,'tanh','tanh')
-#    children[0].setRelatives(parent,children[1])
-#    children[1].setRelatives(parent,children[0])
     return parent
   else: #preterminal node
     words = tree.leaves()
@@ -59,31 +65,67 @@ def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
   print 'created Theta:', theta.dtype.names
   return theta[0]
 
-relations = ['<','>','=','|','^','v','#']
-vocabulary = ['UNK', 'all','no','warthogs','hippos','dogs','bark','walk','talk']
-dwords = 5
-dint = 5
-dcomp = 75
-nrel = len(relations)
-nwords = len(vocabulary)
-theta = initialize(dwords, dint, dcomp, nrel, nwords)
+def unpickle(source):
+
+  with open(source, 'rb') as f:
+     trainData, testData, trialData, vocabulary = pickle.load(f)
+  vocabulary.extend(['<','>','=','|','^','v','#'])
+
+  treeset = [[],[],[]]
+  i=0
+  for set in trainData, testData, trialData:
+    for (trees,rel) in set:
+      treeset[i].append(glueNW(trees,rel,vocabulary))
+    i+=1
+  return treeset[0],treeset[1],treeset[2],vocabulary
+
+
+
+def main():
+  source = os.path.join('data','bowman14.pik')
+  trainData, testData, trialData, vocabulary = unpickle(source)
+
+  relations = ['<','>','=','|','^','v','#']
+#  vocabulary = ['UNK', 'all','no','warthogs','hippos','dogs','bark','walk','talk']
+#  vocabulary.append(relations)
+  dwords = 5
+  dint = 5
+  dcomp = 75
+  nrel = len(relations)
+  nwords = len(vocabulary)
+  theta = initialize(dwords, dint, dcomp, nrel, nwords)
+#  nw= trainData[0]
+#  print nw
+  gradients = np.zeros_like(theta)
+#  trainPredict(nw, theta, gradients)
+  # training hyperparameters
+  alpha = 0.2
+  lambdaL2 = 0.0002
+  bsize = 32
+
+  epochs = 20
+  batches = 10
+  bowmanSGD(lambdaL2, alpha, epochs, theta, trainData, testData, relations, bsize)
+
+main()
+
 #s1 = '( all warthogs ) warthogs'
-s1 = '( all warthogs ) walk'
-t1 = nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s1)+')')
-nw1 = iornnFromTree(t1, vocabulary)
-#print nw1.inner(theta)
-#print nw1.outer(theta)
-
-#def printReps(nw,theta):
-#  print nw, 'Inner:',nw.inner(theta), 'Outer:',nw.outer(theta)
-#  for child in nw.children: printReps(child,theta)
-
-#printReps(nw1,theta)
-#print theta.dtype
-nw1.inner(theta)
-nw1.outer(theta)
-gradients = np.zeros_like(theta)             
-trainPredict(nw1, theta,vocabulary, gradients)
+# s1 = '( all warthogs ) walk'
+# t1 = nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s1)+')')
+# nw1 = iornnFromTree(t1, vocabulary)
+# #print nw1.inner(theta)
+# #print nw1.outer(theta)
+# 
+# #def printReps(nw,theta):
+# #  print nw, 'Inner:',nw.inner(theta), 'Outer:',nw.outer(theta)
+# #  for child in nw.children: printReps(child,theta)
+#
+# #printReps(nw1,theta)
+# #print theta.dtype
+# nw1.inner(theta)
+# nw1.outer(theta)
+# gradients = np.zeros_like(theta)             
+# trainPredict(nw1, theta, gradients)
 # for name in gradients.dtype.names:
 #   theta[name] = theta[name] + gradients[name]
 

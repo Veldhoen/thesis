@@ -1,21 +1,39 @@
 from __future__ import division
 import numpy as np
 import random
+import IORNN
 from collections import defaultdict, Counter
 
 def thetaNorm(theta):
   names = theta.dtype.names
   return sum([np.linalg.norm(theta[name]) for name in names])/len(names)
 
+# def evaluate(theta, testData):
+#   true = 0
+#   confusion = defaultdict(Counter)
+#   for (network, target) in testData:
+#     prediction = network.predict(theta)
+#     confusion[target][prediction] += 1
+#     if prediction == target:
+#       true +=1
+# #    else: print 'mistake in (', network, '), true:',target
+#   return true/len(testData), confusion
+
 def evaluate(theta, testData):
   true = 0
   confusion = defaultdict(Counter)
-  for (network, target) in testData:
-    prediction = network.predict(theta)
-    confusion[target][prediction] += 1
-    if prediction == target:
-      true +=1
-#    else: print 'mistake in (', network, '), true:',target
+  relations = range(len(theta['wordIM']))[-7:]
+  for nw in testData:
+    relNode = nw.children[0].children[1]
+
+    scores = [relNode.score(theta, x, False) for x in relations]
+
+#    print [(relations[i], scores[i]) for i in range(7)]
+    tar = relNode.index
+    pred = relations[scores.index(max(scores))] # NB assumes there is a unique maximum
+#    print tar, pred, pred == tar
+    confusion[relNode.word][pred] += 1
+    if pred == tar: true +=1
   return true/len(testData), confusion
 
 def confusionString(confusion, relations):
@@ -78,7 +96,8 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
       for name in historical_grad.dtype.names:
         historical_grad[name] += np.square(grad[name])
         theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
-      print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
+      if batch % 10 == 0:
+        print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
     accuracy, confusion = evaluate(theta,testData)
     print 'Iteration', i ,', Accuracy:', accuracy
   accuracy, confusion = evaluate(theta,testData)
@@ -88,17 +107,24 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
 
 
 
+# def epoch(theta, examples, lambdaL2):
+#   grads = np.zeros_like(theta)
+#   regularization = lambdaL2/2 * thetaNorm(theta)**2
+#   error = 0
+#   for (network, target) in examples:
+#     network.forward(theta)
+#     error += network.error(theta, target, recompute = False)
+#     dgrads = network.backprop(theta,target)
+#     for name in grads.dtype.names:
+#       grads[name] += dgrads[name]
+#   error = error/ len(examples) + regularization
+#   for name in grads.dtype.names:
+#     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name]
+#   return grads, error
+
 def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
   regularization = lambdaL2/2 * thetaNorm(theta)**2
   error = 0
-  for (network, target) in examples:
-    network.forward(theta)
-    error += network.error(theta, target, recompute = False)
-    dgrads = network.backprop(theta,target)
-    for name in grads.dtype.names:
-      grads[name] += dgrads[name]
-  error = error/ len(examples) + regularization
-  for name in grads.dtype.names:
-    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name]
+  [IORNN.trainPredict(nw, theta,grads) for nw in examples]
   return grads, error
