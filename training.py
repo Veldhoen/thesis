@@ -22,17 +22,23 @@ def thetaNorm(theta):
 def evaluate(theta, testData):
   true = 0
   confusion = defaultdict(Counter)
-  relations = range(len(theta['wordIM']))[-7:]
-  for nw in testData:
-    relNode = nw.children[0].children[1]
 
-    scores = [relNode.score(theta, x, False) for x in relations]
+  for nw, tar in testData:
+    if isinstance(nw,IORNN.Node):
+      relations = range(len(theta['wordIM']))[-7:]
+      nw = nw.children[0].children[1]
+      tar = nw.index
+      scores = [nw.score(theta, x, False) for x in relations]
+#      print scores
+      maxscore = max(scores)
+      if scores[relations.index(tar)] == maxscore: pred = tar
+      else: pred = relations[scores.index(maxscore)] # NB assumes there is a unique maximum
+    else:
+      relations = range(7) #
+      pred = nw.predict(theta)
 
-#    print [(relations[i], scores[i]) for i in range(7)]
-    tar = relNode.index
-    pred = relations[scores.index(max(scores))] # NB assumes there is a unique maximum
-#    print tar, pred, pred == tar
-    confusion[relNode.word][pred] += 1
+    print tar, pred, pred == tar
+    confusion[relations.index(tar)][relations.index(pred)] += 1
     if pred == tar: true +=1
   return true/len(testData), confusion
 
@@ -86,8 +92,11 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
   historical_grad = np.zeros_like(theta)
 #  while not converged:
   accuracy, confusion = evaluate(theta,testData)
-  print 'Accuracy:', accuracy
+  #print 'Accuracy (before training):', accuracy
+  #print confusionString(confusion, relations)
   for i in range(epochs):
+    print 'Iteration', i ,', Accuracy:', accuracy
+    print confusionString(confusion, relations)
     # randomly split the data into parts of batchsize
     random.shuffle(data)
     for batch in range(len(data)//batchsize):
@@ -99,10 +108,11 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
     accuracy, confusion = evaluate(theta,testData)
-    print 'Iteration', i ,', Accuracy:', accuracy
-  accuracy, confusion = evaluate(theta,testData)
+#  accuracy, confusion = evaluate(theta,testData)
+
+  print 'Training terminated. Accuracy:', accuracy
   print confusionString(confusion, relations)
-  print '\tAccuracy:', accuracy
+
 
 
 
@@ -126,5 +136,16 @@ def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
   regularization = lambdaL2/2 * thetaNorm(theta)**2
   error = 0
-  [IORNN.trainPredict(nw, theta,grads) for nw in examples]
+  for nw, target in examples:
+#     try: 
+#        = ex
+#       error += nw.error(theta, target, recompute = False)
+#       print 'this is a regular RNN'
+#     except:
+#       nw = ex
+#       target = None
+#       print 'this is a IORNN'
+    dgrads = nw.train(theta,grads, target)
+  for name in grads.dtype.names:
+    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name]
   return grads, error

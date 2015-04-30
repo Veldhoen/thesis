@@ -5,7 +5,9 @@ import numpy as np
 import sys
 from collections import defaultdict
 import random
-import copy
+#import copy
+
+import activation
 
 class Node:
   def __init__(self, children, cat, actI,actO):
@@ -28,6 +30,9 @@ class Node:
       self.inner(theta)
       self.outer(theta)
 
+  def activateNW(self,theta):
+    self.inner(theta)
+    self.outer(theta)
 
   def setRelatives(self, parent, sibling):
 #    print 'self: [', self,'] (', self.cat,  '). Parent: [',parent, ']. Sibling: [', sibling,']'
@@ -71,7 +76,7 @@ class Node:
     M= theta[self.cat+'IM']
     b= theta[self.cat+'IB']
     self.innerZ = M.dot(inputsignal)+b
-    self.innerA, self.innerAd = activate(self.innerZ,self.actI)
+    self.innerA, self.innerAd = activation.activate(self.innerZ,self.actI)
     return self.innerA
 
   def outer(self, theta):
@@ -85,9 +90,14 @@ class Node:
       M= theta[cat+'OM']
       b= theta[cat+'OB']
       self.outerZ = M.dot(inputsignal)+b
-    self.outerA, self.outerAd = activate(self.outerZ,self.actO)
+    self.outerA, self.outerAd = activation.activate(self.outerZ,self.actO)
     [child.outer(theta) for child in self.children]
 #    return self.outerA
+
+  def train(self, theta, gradients = None, target = None):
+    if gradients == None: gradients = np.zeros_like(theta)
+    [child.train(theta, gradients) for child in self.children]
+    return gradients
 
   def __str__(self):
     if self.cat == 'comparison': return '['+'] VS ['.join([str(child) for child in self.children])+']'
@@ -105,7 +115,20 @@ class Leaf(Node):
     self.index = index
     self.word = word
 
-
+  def train(self, theta, gradients = None, target = None):
+    if gradients == None: gradients = np.zeros_like(theta)
+    nwords = len(theta['wordIM'])
+    scorew = self.score(theta, False)
+    for n in range(1):#3? sample size for candidates
+      x = random.randint(0,nwords-1)
+      while x == self.index:  x = random.randint(0,nwords-1)
+      # if the candidate scores too high: backpropagate error
+      scorex = self.score(theta, x, False)
+      c = 1 - scorew+scorex
+      if c>1:
+        delta = np.array([1])
+        self.children[0].children[0].backpropOuter(delta, theta, gradients)
+    return gradients
 
   def score(self, theta, wordIndex=-1, recompute = True):
     self.recomputeNW(theta)
@@ -123,10 +146,31 @@ class Leaf(Node):
       self.outer(theta)
     return score[0]
 
+  def numericalGradient(theta, nw, target = None):
+  #  print 'numgrad', theta.dtype.names
+    epsilon = 0.0001
+    numgrad = np.zeros_like(theta)
+    score0 = nw.score(theta)
+    for name in theta.dtype.names:
+    # create an iterator to iterate over the array, no matter its shape
+        it = np.nditer(theta[name], flags=['multi_index'])
+        while not it.finished:
+          i = it.multi_index
+          old = theta[name][i]
+          theta[name][i] = old + epsilon
+          errorPlus = max(0,1-score0+nw.score(theta))
+          theta[name][i] = old - epsilon
+          errorMin = max(0,1-score0+nw.score(theta))
+          d =(errorPlus-errorMin)/(2*epsilon)
+          numgrad[name][i] = d
+          theta[name][i] = old  # restore theta
+          it.iternext()
+    return numgrad
+
   def inner(self, theta):
 
     self.innerZ = theta[self.cat+'IM'][self.index]
-    self.innerA, self.innerAd = activate(self.innerZ,self.actI)
+    self.innerA, self.innerAd = activation.activate(self.innerZ,self.actI)
     return self.innerA
 
 
@@ -137,118 +181,7 @@ class Leaf(Node):
   def __str__(self):
     return self.word
 
-def activate(vector, nonlinearity):
-  if nonlinearity =='identity':
-    act = vector
-    der = np.ones_like(act)
-  elif nonlinearity =='tanh':
-    act = np.tanh(vector)
-    der = 1- np.square(act)
-  elif nonlinearity =='ReLU':
-    act = np.array([max(x,0)+0.01*min(x,0) for x in vector])
-    der = np.array([1*(x>=0) for x in vector])
-  elif nonlinearity =='sigmoid':
-    act = 1/(1+np.exp(-1*vector))
-    der = act * (1 - act)
-  elif nonlinearity =='softmax':
-    e = np.exp(vector)
-    act = e/np.sum(e)
-    der = np.ones_like(act)#this is never used
-  else:
-    print 'no familiar nonlinearity:', nonlinearity,'. Used identity.'
-    act = vector
-    der = np.ones(len(act))
-  return act, der
 
-def numericalGradient(theta, nw):
-#  print 'numgrad', theta.dtype.names
-  epsilon = 0.0001
-  numgrad = np.zeros_like(theta)
-  score0 = nw.score(theta)
-  for name in theta.dtype.names:
-  # create an iterator to iterate over the array, no matter its shape
-      it = np.nditer(theta[name], flags=['multi_index'])
-      while not it.finished:
-        i = it.multi_index
-        old = theta[name][i]
-        theta[name][i] = old + epsilon
-        errorPlus = max(0,1-score0+nw.score(theta))
-        theta[name][i] = old - epsilon
-        errorMin = max(0,1-score0+nw.score(theta))
-        d =(errorPlus-errorMin)/(2*epsilon)
-        numgrad[name][i] = d
-        theta[name][i] = old  # restore theta
-        it.iternext()
-  return numgrad
 
-def compareGrad(numgrad,grad):
-  gradflat=np.array([])
-  numgradflat=np.array([])
-  for name in numgrad.dtype.names:
-    ngr = np.reshape(numgrad[name],-1)
-    gr = np.reshape(grad[name],-1)
-    if np.array_equal(gr,ngr): diff = 0
-    else: diff = np.linalg.norm(ngr-gr)/(np.linalg.norm(ngr)+np.linalg.norm(gr))
-    print 'Difference '+name+' :', diff
-#     if True:
-# #    if name == 'uMO' :
-#       for i in range(len(ngr)):
-#         print ngr[i],gr[i]
-    gradflat = np.append(gradflat,gr)
-    numgradflat = np.append(numgradflat,ngr)
-  print 'Difference overall:', np.linalg.norm(numgradflat-gradflat)/(np.linalg.norm(numgradflat)+np.linalg.norm(gradflat))
 
-# def testPredict(nw,theta):
-#   if isinstance(nw,Leaf):
-#     nwords = len(theta[word])
-#     scorew = nw.score(theta, False)
-#     for n in range(3):
-#       anGrad = np.zeros_like(theta)
-#       # create candidate index unlike the observed one
-#       x = random.randint(0,nwords-1)
-#       while x == nw.index:
-#         x = random.randint(0,nwords-1)
-#
-#       # if the candidate scores too high: backpropagate error
-#       scorex = nw.score(theta, x, False)
-#       c = 1 - scorew+scorex
-#       print 'random guess', n, 'c:',c
-#       if c>1: # scorew<scorex
-#         numGrad = numericalGradient(theta, nw)
-#         delta = np.array([1])
-#         nw.children[0].children[0].backpropOuter(delta, theta, anGrad)
-#         compareGrad(numGrad,anGrad)
-#   [testPredict(child, theta, vocabulary, gradients) for child in nw.children]
 
-def trainPredict(nw, theta,gradients):
-#  print 'training:', nw
-
-  if isinstance(nw,Leaf):
-    nwords = len(theta['wordIM'])
-    scorew = nw.score(theta, False)
-    for n in range(3):
-      anGrad = np.zeros_like(theta)
-      # create candidate index unlike the observed one
-      x = random.randint(0,nwords-1)
-      while x == nw.index:
-        x = random.randint(0,nwords-1)
-
-      # if the candidate scores too high: backpropagate error
-      scorex = nw.score(theta, x, False)
-      c = 1 - scorew+scorex
-#      print 'random guess', n, 'c:',c
-      if c>1: # scorew<scorex
-#        numGrad = numericalGradient(theta, nw)
-        delta = np.array([1])
-        nw.children[0].children[0].backpropOuter(delta, theta, anGrad)
-#        compareGrad(numGrad,anGrad)
-
-    # update (or instantiate) variable gradients
-#    if gradients is None:
-#      print 'instantiated gradient.'
-#      gradients = anGrad
-#    else:
-    for name in gradients.dtype.names:
-      gradients[name] += anGrad[name]
-  [trainPredict(child, theta, gradients) for child in nw.children]
-#  return gradients

@@ -5,15 +5,29 @@ from nltk import tree
 from collections import defaultdict
 import numpy as np
 import random
+import pickle
 
-from NN import *
+import NN, IORNN #from NN import *
+#from IORNN import *
 from training import *
-from getEmbeddings import *
-
 from params import *
 
+def types4IO(d, nwords):
+  types = []
+#  types.append(('preterminalM','float64',(dint,dwords)))
+#  types.append(('preterminalB','float64',(dint)))
+  types.append(('compositionIM','float64',(dint,2*dint)))
+  types.append(('compositionIB','float64',(dint)))
+  types.append(('compositionOM','float64',(dint,2*dint)))
+  types.append(('compositionOB','float64',(dint)))
+  types.append(('wordIM','float64',(nwords,dwords)))
+  types.append(('wordOM', 'float64',(2*dint,2*dint)))
+  types.append(('wordOB', 'float64',(2*dint)))
+  types.append(('uOM', 'float64',(1,2*dint)))
+  types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+  return types
 
-def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
+def types4RNN(dwords, dint, dcomp, nrel, nwords = 1):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   types = []
   types.append(('preterminalM','float64',(dint,dwords)))
@@ -24,14 +38,22 @@ def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
   types.append(('comparisonB','float64',(dcomp)))
   types.append(('classifyM','float64',(nrel,dcomp)))
   types.append(('classifyB','float64',(nrel)))
-  types.append(('word','float64',(nwords,dwords)))
+  types.append(('wordIM','float64',(nwords,dwords)))
+  return types
+
+def initialize(style, dwords, dint, dcomp, nrel, nwords = 1, V = None):
+  if style == 'IORNN': types = types4IO(dint, nwords)
+  elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
+  else: print 'PROBLEM'
+  # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   theta = np.zeros(1,dtype = types)
   for name, t, size in types:
     if isinstance(size, (int,long)): theta[name] = np.random.rand(size)*.02-.01
     elif len(size) == 2: theta[name] = np.random.rand(size[0],size[1])*.02-.01
     else: print 'invalid size:', size
-  if 0 in theta: print 'zero in theta!'
   return theta[0]
+
+
 
 
 def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
@@ -39,95 +61,45 @@ def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
     else: cat = 'composition'
     children = [rnnFromTree(child,vocabulary,wordReduction) for child in tree]
-    return Node(children,cat,'tanh')
+    return NN.Node(children,cat,'tanh')
   else: #preterminal node
     words = tree.leaves()
     if len(words)== 1: word = words[0]
     else: 'Not exactly one leaf?!', tree
     try: index = vocabulary.index(word)
     except: index = 0
-    leaf = Leaf('word',index, word)
+    leaf = NN.Leaf('wordIM',index, word)
 
     if wordReduction:
     # wordReduction adds an extra layer to reduce high-dimensional words
     # to the dimensionality of the inner representations
       if grammarBased: cat = tree.label()
       else: cat = 'preterminal'
-      return Node([leaf],cat,'tanh')
+      return NN.Node([leaf],cat,'tanh')
     else: return leaf
 
+def glueNW(trees,rel,reli,voc):
+  nws = [iornnFromTree(t, voc) for t in trees]
+  relLeaf = IORNN.Leaf('word',voc.index(rel), 'tanh',reli)
+  cat = 'composition'
+  im = IORNN.Node([nws[0],relLeaf],cat,'tanh','tanh')
+  return IORNN.Node([im,nws[1]],cat,'tanh','tanh')
 
-def artData(source, relations):
-
-  # make a list of files to open
-  if os.path.isdir(source):
-    toOpen = [os.path.join(source,f) for f in os.listdir(source)]
-    toOpen = [f for f in toOpen if os.path.isfile(f)]
-  elif os.path.isfile(source): toOpen = [source]
-
-
-  examples = []
-  vocabulary = ['UNK']
-  for f in toOpen:
-    with open(f,'r') as f:
-      for line in f:
-        bits = line.split('\t')
-        if len(bits) == 3:
-          relation, s1, s2 = bits
-          # add unknown words to vocabulary
-          for word in s1.split()+s2.split():
-            if word !=')' and word != '(' and word not in vocabulary:
-              vocabulary.append(word)
-          # add training example to set
-          examples.append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relations.index(relation)))
-  # Now that the vocabulary is established, create neural networks from the examples
-  networks = []
-  for (trees, target) in examples:
-    nw = Top([Node([rnnFromTree(tree, vocabulary) for tree in trees],'comparison','ReLU')],'classify','softmax')
-    networks.append((nw,target))
-  np.random.shuffle(networks)
-  nTest = len(networks)//5
-  trainData = networks[:4*nTest]
-  testData = networks[4*nTest:]
-  trialData = []
-
-
-  return trainData, testData, trialData, vocabulary
-
-def sickData(source, relations):
-
-  # make a list of files to open
-  if os.path.isdir(source):
-    toOpen = [os.path.join(source,f) for f in os.listdir(source)]
-    toOpen = [f for f in toOpen if os.path.isfile(f)]
-  elif os.path.isfile(source): toOpen = [source]
-  examples = []
-  vocabulary = ['UNK']
-  for f in toOpen:
-    with open(f,'r') as f:
-      next(f) # skip header
-      for line in f:
-        bits = line.split('\t')
-        s1 = bits[2]
-        s2 = bits[4]
-        relation = bits[5]
-        kind = bits[-1].strip()
-        for word in s1.split()+s2.split():
-          if word !=')' and word != '(' and word not in vocabulary:
-            vocabulary.append(word)
-          # add training example to set
-        examples.append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relations.index(relation),kind))
-  # Now that the vocabulary is established, create neural networks from the examples
-  networks = defaultdict(list)
-  for (trees, target,kind) in examples:
-    try:
-      [nltk.treetransforms.chomsky_normal_form(t) for t in trees]
-      [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in trees]
-      nw = Top([Node([rnnFromTree(tree, vocabulary,wordReduction=True) for tree in trees],'comparison','ReLU')],'classify','softmax')
-      networks[kind].append((nw,target))
-    except:
-      print 'problem with trees', trees
-  return networks['TRAIN'], networks['TEST'], networks['TRIAL'], vocabulary
+def iornnFromTree(tree, vocabulary, grammarBased = False):
+  if tree.height() > 2:
+    if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
+    else: cat = 'composition'
+    children = [iornnFromTree(child,vocabulary, grammarBased) for child in tree]
+    parent = IORNN.Node(children,cat,'tanh','tanh')
+    return parent
+  else: #preterminal node
+    words = tree.leaves()
+    if len(words)== 1: word = words[0]
+    else: print 'Not exactly one leaf?!', tree
+    try: index = vocabulary.index(word)
+    except: index = 0
+    leaf = IORNN.Leaf('word',index, 'tanh',word)
+    return leaf
 
 def printParams():
   print 'Network hyperparameters:'
@@ -143,32 +115,68 @@ def printParams():
 
 def main(args):
   kind = args[0]
-  if kind == 'sickData':
-    source = './data/sick/SICKcorpusSample.txt'
-    embSrc = './data/senna'
-  if kind == 'artData15':
-    source = './data/bowman15'
-  if kind == 'artData14':
-    source = './data/bowman14'
+  style = args[1]
 
+  if kind == 'sickData':
+    relations = ['NEUTRAL','ENTAILMENT','CONTRADICTION']
+    source = './data/sick.pik'
+    embSrc = './data/senna.pik'
+  else:
+    relations = ['<','>','=','|','^','v','#']
+    embSrc = None
+    if kind == 'artData15': source = './data/bowman15.pik'
+    if kind == 'artData14': source = './data/bowman14.pik'
+    else: print 'choose datasource: sickData, artData14 or artData15'
   if not os.path.exists(source):
     print 'No data found at', source
     sys.exit()
+#  try:
+  if True:
+    with open(source, 'rb') as f:
+      trainData, testData, trialData, vocabulary = pickle.load(f)
+      if style == 'IORNN': vocabulary.extend(relations)
+    print 'examples loaded'
+    if embSrc:
+      print'loading embs'
+      V,voc = unpickle(embSrc)
+      print'loaded embs'
+      for i in range(len(voc)):
+        if voc[i] not in vocabulary and voc[i] not in relations and voc[i]!= 'UNK':
+          np.delete(V,i,0)
+          del(voc[i])
+    else: V = None
+#   except:
+#     print 'Problem loading data'
+#     sys.exit()
+
+  treeset = [[],[],[]]
+  i=0
+  for set in trainData, testData, trialData:
+    for (trees,target) in set:
+      targeti = relations.index(target)
+      if style == 'RNN':
+        nw = NN.Top([NN.Node([rnnFromTree(tree, vocabulary,wordReduction=True) for tree in trees],'comparison','ReLU')],'classify','softmax')
+      elif style == 'IORNN':
+        nw = glueNW(trees,target,targeti,vocabulary)
+#        target = None
+#      elif style == 'RAE':
+
+      else: print style, 'is not a familiar architecture'
+      treeset[i].append((nw,targeti))
+    i+=1
+  # there is probably a neater way to do this:
+  trainData = treeset[0]
+  testData = treeset[1]
+  trialData = treeset[2]
 
   printParams()
-  print 'Reading corpus...'
-  if kind == 'artData14' or kind == 'artData15':
-    relations = ['<','>','=','|','^','v','#']
-    trainData, testData, trialData, vocabulary = artData(source, relations)
-    V = None
-  else: # train on sick data, use pretrained word embeddings
-    relations = ['NEUTRAL', 'ENTAILMENT', 'CONTRADICTION']
-    trainData, testData, trialData, vocabulary = sickData(source, relations)
-    V,voc = getSennaEmbs(embSrc, vocabulary)
 
-  print 'Done. Retrieved ',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
-  theta = initialize(dwords,dint,dcomp,len(relations),len(vocabulary), V)
+  print 'There are',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size (inc relations):', len(vocabulary)
+  theta = initialize(style, dwords,dint,dcomp,len(relations),len(vocabulary), V)
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
+
+
+
 #   accuracy, confusion = evaluate(theta,testData)
 #   print confusionString(confusion, relations)
 #  testcases = random.sample(trainData, 1)

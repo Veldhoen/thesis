@@ -13,28 +13,7 @@ from getEmbeddings import *
 
 from params import *
 
-def glueNW(trees,rel,voc):
-  nws = [iornnFromTree(t, voc) for t in trees]
-  relLeaf = Leaf('word',voc.index(rel), 'tanh',rel)
-  cat = 'composition'
-  im = Node([nws[0],relLeaf],cat,'tanh','tanh')
-  return Node([im,nws[1]],cat,'tanh','tanh')
 
-def iornnFromTree(tree, vocabulary, grammarBased = False):
-  if tree.height() > 2:
-    if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
-    else: cat = 'composition'
-    children = [iornnFromTree(child,vocabulary, grammarBased) for child in tree]
-    parent = Node(children,cat,'tanh','tanh')
-    return parent
-  else: #preterminal node
-    words = tree.leaves()
-    if len(words)== 1: word = words[0]
-    else: 'Not exactly one leaf?!', tree
-    try: index = vocabulary.index(word)
-    except: index = 0
-    leaf = Leaf('word',index, 'tanh',word)
-    return leaf
 
 def initialize(dwords, dint, dcomp, nrel, nwords = 1, V = None):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
