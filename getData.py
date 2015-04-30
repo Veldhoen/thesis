@@ -5,6 +5,7 @@ import random
 
 def getSennaEmbs(source, voc = ['UNK']):
   print '\tObtaining embeddings...'
+  source = os.path.join('data',name)
   getVoc = (voc == ['UNK'])
   L = [0]*len(voc)
   with open(source+'/words.lst','r') as words:
@@ -22,12 +23,8 @@ def getSennaEmbs(source, voc = ['UNK']):
   for i in range(len(L)):
     if L[i]==0: L[i] = np.random.rand(d)*0.02-0.01
   V = np.array(L)
-  with open(os.path.join('data','sennaV.pik'), 'wb') as f:
-    print 'opened file'
-    pickle.dump([voc], f, -1)
-#    pickle.dump([V,voc], f, -1)
-    print 'dumped info' 
-  print 'file should be closed now'
+  with open(os.path.join('data',name+'.pik'), 'wb') as f:
+    pickle.dump([V,voc], f, -1)
 
 
 
@@ -86,32 +83,29 @@ def sickData(name):
           if word !=')' and word != '(' and word not in vocabulary:
             vocabulary.append(word)
           # add training example to set
-        examples[kind].append(([nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]],relation))
+        trees = [nltk.tree.Tree.fromstring('('+re.sub(r"([^()\s]+)", r"(W \1)", s)+')') for s in [s1,s2]]
+        [nltk.treetransforms.chomsky_normal_form(t) for t in trees]
+        [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in trees]
+
+        examples[kind].append((trees,relation))
   with open(os.path.join('data',name+'.pik'), 'wb') as f:
     pickle.dump([examples['TRAIN'],examples['TEST'],examples['TRIAL'],vocabulary], f, -1)
 
 
-name = 'bowman14'
-artData(name)
+# name = 'bowman14'
+# artData(name)
+# 
+# name = 'bowman15'
+# artData(name)
 
-name = 'bowman15'
-artData(name)
+# name = 'sick'
+# sickData(name)
 
-
-# source = 'data/senna'
-# getSennaEmbs(source)
+name = 'senna'
+getSennaEmbs(name)
 # with open('data/sennaV.pik', 'wb') as f:
 #   V, voc =   pickle.load(f)
-# 
-# for i in range(10):
-#   print voc[i], V[i]
-
-
-# name = 'sickSample'
-# #sickData(name)
-# #source = os.path.join('data',name)
-# with open(os.path.join('data',name+'.pik'), 'rb') as f:
-#     trainData, testData, trialData, vocabulary = pickle.load(f)
-# print len(trainData), len(testData), len(trialData), len(vocabulary)
-#for e in testData: print e[0][0], e[0][1], e[1]
+#
+with open(os.path.join('data',name+'.pik'),'rb') as f:
+  data = pickle.load(f)
 
