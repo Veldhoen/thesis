@@ -29,6 +29,9 @@ class Node:
     except:
       self.inner(theta)
       self.outer(theta)
+  def leaves(self):
+    return sum([child.leaves() for child in self.children])
+
 
   def activateNW(self,theta):
     self.inner(theta)
@@ -132,7 +135,8 @@ class Leaf(Node):
         delta = np.array([1])
         self.children[0].children[0].backpropOuter(delta, theta, gradients)
     return gradients
-
+  def leaves(self):
+    return self
   def score(self, theta, wordIndex=-1, recompute = True):
     if recompute: self.recomputeNW(theta)
     # pretend the index is the candidate

@@ -20,6 +20,9 @@ def thetaNorm(theta):
 #   return true/len(testData), confusion
 
 def evaluate(theta, testData):
+  if isinstance(testData, list):
+    return evaluateIOUS(theta,testData)
+  
   true = 0
   confusion = defaultdict(Counter)
 
@@ -30,6 +33,16 @@ def evaluate(theta, testData):
     confusion[tar][pred] += 1
     if pred == tar: true +=1
   return true/len(testData), confusion
+
+def evaluateIOUS(theta,testData):
+  ranks = 0
+  for nw in testData:
+    for leaf in nw.leaves():
+      scores = np.zeros(nwords)
+      for x in range(nwords):
+        scores[x] = nw.score(theta,x)
+        ranks+= nwords-scores.argsort().argsort()[leaf.index]
+  return ranks/(len(testData)*nwords)
 
 def confusionString(confusion, relations):
   st = '\t'+'\t'.join(relations)

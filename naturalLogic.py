@@ -12,6 +12,21 @@ import NN, IORNN #from NN import *
 from training import *
 from params import *
 
+def types4IOUS(d, nwords):
+  types = []
+#  types.append(('preterminalM','float64',(dint,dwords)))
+#  types.append(('preterminalB','float64',(dint)))
+  types.append(('compositionIM','float64',(dint,2*dint)))
+  types.append(('compositionIB','float64',(dint)))
+  types.append(('compositionOM','float64',(dint,2*dint)))
+  types.append(('compositionOB','float64',(dint)))
+  types.append(('wordIM','float64',(nwords,dwords)))
+  types.append(('wordOM', 'float64',(2*dint,2*dint)))
+  types.append(('wordOB', 'float64',(2*dint)))
+  types.append(('uOM', 'float64',(1,2*dint)))
+  types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+  return types
+
 def types4IO(d, nrel, nwords):
   types = []
 #  types.append(('preterminalM','float64',(dint,dwords)))
@@ -44,13 +59,15 @@ def types4RNN(dwords, dint, dcomp, nrel, nwords):
   types.append(('wordIM','float64',(nwords,dwords)))
   return types
 
-def initialize(style, dwords, dint, dcomp, nrel, nwords = 1, V = None):
+def initialize(style, dwords, dint, dcomp, nrel=1, nwords = 1, V = None):
+  if style == 'IORNNUS': types = types4IOUS(dint, nwords)
   if style == 'IORNN': types = types4IO(dint, nrel, nwords)
   elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
   else: print 'PROBLEM'
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   theta = np.zeros(1,dtype = types)
   for name, t, size in types:
+    if name == 'wordIM' and not V is None: theta[name]=V
     if isinstance(size, (int,long)): theta[name] = np.random.rand(size)*.02-.01
     elif len(size) == 2: theta[name] = np.random.rand(size[0],size[1])*.02-.01
     else: print 'invalid size:', size
@@ -97,7 +114,7 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
     return parent
   else: #preterminal node
     words = tree.leaves()
-    if len(words)== 1: word = words[0]
+    if len(words)== 1: word = words[0].lower()
     else: print 'Not exactly one leaf?!', tree
     try: index = vocabulary.index(word)
     except: index = 0
