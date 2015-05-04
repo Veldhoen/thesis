@@ -89,7 +89,7 @@ class Leaf(Node):
     return self.word
 
 class Top(Node):
-  def train(self, theta, grads, target):
+  def train(self, theta, target):
     self.forward(theta)
     return self.backprop(theta,target)
 

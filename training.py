@@ -24,21 +24,10 @@ def evaluate(theta, testData):
   confusion = defaultdict(Counter)
 
   for nw, tar in testData:
-    if isinstance(nw,IORNN.Node):
-      relations = range(len(theta['wordIM']))[-7:]
-      nw = nw.children[0].children[1]
-      tar = nw.index
-      scores = [nw.score(theta, x, False) for x in relations]
-#      print scores
-      maxscore = max(scores)
-      if scores[relations.index(tar)] == maxscore: pred = tar
-      else: pred = relations[scores.index(maxscore)] # NB assumes there is a unique maximum
-    else:
-      relations = range(7) #
-      pred = nw.predict(theta)
+    pred = nw.predict(theta)
 
-    print tar, pred, pred == tar
-    confusion[relations.index(tar)][relations.index(pred)] += 1
+#    print tar, pred, pred == tar
+    confusion[tar][pred] += 1
     if pred == tar: true +=1
   return true/len(testData), confusion
 
@@ -145,7 +134,10 @@ def epoch(theta, examples, lambdaL2):
 #       nw = ex
 #       target = None
 #       print 'this is a IORNN'
-    dgrads = nw.train(theta,grads, target)
+    dgrads = nw.train(theta,target)
+    for name in grads.dtype.names:
+      grads[name] += dgrads[name]
+
   for name in grads.dtype.names:
-    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name]
+    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
   return grads, error

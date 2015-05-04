@@ -12,7 +12,7 @@ import NN, IORNN #from NN import *
 from training import *
 from params import *
 
-def types4IO(d, nwords):
+def types4IO(d, nrel, nwords):
   types = []
 #  types.append(('preterminalM','float64',(dint,dwords)))
 #  types.append(('preterminalB','float64',(dint)))
@@ -23,11 +23,14 @@ def types4IO(d, nwords):
   types.append(('wordIM','float64',(nwords,dwords)))
   types.append(('wordOM', 'float64',(2*dint,2*dint)))
   types.append(('wordOB', 'float64',(2*dint)))
+  types.append(('relIM','float64',(nrel,dwords)))
+  types.append(('relOM', 'float64',(2*dint,2*dint)))
+  types.append(('relOB', 'float64',(2*dint)))
   types.append(('uOM', 'float64',(1,2*dint)))
   types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
   return types
 
-def types4RNN(dwords, dint, dcomp, nrel, nwords = 1):
+def types4RNN(dwords, dint, dcomp, nrel, nwords):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   types = []
   types.append(('preterminalM','float64',(dint,dwords)))
@@ -42,7 +45,7 @@ def types4RNN(dwords, dint, dcomp, nrel, nwords = 1):
   return types
 
 def initialize(style, dwords, dint, dcomp, nrel, nwords = 1, V = None):
-  if style == 'IORNN': types = types4IO(dint, nwords)
+  if style == 'IORNN': types = types4IO(dint, nrel, nwords)
   elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
   else: print 'PROBLEM'
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
@@ -80,7 +83,7 @@ def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
 
 def glueNW(trees,rel,reli,voc):
   nws = [iornnFromTree(t, voc) for t in trees]
-  relLeaf = IORNN.Leaf('word',voc.index(rel), 'tanh',reli)
+  relLeaf = IORNN.Leaf('rel',reli, 'tanh',rel)
   cat = 'composition'
   im = IORNN.Node([nws[0],relLeaf],cat,'tanh','tanh')
   return IORNN.Node([im,nws[1]],cat,'tanh','tanh')
@@ -134,7 +137,7 @@ def main(args):
   if True:
     with open(source, 'rb') as f:
       trainData, testData, trialData, vocabulary = pickle.load(f)
-      if style == 'IORNN': vocabulary.extend(relations)
+   #   if style == 'IORNN': vocabulary.extend(relations)
     print 'examples loaded'
     if embSrc:
       print'loading embs'
@@ -171,7 +174,7 @@ def main(args):
 
   printParams()
 
-  print 'There are',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size (inc relations):', len(vocabulary)
+  print 'There are',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
   theta = initialize(style, dwords,dint,dcomp,len(relations),len(vocabulary), V)
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
 

@@ -94,10 +94,14 @@ class Node:
     [child.outer(theta) for child in self.children]
 #    return self.outerA
 
-  def train(self, theta, gradients = None, target = None):
-    if gradients == None: gradients = np.zeros_like(theta)
-    [child.train(theta, gradients) for child in self.children]
+  def train(self, theta, target = None, gradients = None):
+    if gradients is None: gradients = np.zeros_like(theta)
+    [child.train(theta, None, gradients) for child in self.children]
     return gradients
+
+  def predict(self, theta):
+    return max([c.predict(theta) for c in self.children])
+
 
   def __str__(self):
     if self.cat == 'comparison': return '['+'] VS ['.join([str(child) for child in self.children])+']'
@@ -115,12 +119,11 @@ class Leaf(Node):
     self.index = index
     self.word = word
 
-  def train(self, theta, gradients = None, target = None):
-    if gradients == None: gradients = np.zeros_like(theta)
-    nwords = len(theta['wordIM'])
+  def train(self, theta, target = None, gradients = None):
+    if gradients is None: gradients = np.zeros_like(theta)
     scorew = self.score(theta, False)
     for n in range(1):#3? sample size for candidates
-      x = random.randint(0,nwords-1)
+      x = random.randint(0,len(theta[self.cat+'IM'])-1)
       while x == self.index:  x = random.randint(0,nwords-1)
       # if the candidate scores too high: backpropagate error
       scorex = self.score(theta, x, False)
@@ -131,7 +134,7 @@ class Leaf(Node):
     return gradients
 
   def score(self, theta, wordIndex=-1, recompute = True):
-    self.recomputeNW(theta)
+    if recompute: self.recomputeNW(theta)
     # pretend the index is the candidate
     if wordIndex > 0:
       trueIndex = self.index
@@ -145,6 +148,15 @@ class Leaf(Node):
       self.inner(theta)
       self.outer(theta)
     return score[0]
+
+  def predict(self, theta):
+    if self.cat == 'rel':
+      scores = []
+      for index in range(len(theta['relIM'])):
+#        print index
+        scores.append(self.score(theta,index))
+      return scores.index(max(scores))
+    else: return None
 
   def numericalGradient(theta, nw, target = None):
   #  print 'numgrad', theta.dtype.names
@@ -168,11 +180,10 @@ class Leaf(Node):
     return numgrad
 
   def inner(self, theta):
-
+    if self.cat == 'rel': print 'Leaf.inner', self.cat, self.index
     self.innerZ = theta[self.cat+'IM'][self.index]
     self.innerA, self.innerAd = activation.activate(self.innerZ,self.actI)
     return self.innerA
-
 
   def backpropInner(self,delta, theta, gradients):
 #    print 'backpropInner', self
