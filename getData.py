@@ -40,9 +40,11 @@ def storeTrees(name):
   examples = {'TRAIN':[],'TEST':[],'TRIAL':[]}
   vocabulary = set()
   for f in toOpen:
+    print f
     with open(f,'r') as f:
       if 'sick' in name: f.next()
       for line in f:
+#        print line
         if random.randint(0,4)<1: kind = 'TEST'
         else: kind = 'TRAIN'
         if 'sick' in name:
@@ -75,10 +77,12 @@ def storeTrees(name):
 #   V, voc =   pickle.load(f)
 
 
-names = ['bowman14','bowman15','sick','sickSample','flickr']
-for name in names:
-  print name
-  storeTrees(name)
+# names = ['bowman14','bowman15','sick','sickSample','flickr']
+# for name in names:
+#   print name
+#   storeTrees(name)
+
+storeTrees('WSJ')
 
 # with open(os.path.join('data',name+'.pik'),'rb') as f:
 #   data = pickle.load(f)
