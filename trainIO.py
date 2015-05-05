@@ -44,13 +44,17 @@ def main():
   source = 'data/senna.pik'
   with open(source, 'rb') as f:
     V,voc = pickle.load(f)
-    for i in range(len(voc)):
-      if voc[i] not in vocabulary and voc[i]!= 'UNK':
-        np.delete(V,i,0)
-        del(voc[i])
   print 'loaded embeddings'
+  toRem = []
+  for i in range(len(voc),0,-1):
+    if voc[i] not in vocabulary and voc[i]!= 'UNK':
+      toRem.append(i)
+  for j in toRem:
+    np.delete(V,j,0)
+    del(voc[j])
+  print 'removed unnecessary embeddings'
 
-  theta = naturalLogic.initialize('IORNNUS', dwords, dint, dcomp, 0, len(vocabulary), V)
+  theta = naturalLogic.initialize('IORNNUS', dwords, dint, dcomp, 0, len(voc), V)
   print 'initialized theta'
 
   print 'starting training...'
