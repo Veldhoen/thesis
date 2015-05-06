@@ -21,7 +21,7 @@ def thetaNorm(theta):
 
 def evaluate(theta, testData):
   if isinstance(testData, list):
-    return evaluateIOUS(theta,testData)
+    return evaluateIOUS(theta,testData),None
 
   true = 0
   confusion = defaultdict(Counter)
@@ -37,13 +37,14 @@ def evaluate(theta, testData):
 def evaluateIOUS(theta,testData):
   ranks = 0
   nwords = len(theta['wordIM'])
-  indexes = random.sample(xrange(len(testData),25)
-  for i in indexes:
-    for leaf in random.sample(testData[i].leaves(),3):
-      scores = np.zeros(nwords)
-      for x in range(nwords):
-        scores[x] = leaf.score(theta,x)
-        ranks+= nwords-scores.argsort().argsort()[leaf.index]
+  for nw in random.sample(testData,25):
+    nw.activateNW(theta)
+    for leaf in random.sample(nw.leaves(),3):
+      scores = [leaf.score(theta,x,False)[0] for x in range(nwords)]
+#      print scores
+      rank = nwords-np.array(scores).argsort().argsort()[leaf.index]
+#      print rank, 'out of', nwords
+      ranks+= rank
   return ranks/(len(testData)*nwords)
 
 def confusionString(confusion, relations):
@@ -140,8 +141,8 @@ def epoch(theta, examples, lambdaL2):
   grads = np.zeros_like(theta)
   regularization = lambdaL2/2 * thetaNorm(theta)**2
   error = 0
-  for nw, target in examples:
-#     try: 
+  for nw in examples:
+#     try:
 #        = ex
 #       error += nw.error(theta, target, recompute = False)
 #       print 'this is a regular RNN'
@@ -149,7 +150,7 @@ def epoch(theta, examples, lambdaL2):
 #       nw = ex
 #       target = None
 #       print 'this is a IORNN'
-    dgrads = nw.train(theta,target)
+    dgrads = nw.train(theta)
     for name in grads.dtype.names:
       grads[name] += dgrads[name]
 

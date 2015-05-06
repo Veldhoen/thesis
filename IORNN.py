@@ -125,6 +125,7 @@ class Leaf(Node):
     self.word = word
 
   def train(self, theta, target = None, gradients = None):
+    nwords = len(theta['wordIM'])
     if gradients is None: gradients = np.zeros_like(theta)
     scorew = self.score(theta, False)
     for n in range(1):#3? sample size for candidates

@@ -7,28 +7,29 @@ import pickle
 import naturalLogic
 
 def main():
-  source = 'data/sickSample.pik'
+#  source = 'data/sickSample.pik'
+  source = 'data/flickr.pik'
   with open(source, 'rb') as f:
     examples, vocabulary = pickle.load(f)
   for kind, trees in examples.iteritems():
     for i in range(len(trees)):
 #      print trees[i]
       examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary)
-  print 'loaded data'
+  print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TRAIN']), 'test examples.'
 
   source = 'data/senna.pik'
   with open(source, 'rb') as f:
     V,voc = pickle.load(f)
-  print 'loaded embeddings'
-
   V = np.vstack(tuple([V[i] for i in [voc.index(w) if w in voc else 0 for w in vocabulary]]))
-  print 'removed unnecessary embeddings'
+  nwords = len(vocabulary)
+  print 'Loaded embeddings. Vocabulary size is', nwords
+
   dwords = len(V[0])
   dint = dwords
-  theta = naturalLogic.initialize('IORNNUS', dwords, dint, dcomp, 0, len(vocabulary), V)
-  print 'initialized theta'
+  theta = naturalLogic.initialize('IORNNUS', dwords, dint, dcomp, 0, nwords, V)
+  print 'Initialized theta.'
 
-  print 'starting training...'
+  print 'Starting training...'
   bowmanSGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
   with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
     pickle.dump(theta, f, -1)
@@ -36,7 +37,7 @@ def main():
 
 def evaluateNW(nw,theta):
   nwords = len(theta['wordIM'])
-  
+
   for leaf in nw:
     scores = np.zeros(nwords)
     for x in range(nwords):
