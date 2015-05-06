@@ -22,7 +22,7 @@ def thetaNorm(theta):
 def evaluate(theta, testData):
   if isinstance(testData, list):
     return evaluateIOUS(theta,testData)
-  
+
   true = 0
   confusion = defaultdict(Counter)
 
@@ -37,8 +37,9 @@ def evaluate(theta, testData):
 def evaluateIOUS(theta,testData):
   ranks = 0
   nwords = len(theta['wordIM'])
-  for nw in testData:
-    for leaf in nw.leaves():
+  indexes = random.sample(xrange(len(testData),25)
+  for i in indexes:
+    for leaf in random.sample(testData[i].leaves(),3):
       scores = np.zeros(nwords)
       for x in range(nwords):
         scores[x] = leaf.score(theta,x)
