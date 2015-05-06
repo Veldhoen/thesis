@@ -10,9 +10,9 @@ import pickle
 import NN, IORNN #from NN import *
 #from IORNN import *
 from training import *
-from params import *
+#from params import *
 
-def types4IOUS(d, nwords):
+def types4IOUS(dwords,dint, nwords):
   types = []
 #  types.append(('preterminalM','float64',(dint,dwords)))
 #  types.append(('preterminalB','float64',(dint)))
@@ -27,7 +27,7 @@ def types4IOUS(d, nwords):
   types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
   return types
 
-def types4IO(d, nrel, nwords):
+def types4IO(dwors, dint, nrel, nwords):
   types = []
 #  types.append(('preterminalM','float64',(dint,dwords)))
 #  types.append(('preterminalB','float64',(dint)))
@@ -60,8 +60,8 @@ def types4RNN(dwords, dint, dcomp, nrel, nwords):
   return types
 
 def initialize(style, dwords, dint, dcomp, nrel=1, nwords = 1, V = None):
-  if style == 'IORNNUS': types = types4IOUS(dint, nwords)
-  if style == 'IORNN': types = types4IO(dint, nrel, nwords)
+  if style == 'IORNNUS': types = types4IOUS(dwords, dint, nwords)
+  elif style == 'IORNN': types = types4IO(dwords, dint, nrel, nwords)
   elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
   else: print 'PROBLEM'
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
@@ -106,6 +106,7 @@ def glueNW(trees,rel,reli,voc):
   return IORNN.Node([im,nws[1]],cat,'tanh','tanh')
 
 def iornnFromTree(tree, vocabulary, grammarBased = False):
+#  print tree
   if tree.height() > 2:
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
     else: cat = 'composition'
@@ -158,7 +159,8 @@ def main(args):
     print 'examples loaded'
     if embSrc:
       print'loading embs'
-      V,voc = unpickle(embSrc)
+      with open(embSrc, 'rb') as f:
+        V,voc = pickle.load(f)
       print'loaded embs'
       for i in range(len(voc)):
         if voc[i] not in vocabulary and voc[i] not in relations and voc[i]!= 'UNK':

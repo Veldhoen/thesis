@@ -36,11 +36,12 @@ def evaluate(theta, testData):
 
 def evaluateIOUS(theta,testData):
   ranks = 0
+  nwords = len(theta['wordIM'])
   for nw in testData:
     for leaf in nw.leaves():
       scores = np.zeros(nwords)
       for x in range(nwords):
-        scores[x] = nw.score(theta,x)
+        scores[x] = leaf.score(theta,x)
         ranks+= nwords-scores.argsort().argsort()[leaf.index]
   return ranks/(len(testData)*nwords)
 

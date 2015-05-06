@@ -30,8 +30,7 @@ class Node:
       self.inner(theta)
       self.outer(theta)
   def leaves(self):
-    return sum([child.leaves() for child in self.children])
-
+    return sum([child.leaves() for child in self.children],[])
 
   def activateNW(self,theta):
     self.inner(theta)
@@ -99,12 +98,15 @@ class Node:
 
   def train(self, theta, target = None, gradients = None):
     if gradients is None: gradients = np.zeros_like(theta)
-    [child.train(theta, None, gradients) for child in self.children]
+    [leaf.train(theta, None, gradients) for leaf in self.leaves()]
+
+#    [child.train(theta, None, gradients) for child in self.children]
     return gradients
 
   def predict(self, theta):
     return max([c.predict(theta) for c in self.children])
 
+#  def score(self, theta,
 
   def __str__(self):
     if self.cat == 'comparison': return '['+'] VS ['.join([str(child) for child in self.children])+']'
@@ -135,8 +137,9 @@ class Leaf(Node):
         delta = np.array([1])
         self.children[0].children[0].backpropOuter(delta, theta, gradients)
     return gradients
+
   def leaves(self):
-    return self
+    return [self]
   def score(self, theta, wordIndex=-1, recompute = True):
     if recompute: self.recomputeNW(theta)
     # pretend the index is the candidate
