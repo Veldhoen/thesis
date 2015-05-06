@@ -39,7 +39,12 @@ def evaluateIOUS(theta,testData):
   nwords = len(theta['wordIM'])
   for nw in random.sample(testData,25):
     nw.activateNW(theta)
-    for leaf in random.sample(nw.leaves(),3):
+    leaves = nw.leaves()
+    if len(leaves)<3:
+      print 'tiny tree?', nw
+      continue
+
+    for leaf in random.sample(leaves,3):
       scores = [leaf.score(theta,x,False)[0] for x in range(nwords)]
 #      print scores
       rank = nwords-np.array(scores).argsort().argsort()[leaf.index]

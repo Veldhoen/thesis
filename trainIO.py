@@ -15,7 +15,7 @@ def main():
     for i in range(len(trees)):
 #      print trees[i]
       examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary)
-  print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TRAIN']), 'test examples.'
+  print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TEST']), 'test examples.'
 
   source = 'data/senna.pik'
   with open(source, 'rb') as f:
@@ -26,7 +26,7 @@ def main():
 
   dwords = len(V[0])
   dint = dwords
-  theta = naturalLogic.initialize('IORNNUS', dwords, dint, dcomp, 0, nwords, V)
+  theta = naturalLogic.initialize('IORNN', dwords, dint, dcomp, 0, nwords, V)
   print 'Initialized theta.'
 
   print 'Starting training...'

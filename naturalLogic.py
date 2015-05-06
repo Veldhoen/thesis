@@ -12,22 +12,8 @@ import NN, IORNN #from NN import *
 from training import *
 #from params import *
 
-def types4IOUS(dwords,dint, nwords):
-  types = []
-#  types.append(('preterminalM','float64',(dint,dwords)))
-#  types.append(('preterminalB','float64',(dint)))
-  types.append(('compositionIM','float64',(dint,2*dint)))
-  types.append(('compositionIB','float64',(dint)))
-  types.append(('compositionOM','float64',(dint,2*dint)))
-  types.append(('compositionOB','float64',(dint)))
-  types.append(('wordIM','float64',(nwords,dwords)))
-  types.append(('wordOM', 'float64',(2*dint,2*dint)))
-  types.append(('wordOB', 'float64',(2*dint)))
-  types.append(('uOM', 'float64',(1,2*dint)))
-  types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
-  return types
 
-def types4IO(dwors, dint, nrel, nwords):
+def types4IO(dwords, dint, nrel, nwords):
   types = []
 #  types.append(('preterminalM','float64',(dint,dwords)))
 #  types.append(('preterminalB','float64',(dint)))
@@ -36,6 +22,7 @@ def types4IO(dwors, dint, nrel, nwords):
   types.append(('compositionOM','float64',(dint,2*dint)))
   types.append(('compositionOB','float64',(dint)))
   types.append(('wordIM','float64',(nwords,dwords)))
+  types.append(('wordIB', 'float64',(dwords)))
   types.append(('wordOM', 'float64',(2*dint,2*dint)))
   types.append(('wordOB', 'float64',(2*dint)))
   types.append(('relIM','float64',(nrel,dwords)))
@@ -60,8 +47,7 @@ def types4RNN(dwords, dint, dcomp, nrel, nwords):
   return types
 
 def initialize(style, dwords, dint, dcomp, nrel=1, nwords = 1, V = None):
-  if style == 'IORNNUS': types = types4IOUS(dwords, dint, nwords)
-  elif style == 'IORNN': types = types4IO(dwords, dint, nrel, nwords)
+  if style == 'IORNN': types = types4IO(dwords, dint, nrel, nwords)
   elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
   else: print 'PROBLEM'
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]

@@ -84,6 +84,7 @@ class Node:
   def outer(self, theta):
 #    print 'outer called for:', self,  'of cat', self.cat
     if not self.parent:
+      print 'computing outer for node of type', self.cat, self
       self.outerZ = np.zeros_like(theta[self.cat+'IB'])
     else:
       if self.sibling: inputsignal = np.concatenate([self.parent.outerA,self.sibling.innerA])
@@ -140,7 +141,8 @@ class Leaf(Node):
     return gradients
 
   def leaves(self):
-    return [self]
+    return [self] 
+
   def score(self, theta, wordIndex=-1, recompute = True):
     if recompute: self.recomputeNW(theta)
     # pretend the index is the candidate
