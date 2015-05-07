@@ -45,7 +45,7 @@ def evaluateIOUS(theta,testData):
       continue
 
     for leaf in random.sample(leaves,3):
-      scores = [leaf.score(theta,x,False)[0] for x in range(nwords)]
+      scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
 #      print scores
       rank = nwords-np.array(scores).argsort().argsort()[leaf.index]
 #      print rank, 'out of', nwords
@@ -54,9 +54,9 @@ def evaluateIOUS(theta,testData):
 
 def confusionString(confusion, relations):
   st = '\t'+'\t'.join(relations)
-  for tar in range(len(relations)):
+  for tar in xrange(len(relations)):
     st+='\n'+relations[tar]
-    for pred in range(len(relations)):
+    for pred in xrange(len(relations)):
       st+='\t'+str(confusion[tar][pred])
     tot = sum(confusion[tar].values())
     st+= '\t'+str(tot)
@@ -64,8 +64,8 @@ def confusionString(confusion, relations):
     else: st+= '\t0'
   st+='\n'
   next = '\n'
-  for pred in range(len(relations)):
-    tot = sum([confusion[tar][pred] for tar in range(len(relations))])
+  for pred in xrange(len(relations)):
+    tot = sum([confusion[tar][pred] for tar in xrange(len(relations))])
     st += '\t'+str(tot)
     if tot > 0: next+= '\t'+str(round(confusion[pred][pred]/tot,3))
     else: next+= '\t0'
@@ -75,7 +75,7 @@ def confusionString(confusion, relations):
 
 def batchtrain(alpha, lambdaL2, epochs, theta, examples):
   print 'Start batch training'
-  for i in range(epochs):
+  for i in xrange(epochs):
     grads, error = epoch(theta, examples, lambdaL2)
     for name in theta.dtype.names:
       theta[name] -= alpha/len(examples) * grads[name]
@@ -84,17 +84,24 @@ def batchtrain(alpha, lambdaL2, epochs, theta, examples):
   return theta
 
 def SGD(lambdaL2, alpha, epochs, theta, data, batchsize = 0):
-#  print 'Start SGD training with minibatches'
+  print 'Start SGD training with minibatches'
   historical_grad = np.zeros_like(theta)
+  accuracy, confusion = evaluate(theta,testData)
+  if batchsize == 0: batchsize = len(data)
 #  while not converged:
-  for i in range(epochs):
-    if batchsize > 0: minibatch = random.sample(data, batchsize)
-    else: minibatch = data
-    grad, error = epoch(theta, minibatch, lambdaL2)
-    for name in historical_grad.dtype.names:
-      historical_grad[name] += np.square(grad[name])
-      theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
-    print '\tIteration', i, ', average error:', error, ', theta norm:', thetaNorm(theta)
+  for i in xrange(epochs):
+    print 'Iteration', i ,', Accuracy:', accuracy
+    for batch in xrange(len(data)//batchsize):
+      minibatch = random.sample(data, batchsize)
+
+      grad, error = epoch(theta, minibatch, lambdaL2)
+      for name in historical_grad.dtype.names:
+        historical_grad[name] += np.square(grad[name])
+        theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
+      if batch % 10 == 0:
+        print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
+    accuracy, confusion = evaluate(theta,testData)
+
 
 def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
 #  print 'Start SGD training with minibatches'
@@ -104,12 +111,12 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
   accuracy, confusion = evaluate(theta,testData)
   #print 'Accuracy (before training):', accuracy
   #print confusionString(confusion, relations)
-  for i in range(epochs):
+  for i in xrange(epochs):
     print 'Iteration', i ,', Accuracy:', accuracy
     print confusionString(confusion, relations)
     # randomly split the data into parts of batchsize
     random.shuffle(data)
-    for batch in range(len(data)//batchsize):
+    for batch in xrange(len(data)//batchsize):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
       grad, error = epoch(theta, minibatch, lambdaL2)
       for name in historical_grad.dtype.names:

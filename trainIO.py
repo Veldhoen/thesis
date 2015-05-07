@@ -12,7 +12,7 @@ def main():
   with open(source, 'rb') as f:
     examples, vocabulary = pickle.load(f)
   for kind, trees in examples.iteritems():
-    for i in range(len(trees)):
+    for i in xrange(len(trees)):
 #      print trees[i]
       examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary)
   print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TEST']), 'test examples.'
@@ -30,7 +30,8 @@ def main():
   print 'Initialized theta.'
 
   print 'Starting training...'
-  bowmanSGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
+  SGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
+  #bowmanSGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
   with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
     pickle.dump(theta, f, -1)
 
@@ -40,7 +41,7 @@ def evaluateNW(nw,theta):
 
   for leaf in nw:
     scores = np.zeros(nwords)
-    for x in range(nwords):
+    for x in xrange(nwords):
       scores[x] = nw.score(theta,x)
       rank = scores.argsort().argsort()[leaf.index]
 main()

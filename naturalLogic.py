@@ -148,7 +148,7 @@ def main(args):
       with open(embSrc, 'rb') as f:
         V,voc = pickle.load(f)
       print'loaded embs'
-      for i in range(len(voc)):
+      for i in xrange(len(voc)):
         if voc[i] not in vocabulary and voc[i] not in relations and voc[i]!= 'UNK':
           np.delete(V,i,0)
           del(voc[i])

@@ -47,7 +47,7 @@ class Node:
     childrenads = np.concatenate([child.innerAd for child in self.children])
     # compute delta to backprop and backprop it
     deltaB = np.split(np.multiply(np.transpose(theta[self.cat+'IM']).dot(delta),childrenads),len(self.children))
-    [self.children[i].backpropInner(deltaB[i], theta, gradients) for i in range(len(self.children))]
+    [self.children[i].backpropInner(deltaB[i], theta, gradients) for i in xrange(len(self.children))]
     # update gradients for this node
     gradients[self.cat+'IM']+= np.outer(delta,childrenas)
     gradients[self.cat+'IB']+=delta
@@ -129,16 +129,15 @@ class Leaf(Node):
     nwords = len(theta['wordIM'])
     if gradients is None: gradients = np.zeros_like(theta)
     scorew = self.score(theta, False)
-    for n in range(1):#3? sample size for candidates
-      x = random.randint(0,len(theta[self.cat+'IM'])-1)
-      while x == self.index:  x = random.randint(0,nwords-1)
-      # if the candidate scores too high: backpropagate error
-      scorex = self.score(theta, x, False)
-      c = 1 - scorew+scorex
-      if c>1:
-        delta = np.array([1])
-        self.children[0].children[0].backpropOuter(delta, theta, gradients)
-    return gradients
+    x = random.randint(0,len(theta[self.cat+'IM'])-1)
+    while x == self.index:  x = random.randint(0,nwords-1)
+    # if the candidate scores too high: backpropagate error
+    scorex = self.score(theta, x, False)
+    c = 1 - scorew+scorex
+    if c>1:
+      delta = np.array([1])
+      self.children[0].children[0].backpropOuter(delta, theta, gradients)
+  return gradients
 
   def leaves(self):
     return [self] 
@@ -162,7 +161,7 @@ class Leaf(Node):
   def predict(self, theta):
     if self.cat == 'rel':
       scores = []
-      for index in range(len(theta['relIM'])):
+      for index in xrange(len(theta['relIM'])):
 #        print index
         scores.append(self.score(theta,index))
       return scores.index(max(scores))
