@@ -36,21 +36,23 @@ def evaluate(theta, testData):
 
 def evaluateIOUS(theta,testData):
   ranks = 0
+  num = 0
   nwords = len(theta['wordIM'])
-  for nw in random.sample(testData,25):
+  for nw in random.sample(testData,50):
     nw.activateNW(theta)
     leaves = nw.leaves()
-    if len(leaves)<3:
-      print 'tiny tree?', nw
-      continue
+    # we don't expect the network to make true predictions
+    # for such small trees
+    if len(leaves)<3: continue
 
-    for leaf in random.sample(leaves,3):
+    for leaf in random.sample(leaves,2):
       scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
 #      print scores
       rank = nwords-np.array(scores).argsort().argsort()[leaf.index]
 #      print rank, 'out of', nwords
-      ranks+= rank
-  return ranks/(len(testData)*nwords)
+      ranks+= rank/nwords
+      num +=1
+  return ranks/num
 
 def confusionString(confusion, relations):
   st = '\t'+'\t'.join(relations)
@@ -83,7 +85,25 @@ def batchtrain(alpha, lambdaL2, epochs, theta, examples):
   print 'Done.'
   return theta
 
-def SGD(lambdaL2, alpha, epochs, theta, data, batchsize = 0):
+# although the numpy element-wise math operations are more
+# efficient than iterating over the elements, they caused
+# memory issues, especially in the case of the word matrix
+# which has only few non-zero elements
+
+def updateTheta(theta, gradient,histGradient,alpha):
+  for name in theta.dtype.names():
+    grad = gradient[name]
+    nz = np.nonzero(grad)
+    if len(nz[0]) == 0: continue
+    histGrad = histGradient[name]
+    for i in np.nditer(nz):
+      histGrad[name][i] += np.square(grad[i])
+      theta[name][i] -= alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6)
+
+
+
+# each minibatch is an independent random sample (without replacement)
+def SGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
   print 'Start SGD training with minibatches'
   historical_grad = np.zeros_like(theta)
   accuracy, confusion = evaluate(theta,testData)
@@ -95,14 +115,12 @@ def SGD(lambdaL2, alpha, epochs, theta, data, batchsize = 0):
       minibatch = random.sample(data, batchsize)
 
       grad, error = epoch(theta, minibatch, lambdaL2)
-      for name in historical_grad.dtype.names:
-        historical_grad[name] += np.square(grad[name])
-        theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
+      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
     accuracy, confusion = evaluate(theta,testData)
 
-
+# the minibatches are a random but true partition of the data
 def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
 #  print 'Start SGD training with minibatches'
   if batchsize == 0: batchsize = len(data)
@@ -119,9 +137,7 @@ def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsi
     for batch in xrange(len(data)//batchsize):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
       grad, error = epoch(theta, minibatch, lambdaL2)
-      for name in historical_grad.dtype.names:
-        historical_grad[name] += np.square(grad[name])
-        theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
+      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
     accuracy, confusion = evaluate(theta,testData)

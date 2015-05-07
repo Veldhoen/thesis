@@ -84,7 +84,6 @@ class Node:
   def outer(self, theta):
 #    print 'outer called for:', self,  'of cat', self.cat
     if not self.parent:
-      print 'computing outer for node of type', self.cat, self
       self.outerZ = np.zeros_like(theta[self.cat+'IB'])
     else:
       if self.sibling: inputsignal = np.concatenate([self.parent.outerA,self.sibling.innerA])
@@ -99,10 +98,10 @@ class Node:
 
   def train(self, theta, target = None, gradients = None):
     if gradients is None: gradients = np.zeros_like(theta)
-    [leaf.train(theta, None, gradients) for leaf in self.leaves()]
-
+    self.activateNW(theta)
+    error = np.mean([leaf.train(theta, None, gradients) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
-    return gradients
+    return gradients,error
 
   def predict(self, theta):
     return max([c.predict(theta) for c in self.children])
@@ -126,8 +125,9 @@ class Leaf(Node):
     self.word = word
 
   def train(self, theta, target = None, gradients = None):
+    wrong = 0
     nwords = len(theta['wordIM'])
-    if gradients is None: gradients = np.zeros_like(theta)
+#    if gradients is None: gradients = np.zeros_like(theta)
     scorew = self.score(theta, False)
     x = random.randint(0,len(theta[self.cat+'IM'])-1)
     while x == self.index:  x = random.randint(0,nwords-1)
@@ -135,9 +135,11 @@ class Leaf(Node):
     scorex = self.score(theta, x, False)
     c = 1 - scorew+scorex
     if c>1:
+      wrong += 1
       delta = np.array([1])
       self.children[0].children[0].backpropOuter(delta, theta, gradients)
-  return gradients
+#    return gradients
+    return wrong
 
   def leaves(self):
     return [self] 
