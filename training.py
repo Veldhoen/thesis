@@ -3,42 +3,30 @@ import numpy as np
 import random
 import IORNN
 from collections import defaultdict, Counter
+import pickle, os
 
 def thetaNorm(theta):
   names = theta.dtype.names
   return sum([np.linalg.norm(theta[name]) for name in names])/len(names)
 
-# def evaluate(theta, testData):
-#   true = 0
-#   confusion = defaultdict(Counter)
-#   for (network, target) in testData:
-#     prediction = network.predict(theta)
-#     confusion[target][prediction] += 1
-#     if prediction == target:
-#       true +=1
-# #    else: print 'mistake in (', network, '), true:',target
-#   return true/len(testData), confusion
-
-def evaluate(theta, testData):
-  if isinstance(testData, list):
-    return evaluateIOUS(theta,testData),None
-
+def evaluate(theta, testData, amount=1):
+  if isinstance(testData[0], IORNN.Node):
+    return evaluateIOUS(theta,testData, amount),None
   true = 0
   confusion = defaultdict(Counter)
-
   for nw, tar in testData:
     pred = nw.predict(theta)
-
-#    print tar, pred, pred == tar
     confusion[tar][pred] += 1
     if pred == tar: true +=1
   return true/len(testData), confusion
 
-def evaluateIOUS(theta,testData):
+def evaluateIOUS(theta,testData, amount=1):
+  if amount<= 1: n = int(amount*len(testData))
+  else: n = amount
   ranks = 0
   num = 0
   nwords = len(theta['wordIM'])
-  for nw in random.sample(testData,50):
+  for nw in random.sample(testData,n):
     nw.activateNW(theta)
     leaves = nw.leaves()
     # we don't expect the network to make true predictions
@@ -47,14 +35,13 @@ def evaluateIOUS(theta,testData):
 
     for leaf in random.sample(leaves,2):
       scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
-#      print scores
-      rank = nwords-np.array(scores).argsort().argsort()[leaf.index]
-#      print rank, 'out of', nwords
-      ranks+= rank/nwords
+      ranking = np.array(scores).argsort().argsort()+1
+      ranks+= ranking[leaf.index]
       num +=1
-  return ranks/num
+  return ranks/(nwords*num)
 
 def confusionString(confusion, relations):
+  if confusion is None: return ""
   st = '\t'+'\t'.join(relations)
   for tar in xrange(len(relations)):
     st+='\n'+relations[tar]
@@ -91,26 +78,26 @@ def batchtrain(alpha, lambdaL2, epochs, theta, examples):
 # which has only few non-zero elements
 
 def updateTheta(theta, gradient,histGradient,alpha):
-  for name in theta.dtype.names():
+  for name in theta.dtype.names:
     grad = gradient[name]
     nz = np.nonzero(grad)
     if len(nz[0]) == 0: continue
     histGrad = histGradient[name]
     for i in np.nditer(nz):
-      histGrad[name][i] += np.square(grad[i])
-      theta[name][i] -= alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6)
+      histGrad[i] += np.square(grad[i])
+      theta[name][i] += alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6) # should be += rather than -=, right?!
 
 
 
 # each minibatch is an independent random sample (without replacement)
 def SGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
-  print 'Start SGD training with minibatches'
+  print 'Start SGD training with random minibatches'
   historical_grad = np.zeros_like(theta)
   accuracy, confusion = evaluate(theta,testData)
   if batchsize == 0: batchsize = len(data)
 #  while not converged:
   for i in xrange(epochs):
-    print 'Iteration', i ,', Accuracy:', accuracy
+    print 'Iteration', i ,', Performance on test sample:', accuracy
     for batch in xrange(len(data)//batchsize):
       minibatch = random.sample(data, batchsize)
 
@@ -118,33 +105,37 @@ def SGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0)
       updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
-    accuracy, confusion = evaluate(theta,testData)
+    accuracy, confusion = evaluate(theta,testData,0.1)
+  accuracy, confusion = evaluate(theta,testData)
+  print 'Training terminated. Performance on entire test set:', accuracy
+  print confusionString(confusion, relations)
+  with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
+    pickle.dump(theta, f, -1)
 
 # the minibatches are a random but true partition of the data
 def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
-#  print 'Start SGD training with minibatches'
+  print 'Start SGD training with true minibatches'
   if batchsize == 0: batchsize = len(data)
   historical_grad = np.zeros_like(theta)
 #  while not converged:
   accuracy, confusion = evaluate(theta,testData)
-  #print 'Accuracy (before training):', accuracy
-  #print confusionString(confusion, relations)
   for i in xrange(epochs):
-    print 'Iteration', i ,', Accuracy:', accuracy
+    print 'Iteration', i ,', Performance on test sample:', accuracy
     print confusionString(confusion, relations)
-    # randomly split the data into parts of batchsize
-    random.shuffle(data)
+
+    random.shuffle(data) # randomly split the data into parts of batchsize
     for batch in xrange(len(data)//batchsize):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
       grad, error = epoch(theta, minibatch, lambdaL2)
       updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', error, ', theta norm:', thetaNorm(theta)
-    accuracy, confusion = evaluate(theta,testData)
-#  accuracy, confusion = evaluate(theta,testData)
-
-  print 'Training terminated. Accuracy:', accuracy
+    accuracy, confusion = evaluate(theta,testData, 0.1)
+  accuracy, confusion = evaluate(theta,testData, 1)
+  print 'Training terminated. Performance on entire test set:', accuracy
   print confusionString(confusion, relations)
+  with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
+    pickle.dump(theta, f, -1)
 
 
 
@@ -170,18 +161,11 @@ def epoch(theta, examples, lambdaL2):
   regularization = lambdaL2/2 * thetaNorm(theta)**2
   error = 0
   for nw in examples:
-#     try:
-#        = ex
-#       error += nw.error(theta, target, recompute = False)
-#       print 'this is a regular RNN'
-#     except:
-#       nw = ex
-#       target = None
-#       print 'this is a IORNN'
-    dgrads = nw.train(theta)
+    dgrads,derror = nw.train(theta)
+    error += derror
     for name in grads.dtype.names:
       grads[name] += dgrads[name]
 
   for name in grads.dtype.names:
     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
-  return grads, error
+  return grads, error/len(examples)

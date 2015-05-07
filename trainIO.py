@@ -7,8 +7,8 @@ import pickle
 import naturalLogic
 
 def main():
-#  source = 'data/sickSample.pik'
-  source = 'data/flickr.pik'
+  source = 'data/sickSample.pik'
+#  source = 'data/flickr.pik'
   with open(source, 'rb') as f:
     examples, vocabulary = pickle.load(f)
   for kind, trees in examples.iteritems():
@@ -32,8 +32,6 @@ def main():
   print 'Starting training...'
   SGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
   #bowmanSGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
-  with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
-    pickle.dump(theta, f, -1)
 
 
 def evaluateNW(nw,theta):
@@ -43,5 +41,5 @@ def evaluateNW(nw,theta):
     scores = np.zeros(nwords)
     for x in xrange(nwords):
       scores[x] = nw.score(theta,x)
-      rank = scores.argsort().argsort()[leaf.index]
+      ranking = scores.argsort().argsort()[leaf.index]
 main()

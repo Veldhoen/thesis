@@ -99,7 +99,7 @@ class Node:
   def train(self, theta, target = None, gradients = None):
     if gradients is None: gradients = np.zeros_like(theta)
     self.activateNW(theta)
-    error = np.mean([leaf.train(theta, None, gradients) for leaf in self.leaves()])
+    error = np.mean([leaf.trainWords(theta, gradients) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
     return gradients,error
 
@@ -124,12 +124,11 @@ class Leaf(Node):
     self.index = index
     self.word = word
 
-  def train(self, theta, target = None, gradients = None):
+  def trainWords(self, theta, gradients, target = None):
     wrong = 0
-    nwords = len(theta['wordIM'])
-#    if gradients is None: gradients = np.zeros_like(theta)
+    nwords = len(theta[self.cat+'IM'])
     scorew = self.score(theta, False)
-    x = random.randint(0,len(theta[self.cat+'IM'])-1)
+    x = self.index
     while x == self.index:  x = random.randint(0,nwords-1)
     # if the candidate scores too high: backpropagate error
     scorex = self.score(theta, x, False)
