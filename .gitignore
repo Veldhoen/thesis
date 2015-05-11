@@ -53,5 +53,6 @@ docs/_build/
 # PyBuilder
 target/
 
-# data directory
+# data directories
 data/*
+models/*
