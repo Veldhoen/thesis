@@ -11,7 +11,7 @@ def thetaNorm(theta):
 
 def evaluate(theta, testData, amount=1):
   if isinstance(testData[0], IORNN.Node):
-    return evaluateIOUS(theta,testData, amount),None
+    return NAR(theta,testData, amount),None
   true = 0
   confusion = defaultdict(Counter)
   for nw, tar in testData:
@@ -20,25 +20,28 @@ def evaluate(theta, testData, amount=1):
     if pred == tar: true +=1
   return true/len(testData), confusion
 
-def evaluateIOUS(theta,testData, amount=1):
+# compute normalized average rank: 
+# for each leaf, compute scores for vocabulary, determine rank of actual word
+# take the average of those ranks and normalize with vocabulary length
+def NAR(theta,testData, amount=1):
   if amount<= 1: n = int(amount*len(testData))
   else: n = amount
   ranks = 0
   num = 0
   nwords = len(theta['wordIM'])
-  for nw in random.sample(testData,n):
+  for nw in random.sample(testData,n): # take a random sample of the test data (for efficiency. Does this make sense?)
     nw.activateNW(theta)
     leaves = nw.leaves()
     # we don't expect the network to make true predictions
     # for such small trees
     if len(leaves)<3: continue
 
-    for leaf in random.sample(leaves,2):
+    for leaf in random.sample(leaves,2): # take a random sample of the leaves (for efficiency. Does this make sense?)
       scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
-      ranking = np.array(scores).argsort().argsort()+1
+      ranking = np.array(scores).argsort()[::-1].argsort()
       ranks+= ranking[leaf.index]
       num +=1
-  return ranks/(nwords*num)
+  return ranks/(nwords*num) #average (/num) and normalize (/nwords) the ranks
 
 def confusionString(confusion, relations):
   if confusion is None: return ""
@@ -90,7 +93,8 @@ def updateTheta(theta, gradient,histGradient,alpha):
 
 
 # each minibatch is an independent random sample (without replacement)
-def SGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
+hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
+def SGD(theta, hyperParams, examples, relations, cores):
   print 'Start SGD training with random minibatches'
   historical_grad = np.zeros_like(theta)
   accuracy, confusion = evaluate(theta,testData)
@@ -113,7 +117,7 @@ def SGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0)
     pickle.dump(theta, f, -1)
 
 # the minibatches are a random but true partition of the data
-def bowmanSGD(lambdaL2, alpha, epochs, theta, data, testData, relations, batchsize =0):
+def bowmanSGD(theta, hyperParams, examples, relations):
   print 'Start SGD training with true minibatches'
   if batchsize == 0: batchsize = len(data)
   historical_grad = np.zeros_like(theta)

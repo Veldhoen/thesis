@@ -9,46 +9,59 @@ import pickle
 
 import NN, IORNN #from NN import *
 #from IORNN import *
-from training import *
+from trainingParallel import *
+#from training import *
 #from params import *
 
 
-def types4IO(dwords, dint, nrel, nwords):
+def types4IO(dims):
   types = []
-#  types.append(('preterminalM','float64',(dint,dwords)))
-#  types.append(('preterminalB','float64',(dint)))
-  types.append(('compositionIM','float64',(dint,2*dint)))
-  types.append(('compositionIB','float64',(dint)))
-  types.append(('compositionOM','float64',(dint,2*dint)))
-  types.append(('compositionOB','float64',(dint)))
+  dwords = dims['word']
+  din = dims['inside']
+  dout = dims['outside']
+  nwords = dims['nwords']
+
+#  types.append(('preterminalM','float64',(din,dwords)))
+#  types.append(('preterminalB','float64',(din)))
+  types.append(('compositionIM','float64',(din,2*din)))
+  types.append(('compositionIB','float64',(din)))
+  types.append(('compositionOM','float64',(din,2*din)))
+  types.append(('compositionOB','float64',(din)))
   types.append(('wordIM','float64',(nwords,dwords)))
   types.append(('wordIB', 'float64',(dwords)))
-  types.append(('wordOM', 'float64',(2*dint,2*dint)))
-  types.append(('wordOB', 'float64',(2*dint)))
-  types.append(('relIM','float64',(nrel,dwords)))
-  types.append(('relOM', 'float64',(2*dint,2*dint)))
-  types.append(('relOB', 'float64',(2*dint)))
-  types.append(('uOM', 'float64',(1,2*dint)))
+  types.append(('wordOM', 'float64',(2*din,2*din)))
+  types.append(('wordOB', 'float64',(2*din)))
+#   types.append(('relIM','float64',(nrel,dwords)))
+#   types.append(('relOM', 'float64',(2*din,2*din)))
+#   types.append(('relOB', 'float64',(2*din)))
+  types.append(('uOM', 'float64',(1,2*din)))
   types.append(('uOB', 'float64',(1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
   return types
 
-def types4RNN(dwords, dint, dcomp, nrel, nwords):
+def types4RNN(dims):
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   types = []
-  types.append(('preterminalM','float64',(dint,dwords)))
-  types.append(('preterminalB','float64',(dint)))
-  types.append(('compositionM','float64',(dint,2*dint)))
-  types.append(('compositionB','float64',(dint)))
-  types.append(('comparisonM','float64',(dcomp,2*dint)))
+  dwords = dims['word']
+  din = dims['inside']
+  dout = dims['outside']
+  dcomp = dims['comp']
+  nwords = dims['nwords']
+  nrel = dims['nrel']
+
+  types.append(('preterminalM','float64',(din,dwords)))
+  types.append(('preterminalB','float64',(din)))
+  types.append(('compositionM','float64',(din,2*din)))
+  types.append(('compositionB','float64',(din)))
+  types.append(('comparisonM','float64',(dcomp,2*din)))
   types.append(('comparisonB','float64',(dcomp)))
   types.append(('classifyM','float64',(nrel,dcomp)))
   types.append(('classifyB','float64',(nrel)))
   types.append(('wordIM','float64',(nwords,dwords)))
   return types
 
-def initialize(style, dwords, dint, dcomp, nrel=1, nwords = 1, V = None):
-  if style == 'IORNN': types = types4IO(dwords, dint, nrel, nwords)
-  elif style == 'RNN': types = types4RNN(dwords, dint, dcomp, nrel, nwords)
+def initialize(style, dims, V = None):
+  if style == 'IORNN': types = types4IO(dims)
+  elif style == 'RNN': types = types4RNN(dims)
   else: print 'PROBLEM'
   # initialize all parameters randomly using a uniform distribution over [-0.1,0.1]
   theta = np.zeros(1,dtype = types)
@@ -111,7 +124,7 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
 def printParams():
   print 'Network hyperparameters:'
   print '\tword size:', dwords
-  print '\tinternal representation size:', dint
+  print '\tinternal representation size:', din
   print '\tdcomparison size:', dcomp
   print '\tgrammarbased:', grammarBased
   print 'Training hyperparameters:'
@@ -180,7 +193,7 @@ def main(args):
   printParams()
 
   print 'There are',len(trainData),'training examples and',len(testData),'test examples. Vocabulary size:', len(vocabulary)
-  theta = initialize(style, dwords,dint,dcomp,len(relations),len(vocabulary), V)
+  theta = initialize(style, dwords,din,dcomp,len(relations),len(vocabulary), V)
   print 'Parameters initialized. Theta norm:',thetaNorm(theta)
 
 

@@ -1,9 +1,7 @@
 from __future__ import division
-import nltk
-from nltk.tree import Tree
 import numpy as np
 import sys
-from collections import defaultdict
+
 import activation
 
 
@@ -35,7 +33,7 @@ import activation
 
  The gradientCheck is a function to determine the corectness of the
    backpropagation. It computes a numerical gradient and compares it
-   to the analytical gradient from the backprop. The difference should 
+   to the analytical gradient from the backprop. The difference should
    generally be smaller than 1e-7. However, this can vary: see
    http://cs231n.github.io/neural-networks-3/#gradcheck
 '''
@@ -45,7 +43,7 @@ class Node:
     self.cat = cat
     self.children = children
     self.nonlin = nonlinearity
-  def backprop(self,delta,theta,gradients):
+  def backprop(self,delta,theta,gradients, recompute = False):
     childrenas = np.concatenate([child.a for child in self.children])
     childrenads = np.concatenate([child.ad for child in self.children])
     # compute delta to backprop and backprop it
