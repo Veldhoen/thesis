@@ -5,7 +5,7 @@ from trainingParallel import *
 #from params import *
 import pickle
 import argparse
-import naturalLogic
+import naturalLogicCopy as naturalLogic
 
 def main(args):
   # get treebank

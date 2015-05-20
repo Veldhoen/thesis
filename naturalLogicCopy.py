@@ -105,7 +105,8 @@ def glueNW(trees,rel,reli,voc):
   return IORNN.Node([im,nws[1]],cat,'tanh','tanh')
 
 def iornnFromTree(tree, vocabulary, grammarBased = False):
-#  print tree
+#  try:  print tree
+#  except: print 'unprintable tree'
   if tree.height() > 2:
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
     else: cat = 'composition'

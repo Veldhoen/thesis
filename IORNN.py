@@ -6,7 +6,7 @@ import sys
 from collections import defaultdict
 import random
 #import copy
-
+from theano import sparse
 import activation
 
 class Node:
@@ -97,7 +97,11 @@ class Node:
 #    return self.outerA
 
   def train(self, theta, target = None, gradients = None):
-    if gradients is None: gradients = np.zeros_like(theta)
+#    if gradients is None: gradients = np.zeros_like(theta)
+    print 'start training'
+    if gradients is None: 
+      gradients = sparse.csc_from_dense(np.zeros_like(theta))
+      print 'created sparse matrix'  
     self.activateNW(theta)
     error = np.mean([leaf.trainWords(theta, gradients) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
