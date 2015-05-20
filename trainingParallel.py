@@ -15,6 +15,14 @@ def thetaNorm(theta):
 def evaluate(theta, testData, amount=1):
   if isinstance(testData[0], IORNN.Node):
     return NAR(theta,testData, amount),None
+  else: return accuracy(theta,testData)
+
+def evaluateQueue(theta, testData, amount=1, q = None):
+  if isinstance(testData[0], IORNN.Node):
+    q.put((NAR(theta,testData, amount),None))
+  else: q.put(accuracy(theta,testData))
+
+def accuracy(theta, testData):
   true = 0
   confusion = defaultdict(Counter)
   for nw, tar in testData:
@@ -22,6 +30,8 @@ def evaluate(theta, testData, amount=1):
     confusion[tar][pred] += 1
     if pred == tar: true +=1
   return true/len(testData), confusion
+
+
 
 # compute normalized average rank:
 # for each leaf, compute scores for vocabulary, determine rank of actual word
@@ -86,27 +96,29 @@ def updateTheta(theta, gradient,histGradient,alpha):
 
 # each minibatch is an independent random sample (without replacement)
 def SGD(theta, hyperParams, examples, relations, cores = 1):
+  testSample = 0.1
   data = examples['TRAIN']
+  accuracy = 0.5
+#  accuracy, confusion = evaluate(theta,examples['TEST'],testSample)
+
   print 'Start SGD training with random minibatches'
   historical_grad = np.zeros_like(theta)
-  accuracy, confusion = evaluate(theta,examples['TEST'])
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
+  qPerformance = Queue()
   for i in xrange(hyperParams['nEpochs']):
-
-
-    print 'Iteration', i ,', Performance on test sample:', accuracy
+    print 'Iteration', i #,', Performance on test sample:', accuracy
     random.shuffle(data) # randomly split the data into parts of batchsize
     for batch in xrange(len(data)//batchsize):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
 #      minibatch = random.sample(data, batchsize)
       s = len(minibatch)//cores
-      processes = []
+#      processes = []
       q = Queue()
       for i in xrange(cores):
         p = Process(name='process'+str(i), target=epoch, args=(theta, minibatch[i*s:(i+1)*s], hyperParams['lambda'],q))
-        processes.append(p)
+#        processes.append(p)
         p.start()
 
       errors = []
@@ -122,9 +134,15 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', thetaNorm(theta)
-    accuracy, confusion = evaluate(theta,examples['TEST'],0.1)
+    accuracy, confusion = evaluateQueue(theta,examples['TEST'],testSample, qPerformance)
+  print 'Training terminated.'
+  i = 0
+  while i<nEpochs:
+    accuracy, conf = qPerformance.get()
+    print 'Iteration', i, ', Performance on test sample:', accuracy
+    i+= 0
   accuracy, confusion = evaluate(theta,examples['TEST'])
-  print 'Training terminated. Performance on entire test set:', accuracy
+  print 'Eventual performance on entire test set:', accuracy
   print confusionString(confusion, relations)
   with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
     pickle.dump(theta, f, -1)

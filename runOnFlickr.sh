@@ -14,10 +14,14 @@ python -u trainIOCopy.py \
   -t $data$treePost \
   -v $data$vocPost \
   -o $out \
-  -e $emb \
+  -dwrd 5 \
   -n $nEpochs \
   -b $bSize \
   -a $alpha \
   -l $lambda \
-  -c $cores 
+  -c $cores
 echo "$experiment $!" >> psIds.txt
+
+
+
+#  -e $emb \
