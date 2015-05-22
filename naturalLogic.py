@@ -67,7 +67,7 @@ def initialize(style, dims, V = None):
   theta = np.zeros(1,dtype = types)
   for name, t, size in types:
     if name == 'wordIM' and not V is None: theta[name]=V
-    if isinstance(size, (int,long)): theta[name] = np.random.rand(size)*.02-.01
+    elif isinstance(size, (int,long)): theta[name] = np.random.rand(size)*.02-.01
     elif len(size) == 2: theta[name] = np.random.rand(size[0],size[1])*.02-.01
     else: print 'invalid size:', size
   return theta[0]

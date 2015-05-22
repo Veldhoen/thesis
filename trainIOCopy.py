@@ -6,6 +6,7 @@ from trainingParallel import *
 import pickle
 import argparse
 import naturalLogicCopy as naturalLogic
+import myTheta
 
 def main(args):
   # get treebank
@@ -56,7 +57,7 @@ def main(args):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = naturalLogic.initialize('IORNN', dims, V)
+    theta = myTheta.Theta('IORNN', dims, V)
     print 'Initialized theta.'
 
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])

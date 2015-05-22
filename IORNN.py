@@ -6,8 +6,9 @@ import sys
 from collections import defaultdict
 import random
 #import copy
-from theano import sparse
+#from theano import sparse
 import activation
+from scipy import sparse
 
 class Node:
   def __init__(self, children, cat, actI,actO):
@@ -74,10 +75,17 @@ class Node:
       gradients[cat+'OB']+= delta
 
   def inner(self, theta):
-    inputsignal = np.concatenate([child.inner(theta) for child in self.children])
+#    inputsignal = np.concatenate([child.inner(theta) for child in self.children])
+    inputs = [child.inner(theta) for child in self.children]
+
+    inputsignal = np.concatenate(inputs)
     M= theta[self.cat+'IM']
     b= theta[self.cat+'IB']
-    self.innerZ = M.dot(inputsignal)+b
+    try: self.innerZ = M.dot(inputsignal)+b
+    except:
+      print self.cat, ', matrix:',M.shape, ', input:' ,inputsignal.shape
+      for c in self.children: print c.cat, c.innerA.shape
+      sys.exit()
     self.innerA, self.innerAd = activation.activate(self.innerZ,self.actI)
     return self.innerA
 
@@ -98,10 +106,10 @@ class Node:
 
   def train(self, theta, target = None, gradients = None):
 #    if gradients is None: gradients = np.zeros_like(theta)
-    print 'start training'
-    if gradients is None: 
-      gradients = sparse.csc_from_dense(np.zeros_like(theta))
-      print 'created sparse matrix'  
+#    print 'start training'
+    if gradients is None:
+      gradients = theta.zeros_like() #sparse.csc_from_dense(np.zeros_like(theta))
+#      print 'created sparse matrix'
     self.activateNW(theta)
     error = np.mean([leaf.trainWords(theta, gradients) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
@@ -195,13 +203,27 @@ class Leaf(Node):
 
   def inner(self, theta):
     if self.cat == 'rel': print 'Leaf.inner', self.cat, self.index
-    self.innerZ = theta[self.cat+'IM'][self.index]
+    self.innerZ = np.asarray(theta[self.cat+'IM'][self.index]).flatten()
+    # after theta is updated, the wordIM has become a matrix instead of a 2D-array.
+    # therefore, the innerZ is of dimension (1,5) rather than (5,) as it used to be.
     self.innerA, self.innerAd = activation.activate(self.innerZ,self.actI)
+#    print self.cat, self.innerZ.shape, self.innerA.shape
     return self.innerA
 
   def backpropInner(self,delta, theta, gradients):
+#    gradients[self.cat+'IM'] += delta
+
+    d = len(delta)
+    row = np.array([self.index]*d)
+    col = np.arange(d)
+#    print delta.shape, d
+    deltaM = sparse.csc_matrix((delta,(row,col)),shape=np.shape(theta[self.cat+'IM']))
+    gradients[self.cat+'IM'] = gradients[self.cat+'IM']+(deltaM)
 #    print 'backpropInner', self
-    gradients[self.cat+'IM'][self.index] += delta
+#     d = len(theta[self.cat+'IM'][0])
+#     deltaM = sparse.csc_matrix((delta,np.arange(d),[self.index]*d),shape=np.shape(theta[self.cat+'IM']))
+#     sparse.basic.add(gradients[self.cat+'IM'], deltaM)
+#        sparse.basic.add(gradients[self.cat+'IM'][self.index,:], delta)
 
   def __str__(self):
     return self.word

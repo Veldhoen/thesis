@@ -6,11 +6,11 @@ from collections import defaultdict, Counter
 import pickle, os
 import time
 
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Pool
 
-def thetaNorm(theta):
-  names = theta.dtype.names
-  return sum([np.linalg.norm(theta[name]) for name in names])/len(names)
+# def thetaNorm(theta):
+#   names = theta.dtype.names
+#   return sum([np.linalg.norm(theta[name]) for name in names])/len(names)
 
 def evaluate(theta, testData, amount=1):
   if isinstance(testData[0], IORNN.Node):
@@ -82,15 +82,15 @@ def confusionString(confusion, relations):
 # memory issues, especially in the case of the word matrix
 # which has only few non-zero elements
 
-def updateTheta(theta, gradient,histGradient,alpha):
-  for name in theta.dtype.names:
-    grad = gradient[name]
-    nz = np.nonzero(grad)
-    if len(nz[0]) == 0: continue
-    histGrad = histGradient[name]
-    for i in np.nditer(nz):
-      histGrad[i] += np.square(grad[i])
-      theta[name][i] += alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6) # should be += rather than -=, right?!
+# def updateTheta(theta, gradient,histGradient,alpha):
+#   for name in theta.dtype.names:
+#     grad = gradient[name]
+#     nz = np.nonzero(grad)
+#     if len(nz[0]) == 0: continue
+#     histGrad = histGradient[name]
+#     for i in np.nditer(nz):
+#       histGrad[i] += np.square(grad[i])
+#       theta[name][i] += alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6) # should be += rather than -=, right?!
 
 
 
@@ -102,7 +102,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #  accuracy, confusion = evaluate(theta,examples['TEST'],testSample)
 
   print 'Start SGD training with random minibatches'
-  historical_grad = np.zeros_like(theta)
+  historical_grad = theta.zeros_like()
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
@@ -124,7 +124,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
       errors = []
       for i in xrange(cores):
         (grad, error) = q.get()
-        updateTheta(theta, grad,historical_grad,hyperParams['alpha'])
+        theta.update(grad,historical_grad,hyperParams['alpha'])
         errors.append(error)
 
 
@@ -133,9 +133,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #      grad, error = epoch(theta, minibatch, lambdaL2)
 #      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
-        print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', thetaNorm(theta)
+        print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
     accuracy, confusion = evaluateQueue(theta,examples['TEST'],testSample, qPerformance)
-  print 'Training terminated.'
+  print 'Training terminated. Computing performance..'
   i = 0
   while i<nEpochs:
     accuracy, conf = qPerformance.get()
@@ -147,17 +147,36 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
   with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
     pickle.dump(theta, f, -1)
 
+# def epochPool(theta, examples, lambdaL2, cores):
+#   pool = Pool(processes=cores)
+#   dgrads,errors = zip(*[pool.apply(train,args=(nw,)) for nw in examples])
+#   error = sum(errors)
+#   for dgrads, derror in results
+# 
+#   grads = np.zeros_like(theta)
+#   regularization = lambdaL2/2 * thetaNorm(theta)**2
+#   error = 0
+#
+#   for nw in examples:
+#     dgrads,derror = nw.train(theta)
+#     error += derror
+#     for name in grads.dtype.names:
+#       grads[name] += dgrads[name]
+#
+#   for name in grads.dtype.names:
+#     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
+#   q.put((grads, error/len(examples)))
 
 def epoch(theta, examples, lambdaL2, q=None):
-  grads = np.zeros_like(theta)
-  regularization = lambdaL2/2 * thetaNorm(theta)**2
+  grads = theta.zeros_like()
+  regularization = lambdaL2/2 * theta.norm()**2
   error = 0
   for nw in examples:
     dgrads,derror = nw.train(theta)
-    error += derror
-    for name in grads.dtype.names:
-      grads[name] += dgrads[name]
+    error+= derror
+    for name in grads.keys():
+      grads[name] = grads[name] + dgrads[name]
 
-  for name in grads.dtype.names:
+  for name in grads.keys():
     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
   q.put((grads, error/len(examples)))

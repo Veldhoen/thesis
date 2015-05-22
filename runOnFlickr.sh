@@ -8,9 +8,10 @@ nEpochs=5
 bSize=100
 alpha='0.2'
 lambda='0.0005'
-cores='5'
+cores=1
 
-python -u trainIOCopy.py \
+python -u -W ignore::DeprecationWarning \
+  trainIOCopy.py \
   -t $data$treePost \
   -v $data$vocPost \
   -o $out \
