@@ -116,8 +116,8 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
       s = len(minibatch)//cores
 #      processes = []
       q = Queue()
-      for i in xrange(cores):
-        p = Process(name='process'+str(i), target=epoch, args=(theta, minibatch[i*s:(i+1)*s], hyperParams['lambda'],q))
+      for j in xrange(cores):
+        p = Process(name='process'+str(j), target=epoch, args=(theta, minibatch[j*s:(j+1)*s], hyperParams['lambda'],q))
 #        processes.append(p)
         p.start()
 
@@ -134,7 +134,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
-    accuracy, confusion = evaluateQueue(theta,examples['TEST'],testSample, qPerformance)
+    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TEST'],testSample, qPerformance))
+    p.start()
+
   print 'Training terminated. Computing performance..'
   i = 0
   while i<nEpochs:
@@ -152,7 +154,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #   dgrads,errors = zip(*[pool.apply(train,args=(nw,)) for nw in examples])
 #   error = sum(errors)
 #   for dgrads, derror in results
-# 
+#
 #   grads = np.zeros_like(theta)
 #   regularization = lambdaL2/2 * thetaNorm(theta)**2
 #   error = 0
