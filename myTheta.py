@@ -78,10 +78,10 @@ class Theta(dict):
 
 
   def  norm(self):
-    #names = self.keys()
-    #return sum([np.linalg.norm(self[name]) for name in names])/len(names)
-    return 0
-    
+    names = self.keys()
+    return sum([np.linalg.norm(self[name]) for name in names])/len(names)
+    #return 0
+
   def sparse(self):
     for name in self.keys():
       self[name] = sparse.csc_from_dense(self[name])

@@ -2,20 +2,25 @@ experiment=$1
 data='data/flickr'
 treePost='TREES.pik'
 vocPost='VOC.pik'
-out="models/flickr$experiment.pik"
+out="models/sickSample$experiment.pik"
 emb='data/senna.pik'
 nEpochs=5
-bSize=100
+bSize=10
 alpha='0.2'
 lambda='0.0005'
-cores=1
+cores=5
+
+echo "training on $data for $nEpochs epochs"
+echo "initializing word embeddings from $emb"
+echo "parameters: batch size = $bSize, alpha = $alpha, lambda = $lambda."
+
 
 python -u -W ignore::DeprecationWarning \
   trainIOCopy.py \
   -t $data$treePost \
   -v $data$vocPost \
   -o $out \
-  -dwrd 5 \
+  -e $emb \
   -n $nEpochs \
   -b $bSize \
   -a $alpha \
@@ -25,4 +30,4 @@ echo "$experiment $!" >> psIds.txt
 
 
 
-#  -e $emb \
+
