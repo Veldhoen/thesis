@@ -55,11 +55,13 @@ class Theta(dict):
       print 'problem in newMatrix', name, M, size
       sys.exit()
 
-
+  def regularize(self, alpha, lambdaL2, size):
+    for name in self.keys():
+      self[name] = (1- (alpha*lambdaL2)/size)*self[name]
 
   def update(self, gradient, historicalGradient, alpha):
 #    print 'updating theta'
-    for name in self.keys():
+    for name in gradient.keys():
 #      print name, 'before:',self[name].shape
       grad = gradient[name]
       histgrad = historicalGradient[name]
@@ -69,13 +71,7 @@ class Theta(dict):
       else:
         histgrad = histgrad + np.square(grad)
         self[name] = self[name] + alpha * grad/(np.sqrt(histgrad)+1e-6)
-
-
 #      print 'after:',self[name].shape
-
-
-
-
 
   def  norm(self):
     names = self.keys()
@@ -90,11 +86,11 @@ class Theta(dict):
     for name in self.keys():
       self[name] = sparse.dense_from_sparse(self[name])
 
-  def zeros_like(self):
+  def zeros_like(self, sparseWords = True):
     new = Theta()
     for name in self.keys():
       # for the word matrix, create a sparse matrix, as most values will not be updated
-      if name == 'wordIM':
+      if sparseWords and name == 'wordIM':
         shape = self[name].shape
 #        print shape
         new.newMatrix(name,sparse.csc_matrix(shape))
@@ -103,11 +99,16 @@ class Theta(dict):
     return new
 
 def addToDense(denseM,incM, factor = None):
+#  print 'adding sparse to dense. Sparse:', incM.shape,'Dense:', denseM.shape
   if not sparse.issparse(incM):
     denseM = denseM + incM
 
   elif sparse.isspmatrix_csc(incM):
-    for i,j in zip(inc.indices, incM.indptr):
-      if factor: denseM[i,j] += incM[i,j] *factor[i,j]
-      else: denseM[i,j] += incM[i,j]
+    rows, columns = incM.nonzero()
+    for i,j in zip(rows, columns):
+      val = incM[i,j]
+      if factor is not None: f = factor[i,j]
+      else: f = 1
+#      print i,j
+      denseM[i,j] = denseM[i,j] + f*val
   else: print 'addSparseToDense not implemented for this format.'

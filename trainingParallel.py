@@ -102,7 +102,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #  accuracy, confusion = evaluate(theta,examples['TEST'],testSample)
 
   print 'Start SGD training with random minibatches'
-  historical_grad = theta.zeros_like()
+  historical_grad = theta.zeros_like(False)
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
@@ -127,6 +127,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
         p.start()
 
       errors = []
+      theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
       for j in xrange(cores):
         (grad, error) = q.get()
         theta.update(grad,historical_grad,hyperParams['alpha'])
@@ -184,8 +185,8 @@ def epoch(ns, examples, q=None):
     dgrads,derror = nw.train(theta)
     error+= derror
     for name in grads.keys():
-      grads[name] = grads[name] + dgrads[name]
+      grads[name] = grads[name] + dgrads[name]/len(examples)
 
-  for name in grads.keys():
-    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
+#  for name in grads.keys():
+#    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
   q.put((grads, error/len(examples)))

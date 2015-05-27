@@ -7,7 +7,7 @@ nEpochs=5
 bSize=10
 alpha='0.2'
 lambda='0.0005'
-cores=5
+cores=1
 
 echo "training on $data for $nEpochs epochs"
 echo "initializing word embeddings from $emb"
