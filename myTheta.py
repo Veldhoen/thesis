@@ -66,11 +66,11 @@ class Theta(dict):
       grad = gradient[name]
       histgrad = historicalGradient[name]
       if sparse.issparse(grad):
-        addToDense(histgrad, grad.multiply(grad))
-        addToDense(self[name],grad, alpha/(histgrad+1e-6))#/ ...
+        subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
+        subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
       else:
-        histgrad = histgrad + np.square(grad)
-        self[name] = self[name] + alpha * grad/(np.sqrt(histgrad)+1e-6)
+        histgrad = histgrad + np.square(grad)                    # add the square of the grad to histgrad
+        self[name] = self[name] - alpha * grad/(np.sqrt(histgrad)+1e-6)#subtract gradient * alpha/root(histgrad)
 #      print 'after:',self[name].shape
 
   def  norm(self):
@@ -98,10 +98,10 @@ class Theta(dict):
         new.newMatrix(name, np.zeros_like(self[name]))
     return new
 
-def addToDense(denseM,incM, factor = None):
+def subtractFromDense(denseM,incM, factor = None):
 #  print 'adding sparse to dense. Sparse:', incM.shape,'Dense:', denseM.shape
   if not sparse.issparse(incM):
-    denseM = denseM + incM
+    denseM = denseM - incM
 
   elif sparse.isspmatrix_csc(incM):
     rows, columns = incM.nonzero()
@@ -110,5 +110,5 @@ def addToDense(denseM,incM, factor = None):
       if factor is not None: f = factor[i,j]
       else: f = 1
 #      print i,j
-      denseM[i,j] = denseM[i,j] + f*val
-  else: print 'addSparseToDense not implemented for this format.'
+      denseM[i,j] = denseM[i,j] - f*val
+  else: print 'subtractFromDense not implemented for this format.'

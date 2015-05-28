@@ -46,7 +46,9 @@ def storeTrees(name):
       for line in f:
 #        print line
         try:
-          if random.randint(0,4)<1: kind = 'TEST'
+          r = random.randint(0,9)
+          if r<1: kind = 'TEST'
+          elif r<2: kind = 'TRIAL'
           else: kind = 'TRAIN'
           if 'sick' in name:
             bits = line.split('\t')

@@ -5,16 +5,18 @@ vocPost='VOC.pik'
 out="models/sickSample$experiment.pik"
 nEpochs=5
 bSize=10
-alpha='0.2'
-lambda='0.0005'
+alpha='0.05'
+lambda='0.1'
 cores=1
+
+echo "$experiment $$" >> psIds.txt
 
 echo "training on $data for $nEpochs epochs"
 echo "initializing word embeddings from $emb"
 echo "parameters: batch size = $bSize, alpha = $alpha, lambda = $lambda."
 
 
-python -u -Wi::DeprecationWarning \
+python -u -W once \
   trainIOCopy.py \
   -t $data$treePost \
   -v $data$vocPost \
@@ -25,7 +27,7 @@ python -u -Wi::DeprecationWarning \
   -a $alpha \
   -l $lambda \
   -c $cores
-echo "$experiment $!" >> psIds.txt
+
 
 
 
