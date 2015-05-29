@@ -76,7 +76,7 @@ def storeTrees(name):
 #              print word, pos
               vocabulary[pos][word] += 1
           [nltk.treetransforms.chomsky_normal_form(t) for t in ts]
-          [nltk.treetransforms.collapse_unary(t, collapsePOS = False,collapseRoot = True) for t in ts]
+          [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in ts]
           #if kind == 'TRAIN': vocabulary.update([w.lower() for w in t.leaves() for t in ts])
           for t in ts:
             for prod in t.productions():
@@ -90,7 +90,7 @@ def storeTrees(name):
     voc.add('POS-'+pos) # create a placeholder in the vocabuary for all infrequent words with this POS-tag
     for word, count in words.iteritems():
       if count > 3:
-        print word, count
+#        print word, count
         voc.add(word)  # add all frequent words to the vocabulary
 
   vocabulary = list(voc)
@@ -100,7 +100,7 @@ def storeTrees(name):
 
   #vocabulary = list(vocabulary)
   #vocabulary.insert(0, 'UNK')
-  print len(vocabulary),'words,',sum([sum(rules[lhs].values()) for lhs in rules.keys()]),'grammar rules,', len(examples['TRAIN']),'training examples,', len(examples['TRIAL']),'validation examples.', len(examples['TEST']),'test examples.', short, 'sentences with length <10 were discarded.'
+  print len(vocabulary),'words,',sum([sum(rules[lhs].values()) for lhs in rules.keys()]),'grammar rules,', len(examples['TRAIN']),'training examples,', len(examples['TRIAL']),'validation examples,', len(examples['TEST']),'test examples.', short, 'sentences with length <10 were discarded.'
 #  print vocabulary
 
   with open(os.path.join('data',name+'TREES.pik'), 'wb') as f:
