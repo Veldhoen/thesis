@@ -140,20 +140,20 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
-    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TEST'],testSample, qPerformance))
+    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
     p.start()
 
   print 'Training terminated. Computing performance..'
   i = 0
   while i<nEpochs:
     accuracy, conf = qPerformance.get()
-    print 'Iteration', i, ', Performance on test sample:', accuracy
+    print 'Iteration', i, ', Performance on validation set:', accuracy
     i+= 1
   accuracy, confusion = evaluate(theta,examples['TEST'])
-  print 'Eventual performance on entire test set:', accuracy
+  print 'Eventual performance on test set:', accuracy
   print confusionString(confusion, relations)
-  with open(os.path.join('models','flickrIO.pik'), 'wb') as f:
-    pickle.dump(theta, f, -1)
+  return theta
+
 
 # def epochPool(theta, examples, lambdaL2, cores):
 #   pool = Pool(processes=cores)

@@ -65,8 +65,10 @@ def main(args):
 
 
   print 'Starting training...'
-  SGD(theta, hyperParams, examples, [], cores)
-  #bowmanSGD(lambdaL2, alpha, epochs, theta, examples['TRAIN'], examples['TEST'], [], bsize)
+  theta = SGD(theta, hyperParams, examples, [], cores)
+  with open(os.path.join(args['out'] ), 'wb') as f:
+    pickle.dump(theta, f, -1)
+
 
 
 def evaluateNW(nw,theta):
