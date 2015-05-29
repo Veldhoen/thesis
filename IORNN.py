@@ -23,7 +23,7 @@ class Node:
       self.children[1].setRelatives(self,self.children[0])
     if len(children)>2:
       print 'Something is rotten'
-    self.setRelatices(None,None)
+    self.setRelatives(None,None)
   def recomputeNW(self, theta):
     try: self.parent.recomputeNW(theta)
     except:
