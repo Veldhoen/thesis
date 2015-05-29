@@ -99,14 +99,16 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
   data = examples['TRAIN']
   nEpochs = hyperParams['nEpochs']
   accuracy = 0.5
-#  accuracy, confusion = evaluate(theta,examples['TEST'],testSample)
-
-  print 'Start SGD training with random minibatches'
+  print 'Start SGD training'
   historical_grad = theta.zeros_like(False)
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
   qPerformance = Queue()
+  p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+  p.start()
+
+
   for i in xrange(nEpochs):
     print 'Iteration', i #,', Performance on test sample:', accuracy
 
@@ -143,15 +145,19 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
     p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
     p.start()
 
+  p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TEST'], qPerformance))
+  p.start()
+
   print 'Training terminated. Computing performance..'
+  print 'Initial Performance on validation set:', accuracy
   i = 0
   while i<nEpochs:
     accuracy, conf = qPerformance.get()
     print 'Iteration', i, ', Performance on validation set:', accuracy
     i+= 1
-  accuracy, confusion = evaluate(theta,examples['TEST'])
+  accuracy, conf = qPerformance.get()
   print 'Eventual performance on test set:', accuracy
-  print confusionString(confusion, relations)
+#  print confusionString(conf, relations)
   return theta
 
 

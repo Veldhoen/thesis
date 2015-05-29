@@ -66,19 +66,16 @@ def main(args):
 
   print 'Starting training...'
   theta = SGD(theta, hyperParams, examples, [], cores)
-  with open(os.path.join(args['out'] ), 'wb') as f:
+  
+  
+  sentence= [(str(s),s.innerA) for s in examples['TEST']]  
+  with open(os.path.join(args['out']+'SENTENCES.pik' ), 'wb') as f:
+    pickle.dump(sentences, f, -1)
+
+
+
+  with open(os.path.join(args['out']+'THETA.pik' ), 'wb') as f:
     pickle.dump(theta, f, -1)
-
-
-
-def evaluateNW(nw,theta):
-  nwords = len(theta['wordIM'])
-
-  for leaf in nw:
-    scores = np.zeros(nwords)
-    for x in xrange(nwords):
-      scores[x] = nw.score(theta,x)
-      ranking = scores.argsort().argsort()[leaf.index]
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train IORNN on a treebank')
