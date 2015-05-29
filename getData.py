@@ -3,6 +3,7 @@ import nltk, re
 import numpy as np
 import random
 import sys
+from collections import defaultdict, Counter
 
 def getSennaEmbs(source, voc = ['UNK']):
   print '\tObtaining embeddings...'
@@ -38,17 +39,19 @@ def storeTrees(name):
     print 'cannot open source', source
     sys.exit()
   examples = {'TRAIN':[],'TEST':[],'TRIAL':[]}
-  vocabulary = set()
+  vocabulary = defaultdict(Counter) #set()
+  rules = defaultdict(Counter)
+  short = 0
   for f in toOpen:
     print f
     with open(f,'r') as f:
       if 'sick' in name: f.next()
       for line in f:
 #        print line
-        try:
-          r = random.randint(0,9)
-          if r<1: kind = 'TEST'
-          elif r<2: kind = 'TRIAL'
+        #try:
+          r = random.randint(0,19)
+          if r<1: kind = 'TRIAL'
+          elif r<5: kind = 'TEST'
           else: kind = 'TRAIN'
           if 'sick' in name:
             bits = line.split('\t')
@@ -61,19 +64,51 @@ def storeTrees(name):
           else:
             ts = [nltk.tree.Tree.fromstring(line)]
             relation = None
+
+          if len(ts[0].leaves())<10:
+            short+=1
+#            print 'short sentence:', ts[0].leaves()
+            continue
+
+          for t in ts:
+            for word, pos in t.pos():
+              word = word.strip('\"').lower()
+#              print word, pos
+              vocabulary[pos][word] += 1
           [nltk.treetransforms.chomsky_normal_form(t) for t in ts]
-          [nltk.treetransforms.collapse_unary(t, collapsePOS = True,collapseRoot = True) for t in ts]
-          if kind == 'TRAIN': vocabulary.update([w.lower() for w in t.leaves() for t in ts])
+          [nltk.treetransforms.collapse_unary(t, collapsePOS = False,collapseRoot = True) for t in ts]
+          #if kind == 'TRAIN': vocabulary.update([w.lower() for w in t.leaves() for t in ts])
+          for t in ts:
+            for prod in t.productions():
+              if prod.is_nonlexical():
+                rules[str(prod.lhs())][str(prod.rhs())]+=1
+
           examples[kind].append(tuple([ts,relation]))
-        except: print line
-  vocabulary = list(vocabulary)
+        #except: print line
+  voc = set()
+  for pos, words in vocabulary.iteritems():
+    voc.add('POS-'+pos) # create a placeholder in the vocabuary for all infrequent words with this POS-tag
+    for word, count in words.iteritems():
+      if count > 3:
+        print word, count
+        voc.add(word)  # add all frequent words to the vocabulary
+
+  vocabulary = list(voc)
   vocabulary.insert(0, 'UNK')
-  print len(vocabulary),'words,', len(examples['TRAIN']),'training examples,', len(examples['TEST']),'test examples.'
+
+#  rules = list(rules.most_common())
+
+  #vocabulary = list(vocabulary)
+  #vocabulary.insert(0, 'UNK')
+  print len(vocabulary),'words,',sum([sum(rules[lhs].values()) for lhs in rules.keys()]),'grammar rules,', len(examples['TRAIN']),'training examples,', len(examples['TRIAL']),'validation examples.', len(examples['TEST']),'test examples.', short, 'sentences with length <10 were discarded.'
+#  print vocabulary
 
   with open(os.path.join('data',name+'TREES.pik'), 'wb') as f:
     pickle.dump(examples, f, -1)
   with open(os.path.join('data',name+'VOC.pik'), 'wb') as f:
     pickle.dump(vocabulary, f, -1)
+  with open(os.path.join('data',name+'RULES.pik'), 'wb') as f:
+    pickle.dump(rules, f, -1)
 
 
 
@@ -88,12 +123,12 @@ def storeTrees(name):
 #   print name
 #   storeTrees(name)
 
-#storeTrees('WSJ')
-names = ['aa','ab','ac','ad','ae','af','ag','ah','ai']
-names = ['BNC/BNC10'+n for n in names]
-for name in names:
-  print name
-  storeTrees(name)
+storeTrees('WSJ')
+# names = ['aa','ab','ac','ad','ae','af','ag','ah','ai']
+# names = ['BNC/BNC10'+n for n in names]
+# for name in names:
+#   print name
+#   storeTrees(name)
 
 
 # with open(os.path.join('data',name+'.pik'),'rb') as f:

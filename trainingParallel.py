@@ -115,14 +115,14 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
     ns.theta = theta
     ns.lamb = hyperParams['lambda']
     random.shuffle(data) # randomly split the data into parts of batchsize
-    for batch in xrange(len(data)//batchsize):
+    for batch in xrange(len(data)//batchsize+1):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
 #      minibatch = random.sample(data, batchsize)
       s = len(minibatch)//cores
 #      processes = []
       q = Queue()
       for j in xrange(cores):
-        p = Process(name='process'+str(j), target=epoch, args=(ns, minibatch[j*s:(j+1)*s],q))
+        p = Process(name='process'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
 #        processes.append(p)
         p.start()
 
@@ -175,11 +175,11 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 #     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
 #   q.put((grads, error/len(examples)))
 
-def epoch(ns, examples, q=None):
+def trainBatch(ns, examples, q=None):
   theta = ns.theta
   lambdaL2 = ns.lamb
   grads = theta.zeros_like()
-  regularization = lambdaL2/2 * theta.norm()**2
+#  regularization = lambdaL2/2 * theta.norm()**2
   error = 0
   for nw in examples:
     dgrads,derror = nw.train(theta)

@@ -23,8 +23,7 @@ class Node:
       self.children[1].setRelatives(self,self.children[0])
     if len(children)>2:
       print 'Something is rotten'
-    self.parent = None
-    self.sibling = None
+    self.setRelatices(None,None)
   def recomputeNW(self, theta):
     try: self.parent.recomputeNW(theta)
     except:
@@ -144,7 +143,7 @@ class Leaf(Node):
     while x == self.index:  x = random.randint(0,nwords-1)
     # if the candidate scores too high: backpropagate error
     scorex = self.score(theta, x, False)
-    c = 1 - scorew+scorex
+    c = max(0,1 - scorew+scorex)
     if c>1:
       delta = np.array([1])
       self.children[0].children[0].backpropOuter(delta, theta, gradients)
