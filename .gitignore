@@ -56,3 +56,5 @@ target/
 # data directories
 data/*
 models/*
+
+psIds.txt
