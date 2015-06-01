@@ -49,7 +49,8 @@ def NAR(theta,testData, amount=1):
     # for such small trees
     if len(leaves)<5: continue
 
-    for leaf in random.sample(leaves,5): # take a random sample of the leaves (for efficiency. Does this make sense?)
+    for leaf in leaves: 
+    #random.sample(leaves,5): # take a random sample of the leaves (for efficiency. Does this make sense?)
       scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
       ranking = np.array(scores).argsort()[::-1].argsort()
       ranks+= ranking[leaf.index]
@@ -95,7 +96,6 @@ def confusionString(confusion, relations):
 
 
 def SGD(theta, hyperParams, examples, relations, cores = 1):
-  testSample = 0.1
   data = examples['TRAIN']
   nEpochs = hyperParams['nEpochs']
 #  accuracy = 0.5
@@ -132,7 +132,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
       for j in xrange(cores):
         (grad, error) = q.get()
-        theta.update(grad,historical_grad,hyperParams['alpha'])
+#        theta.update(grad,hyperParams['alpha'],historical_grad)
+        theta.update(grad,hyperParams['alpha'])
+
         errors.append(error)
 
 

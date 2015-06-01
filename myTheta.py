@@ -59,15 +59,19 @@ class Theta(dict):
     for name in self.keys():
       self[name] = (1- (alpha*lambdaL2)/size)*self[name]
 
-  def update(self, gradient, historicalGradient, alpha):
+  def update(self, gradient, alpha, historicalGradient = None):
 #    print 'updating theta'
     for name in gradient.keys():
 #      print name, 'before:',self[name].shape
       grad = gradient[name]
-      histgrad = historicalGradient[name]
+      if historicalGradient not is None:
+        histgrad = historicalGradient[name]
+      else: histgrad = False
       if sparse.issparse(grad):
-        subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
-        subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
+        if histgrad: 
+          subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
+          subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
+        else: subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
       else:
         histgrad = histgrad + np.square(grad)                    # add the square of the grad to histgrad
         self[name] = self[name] - alpha * grad/(np.sqrt(histgrad)+1e-6)#subtract gradient * alpha/root(histgrad)

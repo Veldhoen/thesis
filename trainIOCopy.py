@@ -68,7 +68,7 @@ def main(args):
   theta = SGD(theta, hyperParams, examples, [], cores)
 
   sentences = []
-  for nw in examples['TEST']
+  for nw in examples['TEST']:
     nw.activateNW(theta)
     sentences.append(([str(l) for l in nw.leaves()],nw.innerA))
 #  sentences= [(str(nw),nw.innerA) for nw in examples['TEST']]
