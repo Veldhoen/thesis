@@ -66,9 +66,15 @@ def main(args):
 
   print 'Starting training...'
   theta = SGD(theta, hyperParams, examples, [], cores)
-  
-  
-  sentence= [(str(s),s.innerA) for s in examples['TEST']]  
+
+  sentences = []
+  for nw in examples['TEST']
+    try: sentences.append(([str(l) for l in nw.leaves()],nw.innerA))
+    except:
+      print 'network not activated?!',nw
+      nw.activateNW(theta)
+      sentences.append(([str(l) for l in nw.leaves()],nw.innerA))
+#  sentences= [(str(nw),nw.innerA) for nw in examples['TEST']]
   with open(os.path.join(args['out']+'SENTENCES.pik' ), 'wb') as f:
     pickle.dump(sentences, f, -1)
 

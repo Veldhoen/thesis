@@ -24,11 +24,12 @@ class Node:
     if len(children)>2:
       print 'Something is rotten'
     self.setRelatives(None,None)
+
   def recomputeNW(self, theta):
     try: self.parent.recomputeNW(theta)
     except:
-      self.inner(theta)
-      self.outer(theta)
+      self.activateNW(theta)
+
   def leaves(self):
     return sum([child.leaves() for child in self.children],[])
 

@@ -17,7 +17,7 @@ def evaluate(theta, testData, amount=1):
     return NAR(theta,testData, amount),None
   else: return accuracy(theta,testData)
 
-def evaluateQueue(theta, testData, amount=1, q = None):
+def evaluateQueue(theta, testData, q = None, amount=1):
   if isinstance(testData[0], IORNN.Node):
     q.put((NAR(theta,testData, amount),None))
   else: q.put(accuracy(theta,testData))
@@ -98,14 +98,14 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
   testSample = 0.1
   data = examples['TRAIN']
   nEpochs = hyperParams['nEpochs']
-  accuracy = 0.5
+#  accuracy = 0.5
   print 'Start SGD training'
   historical_grad = theta.zeros_like(False)
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
   qPerformance = Queue()
-  p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+  p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
   p.start()
 
 
@@ -145,10 +145,11 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
     p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
     p.start()
 
-  p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TEST'], qPerformance))
+  p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance))
   p.start()
 
   print 'Training terminated. Computing performance..'
+  accuracy, conf = qPerformance.get()
   print 'Initial Performance on validation set:', accuracy
   i = 0
   while i<nEpochs:
@@ -158,28 +159,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
   accuracy, conf = qPerformance.get()
   print 'Eventual performance on test set:', accuracy
 #  print confusionString(conf, relations)
+  if not q.empty(): print 'Performance queue is not empty.'
   return theta
 
-
-# def epochPool(theta, examples, lambdaL2, cores):
-#   pool = Pool(processes=cores)
-#   dgrads,errors = zip(*[pool.apply(train,args=(nw,)) for nw in examples])
-#   error = sum(errors)
-#   for dgrads, derror in results
-#
-#   grads = np.zeros_like(theta)
-#   regularization = lambdaL2/2 * thetaNorm(theta)**2
-#   error = 0
-#
-#   for nw in examples:
-#     dgrads,derror = nw.train(theta)
-#     error += derror
-#     for name in grads.dtype.names:
-#       grads[name] += dgrads[name]
-#
-#   for name in grads.dtype.names:
-#     grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
-#   q.put((grads, error/len(examples)))
 
 def trainBatch(ns, examples, q=None):
   theta = ns.theta
