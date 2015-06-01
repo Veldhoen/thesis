@@ -24,12 +24,10 @@ class Node:
     if len(children)>2:
       print 'Something is rotten'
     self.setRelatives(None,None)
-
   def recomputeNW(self, theta):
     try: self.parent.recomputeNW(theta)
     except:
       self.activateNW(theta)
-
   def leaves(self):
     return sum([child.leaves() for child in self.children],[])
 
@@ -113,6 +111,7 @@ class Node:
     self.activateNW(theta)
     error = np.mean([leaf.trainWords(theta, gradients) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
+    print 'nw error:', error
     return gradients,error
 
   def predict(self, theta):
@@ -149,6 +148,7 @@ class Leaf(Node):
       delta = np.array([1])
       self.children[0].children[0].backpropOuter(delta, theta, gradients)
 #    return gradients
+    print 'leaf c:', c
     return c
 
   def leaves(self):
