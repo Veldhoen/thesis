@@ -47,7 +47,7 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
 #  try:  print tree
 #  except: print 'unprintable tree'
   if tree.height() > 2:
-    if len(tree)!=2: 
+    if len(tree)!=2:
       print 'a non-binary tree!', tree
       sys.exit
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
@@ -57,16 +57,17 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
     return parent
   else: #preterminal node
     words = tree.leaves()
-    if len(words)== 1: word = words[0].lower()
+    if len(words)== 1: word = words[0].strip('\"').lower()
     else:
       print 'Not exactly one leaf?!', tree
       word = 'UNK'
     try: index = vocabulary.index(word)
     except:
-      try: 
-        index = vocabulary.index('POS-'+tree.label().split('+')[0])
-        word += '-POS'
-      except: 
+      try:
+        pos = tree.label().split('+')[0]
+        index = vocabulary.index('POS-'+pos)
+        word += '-'+pos
+      except:
         index = 0
         word += '-UNK'
     leaf = IORNN.Leaf('word',index, 'tanh',word)

@@ -64,11 +64,11 @@ class Theta(dict):
     for name in gradient.keys():
 #      print name, 'before:',self[name].shape
       grad = gradient[name]
-      if historicalGradient not is None:
+      if historicalGradient is not None:
         histgrad = historicalGradient[name]
       else: histgrad = False
       if sparse.issparse(grad):
-        if histgrad: 
+        if histgrad:
           subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
           subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
         else: subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
@@ -105,7 +105,7 @@ class Theta(dict):
 def subtractFromDense(denseM,incM, factor = None):
 #  print 'adding sparse to dense. Sparse:', incM.shape,'Dense:', denseM.shape
   if not sparse.issparse(incM):
-    denseM = denseM - incM
+    denseM = denseM - factor.multiply(incM)
 
   elif sparse.isspmatrix_csc(incM):
     rows, columns = incM.nonzero()

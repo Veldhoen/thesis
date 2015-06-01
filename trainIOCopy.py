@@ -13,7 +13,7 @@ def main(args):
   source = args['trees']
   if os.path.isdir(source): toOpen = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
   elif os.path.isfile(source): toOpen = [source]
-  else: 
+  else:
     print source,'is not a file nor a dir'
     sys.exit()
   for f in [n for n in toOpen if 'TREES' in n]:
@@ -65,7 +65,7 @@ def main(args):
 
 
   print 'Starting training...'
-  theta = SGD(theta, hyperParams, examples, [], cores)
+  theta = SGD(theta, hyperParams, examples, [], cores, adagrad = False)
 
   sentences = []
   for nw in examples['TEST']:

@@ -78,29 +78,12 @@ def confusionString(confusion, relations):
   st+= next
   return st
 
-# although the numpy element-wise math operations are more
-# efficient than iterating over the elements, they caused
-# memory issues, especially in the case of the word matrix
-# which has only few non-zero elements
-
-# def updateTheta(theta, gradient,histGradient,alpha):
-#   for name in theta.dtype.names:
-#     grad = gradient[name]
-#     nz = np.nonzero(grad)
-#     if len(nz[0]) == 0: continue
-#     histGrad = histGradient[name]
-#     for i in np.nditer(nz):
-#       histGrad[i] += np.square(grad[i])
-#       theta[name][i] += alpha * grad[i]/(np.sqrt(histGrad[i])+1e-6) # should be += rather than -=, right?!
-
-
-
-def SGD(theta, hyperParams, examples, relations, cores = 1):
+def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   data = examples['TRAIN']
   nEpochs = hyperParams['nEpochs']
 #  accuracy = 0.5
   print 'Start SGD training'
-  historical_grad = theta.zeros_like(False)
+  if adagrad: historical_grad = theta.zeros_like(False)
   if hyperParams['bSize']: batchsize =hyperParams['bSize']
   else: batchsize = len(data)
 #  while not converged:
@@ -114,13 +97,13 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
 
     mgr = Manager()
     ns = mgr.Namespace()
-    ns.theta = theta
     ns.lamb = hyperParams['lambda']
     random.shuffle(data) # randomly split the data into parts of batchsize
-    for batch in xrange(len(data)//batchsize+1):
+    for batch in xrange((len(data)+batchsize-1)//batchsize):
+      ns.theta = theta
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
 #      minibatch = random.sample(data, batchsize)
-      s = len(minibatch)//cores
+      s = (len(minibatch)+cores-1)//cores
 #      processes = []
       q = Queue()
       for j in xrange(cores):
@@ -132,8 +115,8 @@ def SGD(theta, hyperParams, examples, relations, cores = 1):
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
       for j in xrange(cores):
         (grad, error) = q.get()
-#        theta.update(grad,hyperParams['alpha'],historical_grad)
-        theta.update(grad,hyperParams['alpha'])
+        if adagrad: theta.update(grad,hyperParams['alpha'],historical_grad)
+        else: theta.update(grad,hyperParams['alpha'])
 
         errors.append(error)
 

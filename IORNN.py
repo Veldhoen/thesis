@@ -137,18 +137,18 @@ class Leaf(Node):
 
   def trainWords(self, theta, gradients, target = None):
     nwords = len(theta[self.cat+'IM'])
-    scorew = self.score(theta, False)
+    scorew = self.score(theta, False)[0]
     # pick a candidate x different from own index
     x = self.index
     while x == self.index:  x = random.randint(0,nwords-1)
     # if the candidate scores too high: backpropagate error
-    scorex = self.score(theta, x, False)
+    scorex = self.score(theta, x, False)[0]
     c = max(0,1 - scorew+scorex)
     if c>1:
       delta = np.array([1])
       self.children[0].children[0].backpropOuter(delta, theta, gradients)
 #    return gradients
-    print 'leaf c:', c
+    if c>2: print 'leaf c:', c, self.word
     return c
 
   def leaves(self):
