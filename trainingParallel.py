@@ -17,12 +17,12 @@ def evaluate(theta, testData, amount=1):
     return NAR(theta,testData, amount),None
   else: return accuracy(theta,testData)
 
-def evaluateQueue(theta, testData, q = None, amount=1):
+def evaluateQueue(theta, testData, q = None, amount=1, description = ''):
   if isinstance(testData[0], IORNN.Node):
     nar = NAR(theta,testData, amount)
     print 'Performance report:', nar
-    q.put((nar,None))
-  else: q.put(accuracy(theta,testData))
+    q.put((description, (nar,None)))
+  else: q.put((description, accuracy(theta,testData)))
 
 def accuracy(theta, testData):
   true = 0
@@ -91,7 +91,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 #  while not converged:
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+  p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
   pPs.append(p)
   p.start()
 
@@ -116,8 +116,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
         p.start()
 
       # wait or all worker processes to finish
-      for p in trainPs:
-        p.join()
+      for p in trainPs: p.join()
 
       errors = []
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
@@ -126,41 +125,25 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
         if grad is None: continue
         if adagrad: theta.update(grad,hyperParams['alpha'],historical_grad)
         else: theta.update(grad,hyperParams['alpha'])
-
         errors.append(error)
 
-
-
-
-#      grad, error = epoch(theta, minibatch, lambdaL2)
-#      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
 
-    for p in pPs: p.join()
-    # wait for earlier evalations to finish
-    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Iteration '+ str(i)+', Performance on validation set:'))
     pPs.append(p)
     p.start()
 
-  for p in pPs:
-    p.join()
 
-  p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance))
+  p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
   p.start()
 
-  print 'Training terminated. Computing performance..'
-  accuracy, conf = qPerformance.get()
-  print 'Initial Performance on validation set:', accuracy
-  i = 0
-  while i<nEpochs:
-    accuracy, conf = qPerformance.get()
-    print 'Iteration', i, ', Performance on validation set:', accuracy
-    i+= 1
-  accuracy, conf = qPerformance.get()
-  print 'Eventual performance on test set:', accuracy
-#  print confusionString(conf, relations)
-  if not q.empty(): print 'Performance queue is not empty.'
+  while not qPerformance.empty:
+    description, (accuracy, confusion) = qPerformance.get()
+    print description, accuracy
+
+  for p in pPs: p.join()  # make sure all subprocesses are properly terminated
+
   return theta
 
 
