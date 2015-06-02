@@ -20,7 +20,6 @@ def evaluate(theta, testData, amount=1):
 def evaluateQueue(theta, testData, q = None, amount=1, description = ''):
   if isinstance(testData[0], IORNN.Node):
     nar = NAR(theta,testData, amount)
-    print 'Performance report:', nar
     q.put((description, (nar,None)))
   else: q.put((description, accuracy(theta,testData)))
 

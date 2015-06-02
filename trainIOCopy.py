@@ -51,8 +51,8 @@ def main(args):
       dims['word'] = len(V[0])
     else:
       V = None
-      dims['word'] = args['outside']
-
+      dims['word'] = args['word']
+    
 
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
