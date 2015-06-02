@@ -121,7 +121,7 @@ class Node:
       scorex = leaf.score(theta, x, False)[0]
       summedC += max(0,1 - scorew+scorex)
     return summedC
-     
+
   def predict(self, theta):
     return max([c.predict(theta) for c in self.children])
 
@@ -224,7 +224,7 @@ def numericalGradient(theta, nw, target = None):
   epsilon = 0.0001
   numgrad = theta.zeros_like(False)
   score0 = nw.score(theta)
-  for name in theta.keys:
+  for name in theta.keys():
   # create an iterator to iterate over the array, no matter its shape
       it = np.nditer(theta[name], flags=['multi_index'])
       while not it.finished:

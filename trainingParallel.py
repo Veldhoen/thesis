@@ -19,7 +19,9 @@ def evaluate(theta, testData, amount=1):
 
 def evaluateQueue(theta, testData, q = None, amount=1):
   if isinstance(testData[0], IORNN.Node):
-    q.put((NAR(theta,testData, amount),None))
+    nar = NAR(theta,testData, amount)
+    print 'Performance report:', nar
+    q.put((nar,None))
   else: q.put(accuracy(theta,testData))
 
 def accuracy(theta, testData):
@@ -49,7 +51,7 @@ def NAR(theta,testData, amount=1):
     # for such small trees
     if len(leaves)<5: continue
 
-    for leaf in leaves: 
+    for leaf in leaves:
     #random.sample(leaves,5): # take a random sample of the leaves (for efficiency. Does this make sense?)
       scores = [leaf.score(theta,x,False)[0] for x in xrange(nwords)]
       ranking = np.array(scores).argsort()[::-1].argsort()
@@ -88,7 +90,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   else: batchsize = len(data)
 #  while not converged:
   qPerformance = Queue()
+  pPs = []
   p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+  pPs.append(p)
   p.start()
 
 
@@ -104,17 +108,22 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
 #      minibatch = random.sample(data, batchsize)
       s = (len(minibatch)+cores-1)//cores
-#      processes = []
+      trainPs = []
       q = Queue()
       for j in xrange(cores):
-        p = Process(name='process'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
-#        processes.append(p)
+        p = Process(name='epoch'+str(i)+'minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
+        trainPs.append(p)
         p.start()
+
+      # wait or all worker processes to finish
+      for p in trainPs:
+        p.join()
 
       errors = []
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
       for j in xrange(cores):
         (grad, error) = q.get()
+        if grad is None: continue
         if adagrad: theta.update(grad,hyperParams['alpha'],historical_grad)
         else: theta.update(grad,hyperParams['alpha'])
 
@@ -127,8 +136,15 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 #      updateTheta(theta, grad,historical_grad,alpha)
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
+
+    for p in pPs: p.join()
+    # wait for earlier evalations to finish
     p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance))
+    pPs.append(p)
     p.start()
+
+  for p in pPs:
+    p.join()
 
   p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance))
   p.start()
@@ -149,17 +165,22 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 
 
 def trainBatch(ns, examples, q=None):
-  theta = ns.theta
-  lambdaL2 = ns.lamb
-  grads = theta.zeros_like()
-#  regularization = lambdaL2/2 * theta.norm()**2
-  error = 0
-  for nw in examples:
-    dgrads,derror = nw.train(theta)
-    error+= derror
-    for name in grads.keys():
-      grads[name] = grads[name] + dgrads[name]/len(examples)
+  if len(examples)>0:
+    theta = ns.theta
+    lambdaL2 = ns.lamb
+    grads = theta.zeros_like()
+  #  regularization = lambdaL2/2 * theta.norm()**2
+    error = 0
+    for nw in examples:
+      dgrads,derror = nw.train(theta)
+      error+= derror
+      for name in grads.keys():
+        grads[name] = grads[name] + dgrads[name]/len(examples)
 
-#  for name in grads.keys():
-#    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
-  q.put((grads, error/len(examples)))
+  #  for name in grads.keys():
+  #    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
+    q.put((grads, error/len(examples)))
+  else:
+    print 'Batch with no training examples?!'
+    q.put((None,None))
+
