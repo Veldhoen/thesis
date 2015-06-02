@@ -114,6 +114,14 @@ class Node:
     print 'nw error:', error
     return gradients,error
 
+  def score(self,theta, x=15):
+    summedC = 0
+    for leaf in self.leaves():
+      scorew = leaf.score(theta, -1, False)[0]
+      scorex = leaf.score(theta, x, False)[0]
+      summedC += max(0,1 - scorew+scorex)
+    return summedC
+     
   def predict(self, theta):
     return max([c.predict(theta) for c in self.children])
 
@@ -179,26 +187,6 @@ class Leaf(Node):
       return scores.index(max(scores))
     else: return None
 
-  def numericalGradient(theta, nw, target = None):
-  #  print 'numgrad', theta.dtype.names
-    epsilon = 0.0001
-    numgrad = np.zeros_like(theta)
-    score0 = nw.score(theta)
-    for name in theta.dtype.names:
-    # create an iterator to iterate over the array, no matter its shape
-        it = np.nditer(theta[name], flags=['multi_index'])
-        while not it.finished:
-          i = it.multi_index
-          old = theta[name][i]
-          theta[name][i] = old + epsilon
-          errorPlus = max(0,1-score0+nw.score(theta))
-          theta[name][i] = old - epsilon
-          errorMin = max(0,1-score0+nw.score(theta))
-          d =(errorPlus-errorMin)/(2*epsilon)
-          numgrad[name][i] = d
-          theta[name][i] = old  # restore theta
-          it.iternext()
-    return numgrad
 
   def inner(self, theta):
     if self.cat == 'rel': print 'Leaf.inner', self.cat, self.index
@@ -231,3 +219,23 @@ class Leaf(Node):
 
 
 
+def numericalGradient(theta, nw, target = None):
+#  print 'numgrad', theta.dtype.names
+  epsilon = 0.0001
+  numgrad = theta.zeros_like(False)
+  score0 = nw.score(theta)
+  for name in theta.keys:
+  # create an iterator to iterate over the array, no matter its shape
+      it = np.nditer(theta[name], flags=['multi_index'])
+      while not it.finished:
+        i = it.multi_index
+        old = theta[name][i]
+        theta[name][i] = old + epsilon
+        errorPlus = max(0,1-score0+nw.score(theta))
+        theta[name][i] = old - epsilon
+        errorMin = max(0,1-score0+nw.score(theta))
+        d =(errorPlus-errorMin)/(2*epsilon)
+        numgrad[name][i] = d
+        theta[name][i] = old  # restore theta
+        it.iternext()
+  return numgrad

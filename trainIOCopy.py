@@ -90,8 +90,8 @@ if __name__ == "__main__":
   parser.add_argument('-p','--pars', type=str, help='File with pickled theta to initialize with', required=False)
   # network hyperparameters:
   parser.add_argument('-din','--inside', type=int, help='Dimensionality of inside representations', required=False)
-  parser.add_argument('-dwrd','--outside', type=int, help='Dimensionality of leaves (word nodes)', required=False)
-  parser.add_argument('-dout','--word', type=int, help='Dimensionality of outside representations', required=False)
+  parser.add_argument('-dwrd','--word', type=int, help='Dimensionality of leaves (word nodes)', required=False)
+  parser.add_argument('-dout','--outside', type=int, help='Dimensionality of outside representations', required=False)
   # training hyperparameters:
   parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs to train', required=True)
   parser.add_argument('-b','--bSize', type=int, default = 0, help='Batch size for minibatch training', required=False)
