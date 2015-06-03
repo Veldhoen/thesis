@@ -17,7 +17,7 @@ def evaluate(theta, testData, amount=1):
     return NAR(theta,testData, amount),None
   else: return accuracy(theta,testData)
 
-def evaluateQueue(theta, testData, q = None, amount=1, description = ''):
+def evaluateQueue(theta, testData, q = None, description = '', amount=1):
   if isinstance(testData[0], IORNN.Node):
     nar = NAR(theta,testData, amount)
     q.put((description, (nar,None)))
@@ -105,6 +105,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
     for batch in xrange((len(data)+batchsize-1)//batchsize):
       ns.theta = theta
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
+      print 'minibatch size:',len(minibatch)
 #      minibatch = random.sample(data, batchsize)
       s = (len(minibatch)+cores-1)//cores
       trainPs = []
