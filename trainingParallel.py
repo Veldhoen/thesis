@@ -134,16 +134,18 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
     pPs.append(p)
     p.start()
 
+  print 'Computing performance...',len(pPs)
 
   p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
+  pPs.append(p)
   p.start()
+  for p in pPs: p.join()  # make sure all subprocesses are properly terminated
 
-  while not qPerformance.empty:
+  while not qPerformance.empty():
     description, (accuracy, confusion) = qPerformance.get()
     print description, accuracy
 
-  for p in pPs: p.join()  # make sure all subprocesses are properly terminated
-
+  print 'End of training.'
   return theta
 
 

@@ -10,6 +10,7 @@ import myTheta
 
 def main(args):
   # get treebank
+  print 'Loading treebank.'
   source = args['trees']
   if os.path.isdir(source): toOpen = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
   elif os.path.isfile(source): toOpen = [source]
@@ -20,6 +21,7 @@ def main(args):
     with open(f, 'rb') as f:
       examples = pickle.load(f)
   # get vocabulary
+  print 'Loading vocabulary.'
   source = args['voc']
   if os.path.isdir(source): toOpen = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
   elif os.path.isfile(source): toOpen = [source]
@@ -31,12 +33,16 @@ def main(args):
   for f in [n for n in toOpen if 'VOC' in n ]:
     with open(f, 'rb') as f: vocabulary.update(pickle.load(f))
   vocabulary = list(vocabulary)
+
   # create networks
+  print 'Initializing networks.'
   for kind, trees in examples.iteritems():
     for i in xrange(len(trees)):
       examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary)
   print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TEST']), 'test examples.'
 
+  # initialize theta
+  print 'Initializing theta.'
   if args['pars']:
     with open(args['pars'], 'rb') as f:
       theta = pickle.load(f)
@@ -52,21 +58,28 @@ def main(args):
     else:
       V = None
       dims['word'] = args['word']
-    
+
 
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
     theta = myTheta.Theta('IORNN', dims, V)
-    print 'Initialized theta.'
 
+  for dim, value in dims.iteritems():
+    print dim, '-' , value
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
   cores = args['cores']
+  for param, value in hyperParams.iteritems():
+    print param, '-' ,value
+  print 'number of cores -', cores
 
 
-  print 'Starting training...'
+
+  print 'Start training...'
   theta = SGD(theta, hyperParams, examples, [], cores, adagrad = False)
 
+  
+  print 'Writing model to file.'
   sentences = []
   for nw in examples['TEST']:
     nw.activateNW(theta)

@@ -102,16 +102,17 @@ class Node:
     [child.outer(theta) for child in self.children]
 #    return self.outerA
 
-  def train(self, theta, target = None, gradients = None):
+  def train(self, theta, gradients = None, target = None):
 #    if gradients is None: gradients = np.zeros_like(theta)
 #    print 'start training'
     if gradients is None:
       gradients = theta.zeros_like() #sparse.csc_from_dense(np.zeros_like(theta))
 #      print 'created sparse matrix'
     self.activateNW(theta)
-    error = np.mean([leaf.trainWords(theta, gradients) for leaf in self.leaves()])
+    error = np.mean([leaf.trainWords(theta, gradients,target) for leaf in self.leaves()])
 #    [child.train(theta, None, gradients) for child in self.children]
-    print 'nw error:', error
+    if error>2: print 'nw error:', error
+
     return gradients,error
 
   def score(self,theta, x=15):
@@ -144,11 +145,15 @@ class Leaf(Node):
     self.word = word
 
   def trainWords(self, theta, gradients, target = None):
+
     nwords = len(theta[self.cat+'IM'])
     scorew = self.score(theta, False)[0]
     # pick a candidate x different from own index
-    x = self.index
-    while x == self.index:  x = random.randint(0,nwords-1)
+
+    if target is None:
+      x = self.index
+      while x == self.index:  x = random.randint(0,nwords-1)
+    else: x = target
     # if the candidate scores too high: backpropagate error
     scorex = self.score(theta, x, False)[0]
     c = max(0,1 - scorew+scorex)
@@ -220,11 +225,13 @@ class Leaf(Node):
 
 
 def numericalGradient(theta, nw, target = None):
+  print 'Computing numerical gradient.'
 #  print 'numgrad', theta.dtype.names
   epsilon = 0.0001
   numgrad = theta.zeros_like(False)
   score0 = nw.score(theta)
   for name in theta.keys():
+    print '\t',name
   # create an iterator to iterate over the array, no matter its shape
       it = np.nditer(theta[name], flags=['multi_index'])
       while not it.finished:
