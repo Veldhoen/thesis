@@ -10,7 +10,7 @@ class Theta(dict):
     else:
       if dims is None: print 'no dimensions for initialization of theta'
       elif style == 'IORNN': self.forIORNN(dims,embeddings)
-      elif style == 'IORNN': self.forIORNN(dims,embeddings)
+      elif style == 'RNN': self.forRNN(dims,embeddings)
       else:
         print 'style not supported for theta initialization:', style
         sys.exit()
@@ -28,7 +28,7 @@ class Theta(dict):
     self.newMatrix('compositionOM',None,(din,2*din))
     self.newMatrix('compositionOB',None,(din))
     self.newMatrix('wordIM',embeddings,(nwords,dwords))
-    self.newMatrix('wordIB', None,(dwords))
+    self.newMatrix('wordIB', None,(dwords))  # in principle, this is never used, unless a leaf is a top node
     self.newMatrix('wordOM', None,(2*din,2*din))
     self.newMatrix('wordOB', None,(2*din))
     self.newMatrix('uOM', None,(1,2*din))

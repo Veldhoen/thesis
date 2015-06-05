@@ -1,7 +1,7 @@
 from __future__ import division
 
 import sys, os, re
-from nltk import tree
+#from nltk import tree
 from collections import defaultdict
 import numpy as np
 import random
@@ -19,7 +19,7 @@ def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
     else: cat = 'composition'
     children = [rnnFromTree(child,vocabulary,wordReduction) for child in tree]
-    return NN.Node(children,cat,'tanh')
+    return NN.Node(children,cat,'sigmoid')
   else: #preterminal node
     words = tree.leaves()
     if len(words)== 1: word = words[0]
@@ -33,15 +33,15 @@ def rnnFromTree(tree, vocabulary, wordReduction = False, grammarBased = False):
     # to the dimensionality of the inner representations
       if grammarBased: cat = tree.label()
       else: cat = 'preterminal'
-      return NN.Node([leaf],cat,'tanh')
+      return NN.Node([leaf],cat,'sigmoid')
     else: return leaf
 
 def glueNW(trees,rel,reli,voc):
   nws = [iornnFromTree(t, voc) for t in trees]
-  relLeaf = IORNN.Leaf('rel',reli, 'tanh',rel)
+  relLeaf = IORNN.Leaf('rel',reli, 'sigmoid',rel)
   cat = 'composition'
-  im = IORNN.Node([nws[0],relLeaf],cat,'tanh','tanh')
-  return IORNN.Node([im,nws[1]],cat,'tanh','tanh')
+  im = IORNN.Node([nws[0],relLeaf],cat,'sigmoid','sigmoid')
+  return IORNN.Node([im,nws[1]],cat,'sigmoid','sigmoid')
 
 def iornnFromTree(tree, vocabulary, grammarBased = False):
 #  try:  print tree
@@ -53,7 +53,7 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
     if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
     else: cat = 'composition'
     children = [iornnFromTree(child,vocabulary, grammarBased) for child in tree]
-    parent = IORNN.Node(children,cat,'tanh','tanh')
+    parent = IORNN.Node(children,cat,'sigmoid','sigmoid')
     return parent
   else: #preterminal node
     words = tree.leaves()
@@ -70,7 +70,7 @@ def iornnFromTree(tree, vocabulary, grammarBased = False):
       except:
         index = 0
         word += '-UNK'
-    leaf = IORNN.Leaf('word',index, 'tanh',word)
+    leaf = IORNN.Leaf('word',index, 'sigmoid',word)
     return leaf
 
 def printParams():

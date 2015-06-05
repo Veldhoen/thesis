@@ -65,8 +65,8 @@ def main(args):
     dims['nwords']=len(vocabulary)
     theta = myTheta.Theta('IORNN', dims, V)
 
-  for dim, value in dims.iteritems():
-    print dim, '-' , value
+    for dim, value in dims.iteritems():
+      print dim, '-' , value
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
   cores = args['cores']
   for param, value in hyperParams.iteritems():
@@ -89,6 +89,8 @@ def main(args):
     pickle.dump(sentences, f, -1)
 
 
+  with open(os.path.join(args['out']+'VOC.pik' ), 'wb') as f:
+    pickle.dump(vocabulary, f, -1)
 
   with open(os.path.join(args['out']+'THETA.pik' ), 'wb') as f:
     pickle.dump(theta, f, -1)
