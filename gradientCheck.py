@@ -3,27 +3,28 @@ from nltk import tree
 import myTheta
 import numpy as np
 from scipy import sparse
+import sys
 
 def gradientCheck(theta, network, target):
-  network.activateNW(theta)
+  #network.activateNW(theta)
 
   # compute analyticial and numerical gradient
   #grad = network.backprop(theta, target)
   print 'computing analytical gradient'
   grad, err = network.train(theta, None, target)
-
 #   if err<=1:
 #     print 'no backpropagation.'
 #     return
-  print 'computing numerical gradient'
+#  print 'computing numerical gradient'
   numgrad = network.numericalGradient(theta,target)
 
 
 
 
-  print 'comparing'
+  print 'Comparing analytical numerical gradient'
   # flatten gradient objects and report difference
   gradflat = np.array([])
+
   numgradflat = np.array([])
   for name in theta.keys():
     ngr = np.reshape(numgrad[name],-1)
@@ -35,7 +36,7 @@ def gradientCheck(theta, network, target):
     if False:#'composition'in name: #diff>0:
       print 'gr\t\tngr\t\td'
       for i in range(len(gr)):
-        print str(gr[i])+'\t'+str(ngr[i])+'\t'+str(gr[i]-ngr[i])
+        print str(gr[i])+'\t'+str(ngr[i])+'\t'+str(abs((gr[i]-ngr[i])/(gr[i]+ngr[i])))
     gradflat = np.append(gradflat,gr)
     numgradflat = np.append(numgradflat,ngr)
   print 'Difference overall:', np.linalg.norm(numgradflat-gradflat)/(np.linalg.norm(numgradflat)+np.linalg.norm(gradflat))
@@ -47,13 +48,13 @@ def checkIORNN():
   dims = {'inside':d,'outside':d,'word':d,'nwords':len(voc)}
   theta = myTheta.Theta('IORNN', dims)
 
-#  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
+  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
 #  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
-  s = '(NP (Q most) (N hippos))'
+#  s = '(NP (Q most) (N hippos))'
 #  s = '(Q most)'
   t = tree.Tree.fromstring(s)
   nw = nl.iornnFromTree(t, voc, grammarBased = False)
-  nw.activateNW(theta)
+#  nw.activateNW(theta)
   gradientCheck(theta, nw, 0)
 
 checkIORNN()

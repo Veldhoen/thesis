@@ -25,13 +25,12 @@ class Theta(dict):
   #  self.newMatrix('preterminalB',None,(din))
     self.newMatrix('compositionIM',None,(din,2*din))
     self.newMatrix('compositionIB',None,(din))
-    self.newMatrix('compositionOM',None,(din,2*din))
-    self.newMatrix('compositionOB',None,(din))
+    self.newMatrix('compositionOM',None,(dout,din+dout))
+    self.newMatrix('compositionOB',None,(dout))
     self.newMatrix('wordIM',embeddings,(nwords,dwords))
-    self.newMatrix('wordIB', None,(dwords))  # in principle, this is never used, unless a leaf is a top node
-    self.newMatrix('wordOM', None,(2*din,2*din))
-    self.newMatrix('wordOB', None,(2*din))
-    self.newMatrix('uOM', None,(1,2*din))
+    self.newMatrix('wordOM', None,(dout,din+dout))
+    self.newMatrix('wordOB', None,(dout))
+    self.newMatrix('uOM', None,(1,dout))
     self.newMatrix('uOB',None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
 
@@ -49,8 +48,8 @@ class Theta(dict):
 
   def newMatrix(self, name,M= None, size = (0,0)):
     if M is not None: self[name] = M
-    elif isinstance(size, (int,long)): self[name] = np.random.rand(size)*.02-.01
-    elif len(size) == 2: self[name] = np.random.rand(size[0],size[1])*.02-.01
+    elif isinstance(size, (int,long)): self[name] = np.random.rand(size)*.2-.1
+    elif len(size) == 2: self[name] = np.random.rand(size[0],size[1])*.2-.1
     else:
       print 'problem in newMatrix', name, M, size
       sys.exit()
