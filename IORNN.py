@@ -111,9 +111,6 @@ class Node:
 #    print 'node.outer', self.cat
 #    print 'outer called for:', self,  'of cat', self.cat
     if not self.parent:
-#      size = np.size(theta[self.cat+'OB'])
-#      self.outerZ = np.random.rand(size)*0.2-0.1
-
       self.outerZ = np.zeros_like(theta[self.cat+'OB'])
     else:
       if self.sibling: inputsignal = np.concatenate([self.parent.outerA,self.sibling.innerA])
@@ -128,7 +125,7 @@ class Node:
 
   def train(self, theta, gradients = None, target = None):
 #    if gradients is None: gradients = np.zeros_like(theta)
-    print 'network',self,'start training with target', target
+#    print 'network',self,'start training with target', target
     if gradients is None:
       gradients = theta.zeros_like()
     self.activateNW(theta)
@@ -285,7 +282,7 @@ class Leaf(Node):
 #    print delta.shape, d
     deltaM = sparse.csc_matrix((delta,(row,col)),shape=np.shape(theta[self.cat+'IM']))
 #    deltaM = np.zeros_like(theta['wordIM'])
-    deltaM[self.index] = delta
+#    deltaM[self.index] = delta
     gradients[self.cat+'IM'] = gradients[self.cat+'IM']+(deltaM)
 
   def __str__(self):

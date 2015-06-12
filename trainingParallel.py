@@ -90,13 +90,20 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 #  while not converged:
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
-  pPs.append(p)
-  p.start()
+
+  if cores<2: #don't start a subprocess
+      evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')
+      while not qPerformance.empty():
+        description, (accuracy, confusion) = qPerformance.get()
+        print description, accuracy
+    else:
+      p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
+      pPs.append(p)
+      p.start()
 
 
   for i in xrange(nEpochs):
-    print 'Iteration', i #,', Performance on test sample:', accuracy
+    print 'Epoch', i #,', Performance on test sample:', accuracy
 
     mgr = Manager()
     ns = mgr.Namespace()
@@ -110,13 +117,16 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       s = (len(minibatch)+cores-1)//cores
       trainPs = []
       q = Queue()
-      for j in xrange(cores):
-        p = Process(name='epoch'+str(i)+'minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
-        trainPs.append(p)
-        p.start()
 
-      # wait or all worker processes to finish
-      for p in trainPs: p.join()
+      if cores<2: trainBatch(ns, minibatch,q) #don't start a subprocess
+      else:
+        for j in xrange(cores):
+          p = Process(name='epoch'+str(i)+'minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
+          trainPs.append(p)
+          p.start()
+
+        # wait or all worker processes to finish
+        for p in trainPs: p.join()
 
       errors = []
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
@@ -130,16 +140,28 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
 
-    p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Iteration '+ str(i)+', Performance on validation set:'))
-    pPs.append(p)
-    p.start()
+    if cores<2: trainBatch(ns, minibatch,q) #don't start a subprocess
+      evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')
+      while not qPerformance.empty():
+        description, (accuracy, confusion) = qPerformance.get()
+        print description, accuracy
+    else:
+      p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:'))
+      pPs.append(p)
+      p.start()
 
   print 'Computing performance...',len(pPs)
 
-  p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
-  pPs.append(p)
-  p.start()
-  for p in pPs: p.join()  # make sure all subprocesses are properly terminated
+  if cores<2: trainBatch(ns, minibatch,q) #don't start a subprocess
+    evaluateQueue(theta, examples['TEST'], qPerformance,'Eventual performance on test set:')
+    while not qPerformance.empty():
+      description, (accuracy, confusion) = qPerformance.get()
+      print description, accuracy
+  else:
+    p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
+    pPs.append(p)
+    p.start()
+    for p in pPs: p.join()  # make sure all subprocesses are properly terminated
 
   while not qPerformance.empty():
     description, (accuracy, confusion) = qPerformance.get()
@@ -164,7 +186,7 @@ def trainBatch(ns, examples, q=None):
 
   #  for name in grads.keys():
   #    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
-    q.put((grads, error/len(examples)))
+    else: q.put((grads, error/len(examples)))
   else:
     print 'Batch with no training examples?!'
     q.put((None,None))
