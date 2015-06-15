@@ -43,16 +43,23 @@ def glueNW(trees,rel,reli,voc):
   im = IORNN.Node([nws[0],relLeaf],cat,'sigmoid','sigmoid')
   return IORNN.Node([im,nws[1]],cat,'sigmoid','sigmoid')
 
-def iornnFromTree(tree, vocabulary, grammarBased = False):
+def iornnFromTree(tree, vocabulary, grammar= None):
 #  try:  print tree
 #  except: print 'unprintable tree'
   if tree.height() > 2:
     if len(tree)!=2:
       print 'a non-binary tree!', tree
       sys.exit
-    if grammarBased: cat = tree.label()+' -> '+' '.join([child.label() for child in tree])
-    else: cat = 'composition'
-    children = [iornnFromTree(child,vocabulary, grammarBased) for child in tree]
+    cat = 'composition'
+    if grammar:
+      lhs = tree.label()
+      rhs = '('+ ', '.join([child.label() for child in tree])+')'
+      rule = lhs+'->'+rhs
+      if rule in grammar[0]:
+        cat += rule
+      elif head in grammar[1]:
+        cat += head
+    children = [iornnFromTree(child,vocabulary, grammar) for child in tree]
     parent = IORNN.Node(children,cat,'sigmoid','sigmoid')
     return parent
   else: #preterminal node

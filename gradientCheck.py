@@ -44,12 +44,12 @@ def gradientCheck(theta, network, target):
 def checkIORNN():
   voc = ['UNK','most','large', 'hippos','bark','chase','dogs']
 #  voc = ['UNK','most','hippos']
-  d = 3
+  d = 15
   dims = {'inside':d,'outside':d,'word':d,'nwords':len(voc)}
   theta = myTheta.Theta('IORNN', dims)
 
-  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
-#  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
+#  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
+  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
 #  s = '(NP (Q most) (N hippos))'
 #  s = '(Q most)'
   t = tree.Tree.fromstring(s)

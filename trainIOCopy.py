@@ -7,8 +7,25 @@ import pickle
 import argparse
 import naturalLogicCopy as naturalLogic
 import myTheta
+from collections import Counter
+
+def getGrammar(rules,n=400):
+  # rules is a (default)dict with the LHS as key and of Counters of RHS's
+  # get the n most frequent rules:
+
+  rulesC = Counter()
+  lhss = Counter()
+  for LHS, RHSS in rules.iteritems():
+    lhss[LHS] = sum(RHSS.values())
+    for RHS, count in RHSS.iteritems():
+      rulesC[LHS+'->'+RHS]=count
+  if n<1: n = len(rulesC)
+  grammar = [rule for rule, count in rulesC.most_common(n)]
+  heads = [lhs for lhs, count in lhss.most_common(n)]
+  return grammar, heads
 
 def main(args):
+  print 'Start part of experiment '+ args['experiment']
   # get treebank
   print 'Loading treebank.'
   source = args['trees']
@@ -33,6 +50,15 @@ def main(args):
   for f in [n for n in toOpen if 'VOC' in n ]:
     with open(f, 'rb') as f: vocabulary.update(pickle.load(f))
   vocabulary = list(vocabulary)
+
+  
+  # get grammar
+  if args['grammar']:
+    with open(args['grammar'], 'rb') as f:
+      rules = pickle.load(f)
+      grammar = getGrammar(rules,n=400)
+  else:
+    grammar = None
 
   # create networks
   print 'Initializing networks.'
@@ -63,7 +89,7 @@ def main(args):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('IORNN', dims, V)
+    theta = myTheta.Theta('IORNN', dims, V, grammar)
 
     for dim, value in dims.iteritems():
       print dim, '-' , value
@@ -98,9 +124,11 @@ def main(args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train IORNN on a treebank')
   # data:
+  parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)
   parser.add_argument('-t','--trees', type=str, help='File or directory with pickled treebank', required=True)
   parser.add_argument('-v','--voc', type=str, help='File with pickled vocabulary', required=True)
   parser.add_argument('-e','--emb', type=str, help='File with pickled embeddings', required=False)
+  parser.add_argument('-g','--grammar', type=str, help='File with pickled grammar', required=False)
   parser.add_argument('-o','--out', type=str, help='Output file to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, help='File with pickled theta to initialize with', required=False)
   # network hyperparameters:

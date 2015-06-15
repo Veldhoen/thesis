@@ -1,21 +1,21 @@
-from theano import tensor#, sparse
+#from theano import tensor#, sparse
 import numpy as np
 import sys
 from scipy import sparse
 
 class Theta(dict):
 
-  def __init__(self, style=None, dims=None, embeddings = None):
+  def __init__(self, style=None, dims=None, embeddings = None, grammar = None):
     if style is None: True
     else:
       if dims is None: print 'no dimensions for initialization of theta'
-      elif style == 'IORNN': self.forIORNN(dims,embeddings)
+      elif style == 'IORNN': self.forIORNN(dims,embeddings,grammar)
       elif style == 'RNN': self.forRNN(dims,embeddings)
       else:
         print 'style not supported for theta initialization:', style
         sys.exit()
 
-  def forIORNN(self, dims, embeddings = None):
+  def forIORNN(self, dims, embeddings = None, grammar = None):
     dwords = dims['word']
     din = dims['inside']
     dout = dims['outside']
@@ -25,11 +25,26 @@ class Theta(dict):
   #  self.newMatrix('preterminalB',None,(din))
     self.newMatrix('compositionIM',None,(din,2*din))
     self.newMatrix('compositionIB',None,(din))
-    self.newMatrix('compositionOM',None,(dout,din+dout))
-    self.newMatrix('compositionOB',None,(dout))
+    self.newMatrix('compositionLOM',None,(dout,din+dout))
+    self.newMatrix('compositionLOB',None,(dout))
+    self.newMatrix('compositionROM',None,(dout,din+dout))
+    self.newMatrix('compositionROB',None,(dout))
+    if grammar:
+      rules = grammar[0]
+      heads = grammar[1]
+      for rule in rules+heads:
+        self.newMatrix('composition'+rule+'IM',None,(din,2*din))
+        self.newMatrix('composition'+rule+'IB',None,(din))
+        self.newMatrix('composition'+rule+'LOM',None,(dout,din+dout))
+        self.newMatrix('composition'+rule+'LOB',None,(dout))
+        self.newMatrix('composition'+rule+'ROM',None,(dout,din+dout))
+        self.newMatrix('composition'+rule+'ROB',None,(dout))
     self.newMatrix('wordIM',embeddings,(nwords,dwords))
-    self.newMatrix('wordOM', None,(dout,din+dout))
-    self.newMatrix('wordOB', None,(dout))
+    self.newMatrix('wordLOM', None,(dout,din+dout))
+    self.newMatrix('wordLOB', None,(dout))
+    self.newMatrix('wordROM', None,(dout,din+dout))
+    self.newMatrix('wordROB', None,(dout))
+
     self.newMatrix('uOM', None,(1,dout))
     self.newMatrix('uOB',None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 

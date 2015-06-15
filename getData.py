@@ -123,7 +123,8 @@ def storeTrees(name):
 #   print name
 #   storeTrees(name)
 
-storeTrees('WSJ')
+storeTrees('sickSample')
+#storeTrees('WSJ')
 # names = ['aa','ab','ac','ad','ae','af','ag','ah','ai']
 # names = ['BNC/BNC10'+n for n in names]
 # for name in names:

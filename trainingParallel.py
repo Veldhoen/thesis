@@ -92,14 +92,14 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   pPs = []
 
   if cores<2: #don't start a subprocess
-      evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')
-      while not qPerformance.empty():
-        description, (accuracy, confusion) = qPerformance.get()
-        print description, accuracy
-    else:
-      p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
-      pPs.append(p)
-      p.start()
+    evaluateQueue(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:')
+    while not qPerformance.empty():
+      description, (accuracy, confusion) = qPerformance.get()
+      print description, accuracy
+  else:
+    p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
+    pPs.append(p)
+    p.start()
 
 
   for i in xrange(nEpochs):
@@ -140,7 +140,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
 
-    if cores<2: trainBatch(ns, minibatch,q) #don't start a subprocess
+    if cores<2: #don't start a subprocess
       evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')
       while not qPerformance.empty():
         description, (accuracy, confusion) = qPerformance.get()
@@ -152,7 +152,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 
   print 'Computing performance...',len(pPs)
 
-  if cores<2: trainBatch(ns, minibatch,q) #don't start a subprocess
+  if cores<2: #don't start a subprocess
     evaluateQueue(theta, examples['TEST'], qPerformance,'Eventual performance on test set:')
     while not qPerformance.empty():
       description, (accuracy, confusion) = qPerformance.get()

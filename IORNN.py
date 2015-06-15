@@ -17,16 +17,16 @@ class Node:
     self.actO = actO
     self.children = children
     if len(children)==1:
-      self.children[0].setRelatives(self,None)
+      self.children[0].setRelatives(self)
     if len(children)==2:
-      self.children[0].setRelatives(self,self.children[1])
-      self.children[1].setRelatives(self,self.children[0])
+      self.children[0].setRelatives(self,None,self.children[1])
+      self.children[1].setRelatives(self,self.children[0],None)
 #      self.children[0].setRelatives(None,self.children[1])
 #      self.children[1].setRelatives(None,self.children[0])
 
     if len(children)>2:
       print 'Something is rotten'
-    self.setRelatives(None,None)
+    self.setRelatives(None)
 
   ''' activate the entire network'''
   def recomputeNW(self, theta):
@@ -47,10 +47,11 @@ class Node:
 
 
 
-  def setRelatives(self, parent, sibling):
+  def setRelatives(self, parent, siblingL=None, siblingR=None):
 #    print 'self: [', self,'] (', self.cat,  '). Parent: [',parent, ']. Sibling: [', sibling,']'
     self.parent = parent
-    self.sibling = sibling
+    self.siblingL = siblingL
+    self.siblingR = siblingR
 
   def backpropInner(self,delta,theta,gradients):
 #    print 'node.backpropInner', self, np.shape(delta), delta
@@ -67,22 +68,28 @@ class Node:
 #    print 'backpropOuter', self.cat, self#, self.sibling
     # input: OUTER of the parent
     #        INNER of the sibling (if it exists)
-
     if self.parent:
       As = self.parent.outerA
       Ads = self.parent.outerAd
-      if self.sibling:
-        As = np.append(As,self.sibling.innerA)
-        Ads = np.append(Ads,self.sibling.innerAd)
       cat = self.parent.cat
+      if self.siblingL:
+        As = np.append(self.siblingL.innerA,As)
+        Ads = np.append(self.siblingL.innerAd,Ads)
+        cat+= 'R'
+      if self.siblingR:
+        As = np.append(As,self.siblingR.innerA)
+        Ads = np.append(Ads,self.siblingR.innerAd)
+        cat += 'L'
+
+
       M = theta[cat+'OM']
-#      print cat, np.shape(M), np.shape(delta)
       deltaB = np.multiply(np.transpose(M).dot(delta), Ads)
-      if self.sibling:
+      if self.siblingL or self.siblingR :
 #        print '\t backproping to parent and sibling'
         deltaB = np.split(deltaB,2)
         self.parent.backpropOuter(deltaB[0], theta, gradients)
-        self.sibling.backpropInner(deltaB[1], theta, gradients)
+        try: self.siblingL.backpropInner(deltaB[1], theta, gradients)
+        except: self.siblingR.backpropInner(deltaB[1], theta, gradients)
       else:
 #        print '\t backproping to parent only'
         self.parent.backpropOuter(deltaB, theta, gradients)
@@ -111,13 +118,24 @@ class Node:
 #    print 'node.outer', self.cat
 #    print 'outer called for:', self,  'of cat', self.cat
     if not self.parent:
-      self.outerZ = np.zeros_like(theta[self.cat+'OB'])
+      self.outerZ = np.zeros_like(theta[self.cat+'LOB'])
     else:
-      if self.sibling: inputsignal = np.concatenate([self.parent.outerA,self.sibling.innerA])
-      else: inputsignal = self.parent.outerA
+      inputsignal = self.parent.outerA
       cat = self.parent.cat
-      M= theta[cat+'OM']
-      b= theta[cat+'OB']
+      if self.siblingL: 
+        inputsignal = np.append(self.siblingL.innerA,inputsignal)
+        cat +='R'
+      elif self.siblingR:
+        inputsignal = np.append(inputsignal,self.siblingR.innerA)
+        cat += 'L'
+#      else:
+#        print 'no sibling', self.cat, self
+      try:
+        M= theta[cat+'OM']
+        b= theta[cat+'OB']
+      except: 
+        print self.cat, self
+        sys.exit()
       self.outerZ = M.dot(inputsignal)+b
     self.outerA, self.outerAd = activation.activate(self.outerZ,self.actO)
     [child.outer(theta) for child in self.children]
