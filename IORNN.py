@@ -17,7 +17,7 @@ class Node:
     self.actO = actO
     self.children = children
     if len(children)==1:
-      self.children[0].setRelatives(self)
+      self.children[0].setRelatives(self,None,None)
     if len(children)==2:
       self.children[0].setRelatives(self,None,self.children[1])
       self.children[1].setRelatives(self,self.children[0],None)
@@ -26,7 +26,7 @@ class Node:
 
     if len(children)>2:
       print 'Something is rotten'
-    self.setRelatives(None)
+    self.setRelatives(None,None,None)
 
   ''' activate the entire network'''
   def recomputeNW(self, theta):
@@ -47,7 +47,7 @@ class Node:
 
 
 
-  def setRelatives(self, parent, siblingL=None, siblingR=None):
+  def setRelatives(self, parent, siblingL, siblingR):
 #    print 'self: [', self,'] (', self.cat,  '). Parent: [',parent, ']. Sibling: [', sibling,']'
     self.parent = parent
     self.siblingL = siblingL
@@ -77,19 +77,17 @@ class Node:
         Ads = np.append(self.siblingL.innerAd,Ads)
         cat+= 'R'
       if self.siblingR:
-        As = np.append(As,self.siblingR.innerA)
-        Ads = np.append(Ads,self.siblingR.innerAd)
-        cat += 'L'
-
-
+        As = np.append(self.siblingR.innerA,As)
+        Ads = np.append(self.siblingR.innerAd,Ads)
+        cat+= 'L'
       M = theta[cat+'OM']
       deltaB = np.multiply(np.transpose(M).dot(delta), Ads)
       if self.siblingL or self.siblingR :
 #        print '\t backproping to parent and sibling'
         deltaB = np.split(deltaB,2)
-        self.parent.backpropOuter(deltaB[0], theta, gradients)
-        try: self.siblingL.backpropInner(deltaB[1], theta, gradients)
-        except: self.siblingR.backpropInner(deltaB[1], theta, gradients)
+        self.parent.backpropOuter(deltaB[1], theta, gradients)
+        try:    self.siblingL.backpropInner(deltaB[0], theta, gradients)
+        except: self.siblingR.backpropInner(deltaB[0], theta, gradients)
       else:
 #        print '\t backproping to parent only'
         self.parent.backpropOuter(deltaB, theta, gradients)
@@ -122,19 +120,17 @@ class Node:
     else:
       inputsignal = self.parent.outerA
       cat = self.parent.cat
-      if self.siblingL: 
+      if self.siblingL:
         inputsignal = np.append(self.siblingL.innerA,inputsignal)
         cat +='R'
       elif self.siblingR:
-        inputsignal = np.append(inputsignal,self.siblingR.innerA)
+        inputsignal = np.append(self.siblingR.innerA,inputsignal)
         cat += 'L'
-#      else:
-#        print 'no sibling', self.cat, self
       try:
         M= theta[cat+'OM']
         b= theta[cat+'OB']
-      except: 
-        print self.cat, self
+      except:
+        print 'No theta entry for', self.cat, self
         sys.exit()
       self.outerZ = M.dot(inputsignal)+b
     self.outerA, self.outerAd = activation.activate(self.outerZ,self.actO)
@@ -216,8 +212,12 @@ class Leaf(Node):
     children = [Node([Node([], 'score', 'sigmoid','sigmoid')], 'u', 'tanh','tanh')]
 #    children = [Node([Node([], 'score', 'tanh','tanh')], 'u', 'tanh','tanh')]
     Node.__init__(self,children,cat,'identity',actO)
-    children[0].setRelatives(self,self)
-    children[0].children[0].setRelatives(children[0],None)
+#    children[0].setRelatives(self,self,None)
+    children[0].setRelatives(self,None,self)
+    # ?? IF I CHANGE THIS TO self,None,self the problems emerge also
+    # for compositionR???!
+
+    children[0].children[0].setRelatives(children[0],None,None)
     # this node should behave as a sibling (produce an inner representation) and a parent (outer) to the u node
     self.index = index
     self.word = word

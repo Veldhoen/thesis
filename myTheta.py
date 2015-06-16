@@ -33,12 +33,12 @@ class Theta(dict):
       rules = grammar[0]
       heads = grammar[1]
       for rule in rules+heads:
-        self.newMatrix('composition'+rule+'IM',None,(din,2*din))
-        self.newMatrix('composition'+rule+'IB',None,(din))
-        self.newMatrix('composition'+rule+'LOM',None,(dout,din+dout))
-        self.newMatrix('composition'+rule+'LOB',None,(dout))
-        self.newMatrix('composition'+rule+'ROM',None,(dout,din+dout))
-        self.newMatrix('composition'+rule+'ROB',None,(dout))
+        self.newMatrix('composition-'+rule+'-IM',None,(din,2*din))
+        self.newMatrix('composition-'+rule+'-IB',None,(din))
+        self.newMatrix('composition-'+rule+'-LOM',None,(dout,din+dout))
+        self.newMatrix('composition-'+rule+'-LOB',None,(dout))
+        self.newMatrix('composition-'+rule+'-ROM',None,(dout,din+dout))
+        self.newMatrix('composition-'+rule+'-ROB',None,(dout))
     self.newMatrix('wordIM',embeddings,(nwords,dwords))
     self.newMatrix('wordLOM', None,(dout,din+dout))
     self.newMatrix('wordLOB', None,(dout))

@@ -54,9 +54,10 @@ def main(args):
   
   # get grammar
   if args['grammar']:
+    print 'Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.'
     with open(args['grammar'], 'rb') as f:
       rules = pickle.load(f)
-      grammar = getGrammar(rules,n=400)
+    grammar = getGrammar(rules,n=400)
   else:
     grammar = None
 
@@ -64,7 +65,7 @@ def main(args):
   print 'Initializing networks.'
   for kind, trees in examples.iteritems():
     for i in xrange(len(trees)):
-      examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary)
+      examples[kind][i] = naturalLogic.iornnFromTree(trees[i][0][0], vocabulary,grammar)
   print 'Loaded data.',len(examples['TRAIN']), 'training examples, and',len(examples['TEST']), 'test examples.'
 
   # initialize theta

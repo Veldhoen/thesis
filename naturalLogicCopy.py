@@ -56,9 +56,9 @@ def iornnFromTree(tree, vocabulary, grammar= None):
       rhs = '('+ ', '.join([child.label() for child in tree])+')'
       rule = lhs+'->'+rhs
       if rule in grammar[0]:
-        cat += rule
-      elif head in grammar[1]:
-        cat += head
+        cat += '-'+rule+'-'
+      elif lhs in grammar[1]:
+        cat += '-'+lhs+'-'
     children = [iornnFromTree(child,vocabulary, grammar) for child in tree]
     parent = IORNN.Node(children,cat,'sigmoid','sigmoid')
     return parent
