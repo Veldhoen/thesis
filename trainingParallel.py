@@ -8,19 +8,17 @@ import time
 
 from multiprocessing import Process, Queue, Pool, Manager
 
-# def thetaNorm(theta):
-#   names = theta.dtype.names
-#   return sum([np.linalg.norm(theta[name]) for name in names])/len(names)
-
 def evaluate(theta, testData, amount=1):
   if isinstance(testData[0], IORNN.Node):
     return NAR(theta,testData, amount),None
   else: return accuracy(theta,testData)
 
 def evaluateQueue(theta, testData, q = None, description = '', amount=1):
+  print 'evaluating...'
   if isinstance(testData[0], IORNN.Node):
     nar = NAR(theta,testData, amount)
     q.put((description, (nar,None)))
+    print description, nar
   else: q.put((description, accuracy(theta,testData)))
 
 def accuracy(theta, testData):
@@ -91,11 +89,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   qPerformance = Queue()
   pPs = []
 
-  if cores<2: #don't start a subprocess
-    evaluateQueue(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:')
-    while not qPerformance.empty():
-      description, (accuracy, confusion) = qPerformance.get()
-      print description, accuracy
+  if cores<2: evaluateQueue(theta, examples['TRIAL'], qPerformance,)#don't start a subprocess
   else:
     p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
     pPs.append(p)
@@ -140,11 +134,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
 
-    if cores<2: #don't start a subprocess
-      evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')
-      while not qPerformance.empty():
-        description, (accuracy, confusion) = qPerformance.get()
-        print description, accuracy
+    if cores<2: evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')#don't start a subprocess
     else:
       p = Process(name='evaluate'+str(i), target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:'))
       pPs.append(p)
@@ -152,11 +142,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 
   print 'Computing performance...',len(pPs)
 
-  if cores<2: #don't start a subprocess
-    evaluateQueue(theta, examples['TEST'], qPerformance,'Eventual performance on test set:')
-    while not qPerformance.empty():
-      description, (accuracy, confusion) = qPerformance.get()
-      print description, accuracy
+  if cores<2: evaluateQueue(theta, examples['TEST'], qPerformance,'Eventual performance on test set:')#don't start a subprocess
   else:
     p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
     pPs.append(p)
