@@ -12,14 +12,12 @@ cores=1
 
 echo "$experiment $$" >> psIds.txt
 
-
-echo "$experiment"
 echo "training on $data for $nEpochs epochs"
 echo "initializing word embeddings from $emb"
 echo "parameters: batch size = $bSize, alpha = $alpha, lambda = $lambda."
 
-
-python -u -W once \
+nohup python -u -W once \
+#python -u -W once \
   trainIOCopy.py \
   -exp $experiment \
   -t $data$treePost \
@@ -32,6 +30,8 @@ python -u -W once \
   -a $alpha \
   -l $lambda \
   -c $cores
+#   >> nohups/$experiment.nohup.out &
+# echo "python main $!" >> psIds.txt
 
 
 
