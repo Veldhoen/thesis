@@ -89,7 +89,9 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   qPerformance = Queue()
   pPs = []
 
-  if cores<2: evaluateQueue(theta, examples['TRIAL'], qPerformance,)#don't start a subprocess
+  if cores<2:
+    print 'skipping initial evaluation. Estimate of inital performance is 0.5.'
+    #evaluateQueue(theta, examples['TRIAL'], qPerformance,)#don't start a subprocess
   else:
     p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, examples['TRIAL'], qPerformance,'Initial Performance on validation set:'))
     pPs.append(p)
@@ -106,7 +108,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
     for batch in xrange((len(data)+batchsize-1)//batchsize):
       ns.theta = theta
       minibatch = data[batch*batchsize:(batch+1)*batchsize]
-      print 'minibatch size:',len(minibatch)
+#      print 'minibatch size:',len(minibatch)
 #      minibatch = random.sample(data, batchsize)
       s = (len(minibatch)+cores-1)//cores
       trainPs = []
@@ -119,17 +121,19 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
           trainPs.append(p)
           p.start()
 
-        # wait or all worker processes to finish
-        for p in trainPs: p.join()
 
       errors = []
       theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
-      for j in xrange(cores):
+      for j in xrange(len(trainPs)):
         (grad, error) = q.get()
         if grad is None: continue
         if adagrad: theta.update(grad,hyperParams['alpha'],historical_grad)
         else: theta.update(grad,hyperParams['alpha'])
         errors.append(error)
+
+      # make sure all worker processes have finished and are killed
+      for p in trainPs: p.join()
+
 
       if batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
@@ -147,11 +151,15 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
     p = Process(name='evaluateFIN', target=evaluateQueue, args=(theta, examples['TEST'], qPerformance, 'Eventual performance on test set:'))
     pPs.append(p)
     p.start()
-    for p in pPs: p.join()  # make sure all subprocesses are properly terminated
 
-  while not qPerformance.empty():
+
+  for j in xrange(len(pPs)):
     description, (accuracy, confusion) = qPerformance.get()
     print description, accuracy
+
+  # make sure all worker processes have finished and are killed
+  for p in pPs: p.join()
+
 
   print 'End of training.'
   return theta
@@ -169,11 +177,7 @@ def trainBatch(ns, examples, q=None):
       error+= derror
       for name in grads.keys():
         grads[name] = grads[name] + dgrads[name]/len(examples)
-
-  #  for name in grads.keys():
-  #    grads[name] = grads[name]/len(examples)+ lambdaL2*theta[name] # regularize
-    else: q.put((grads, error/len(examples)))
+    q.put((grads, error/len(examples)))
   else:
-    print 'Batch with no training examples?!'
+    print 'Part of minibatch with no training examples.'
     q.put((None,None))
-
