@@ -71,7 +71,7 @@ class Theta(dict):
 
   def regularize(self, alphaDsize, lambdaL2):
     for name in self.keys():
-      if name[-1] = 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
+      if name[-1] == 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
       else: continue
 
   def update(self, gradient, alpha, historicalGradient = None):
@@ -81,16 +81,10 @@ class Theta(dict):
       grad = gradient[name]
       if historicalGradient is not None:
         histgrad = historicalGradient[name]
-      else: histgrad = None
-      if sparse.issparse(grad):
-        if histgrad is not None:
-          subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
-          subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
-        else: subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
+        subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
+        subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
       else:
-        histgrad = histgrad + np.square(grad)                    # add the square of the grad to histgrad
-        self[name] = self[name] - alpha * grad/(np.sqrt(histgrad)+1e-6)#subtract gradient * alpha/root(histgrad)
-#      print 'after:',self[name].shape
+        subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
 
   def  norm(self):
     names = self.keys()

@@ -121,7 +121,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 
 
       errors = []
-      theta.regularize(hyperParams['alpha']/len(data, hyperParams['lambda'])
+      theta.regularize(hyperParams['alpha']/len(data), hyperParams['lambda'])
       for j in xrange(len(trainPs)):
         (grad, error) = q.get()
         if grad is None: continue
