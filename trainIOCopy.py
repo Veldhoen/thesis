@@ -51,7 +51,7 @@ def main(args):
     with open(f, 'rb') as f: vocabulary.update(pickle.load(f))
   vocabulary = list(vocabulary)
 
-  
+
   # get grammar
   if args['grammar']:
     print 'Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.'
@@ -100,12 +100,13 @@ def main(args):
     print param, '-' ,value
   print 'number of cores -', cores
 
-
+  ada = True
+  print 'Adagrad is on.'
 
   print 'Start training...'
-  theta = SGD(theta, hyperParams, examples, [], cores, adagrad = False)
+  theta = SGD(theta, hyperParams, examples, [], cores, adagrad = ada)
 
-  
+
   print 'Writing model to file.'
   sentences = []
   for nw in examples['TEST']:

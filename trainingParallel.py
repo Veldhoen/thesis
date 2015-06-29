@@ -185,5 +185,5 @@ def trainBatch(ns, examples, q=None):
         grads[name] = grads[name] + dgrads[name]/len(examples)
     q.put((grads, error/len(examples)))
   else:
-    print 'Part of minibatch with no training examples.'
+    print '\tPart of minibatch with no training examples.'
     q.put((None,None))

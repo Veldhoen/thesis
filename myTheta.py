@@ -81,7 +81,9 @@ class Theta(dict):
       grad = gradient[name]
       if historicalGradient is not None:
         histgrad = historicalGradient[name]
-        subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
+        if sparse.issparse(grad): sq = grad.multiply(grad)
+        else: sq = np.multiply(grad,grad)
+        subtractFromDense(histgrad, -1*sq)      # add the square of the grad to histgrad
         subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
       else:
         subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
@@ -111,15 +113,16 @@ class Theta(dict):
         new.newMatrix(name, np.zeros_like(self[name]))
     return new
 
-def subtractFromDense(denseM,incM, factor = None):
+def subtractFromDense(denseM,decM, factor = None):
 #  print 'adding sparse to dense. Sparse:', incM.shape,'Dense:', denseM.shape
-  if not sparse.issparse(incM):
-    denseM = denseM - factor.multiply(incM)
+  if not sparse.issparse(decM):
+    if factor is None: denseM = denseM - decM
+    else: denseM = denseM - np.multiply(factor,decM)
 
-  elif sparse.isspmatrix_csc(incM):
-    rows, columns = incM.nonzero()
+  elif sparse.isspmatrix_csc(decM):
+    rows, columns = decM.nonzero()
     for i,j in zip(rows, columns):
-      val = incM[i,j]
+      val = decM[i,j]
       if factor is not None: f = factor[i,j]
       else: f = 1
 #      print i,j
