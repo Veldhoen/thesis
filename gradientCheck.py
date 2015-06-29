@@ -33,7 +33,7 @@ def gradientCheck(theta, network, target):
     if np.array_equal(gr,ngr): diff = 0
     else: diff = np.linalg.norm(ngr-gr)/(np.linalg.norm(ngr)+np.linalg.norm(gr))
     print 'Difference '+name+' :', diff
-    if False:#'composition'in name: #diff>0:
+    if False: #diff>0.01:
       print 'gr\t\tngr\t\td'
       for i in range(len(gr)):
         print str(gr[i])+'\t'+str(ngr[i])+'\t'+str(abs((gr[i]-ngr[i])/(gr[i]+ngr[i])))
@@ -43,17 +43,23 @@ def gradientCheck(theta, network, target):
 
 def checkIORNN():
   voc = ['UNK','most','large', 'hippos','bark','chase','dogs']
+  gram = ['S->(NP,VP)']
+  heads = ['NP']
+#  gram = []
+#  heads = []
+
 #  voc = ['UNK','most','hippos']
   d = 15
   dims = {'inside':d,'outside':d,'word':d,'nwords':len(voc)}
-  theta = myTheta.Theta('IORNN', dims)
 
-#  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
-  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
-#  s = '(NP (Q most) (N hippos))'
+  theta = myTheta.Theta('IORNN', dims,grammar=(gram,heads))
+  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
+#  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
+#  s = '(VP (NP (Q most) (N hippos)) (V bark))'
+# s = '(NP (Q most) (N hippos))'
 #  s = '(Q most)'
   t = tree.Tree.fromstring(s)
-  nw = nl.iornnFromTree(t, voc, grammarBased = False)
+  nw = nl.iornnFromTree(t, voc, (gram,heads))
 #  nw.activateNW(theta)
   gradientCheck(theta, nw, 0)
 

@@ -110,7 +110,7 @@ def main(args):
   sentences = []
   for nw in examples['TEST']:
     nw.activateNW(theta)
-    sentences.append(([str(l) for l in nw.leaves()],nw.innerA))
+    sentences.append((' '.join([str(l) for l in nw.leaves()]),nw.innerA))
 #  sentences= [(str(nw),nw.innerA) for nw in examples['TEST']]
   with open(os.path.join(args['out']+'SENTENCES.pik' ), 'wb') as f:
     pickle.dump(sentences, f, -1)

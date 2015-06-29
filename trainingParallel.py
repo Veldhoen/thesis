@@ -14,11 +14,9 @@ def evaluate(theta, testData, amount=1):
   else: return accuracy(theta,testData)
 
 def evaluateQueue(theta, testData, q = None, description = '', amount=1):
-  print 'evaluating...'
   if isinstance(testData[0], IORNN.Node):
     nar = NAR(theta,testData, amount)
     q.put((description, (nar,None)))
-    print description, nar
   else: q.put((description, accuracy(theta,testData)))
 
 def accuracy(theta, testData):
@@ -123,7 +121,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
 
 
       errors = []
-      theta.regularize(hyperParams['alpha'], hyperParams['lambda'], len(data))
+      theta.regularize(hyperParams['alpha']/len(data, hyperParams['lambda'])
       for j in xrange(len(trainPs)):
         (grad, error) = q.get()
         if grad is None: continue
@@ -135,7 +133,7 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
       for p in trainPs: p.join()
 
 
-      if batch % 10 == 0:
+      if True: #batch % 10 == 0:
         print '\tBatch', batch, ', average error:', sum(errors)/len(errors), ', theta norm:', theta.norm()
 
     if cores<2: evaluateQueue(theta, examples['TRIAL'], qPerformance,'Epoch '+ str(i)+', Performance on validation set:')#don't start a subprocess
@@ -164,7 +162,15 @@ def SGD(theta, hyperParams, examples, relations, cores = 1, adagrad = True):
   print 'End of training.'
   return theta
 
+'''Compute the average gradient over the batch of examples
+input: 
+- ns: namespace containing theta
+- examples: items in the (mini)batch
+- q: Queue to put the result (gradient and error) in
 
+For each example: have the network backpropagate errors and return a gradient
+
+'''
 def trainBatch(ns, examples, q=None):
   if len(examples)>0:
     theta = ns.theta

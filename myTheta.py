@@ -69,9 +69,10 @@ class Theta(dict):
       print 'problem in newMatrix', name, M, size
       sys.exit()
 
-  def regularize(self, alpha, lambdaL2, size):
+  def regularize(self, alphaDsize, lambdaL2):
     for name in self.keys():
-      self[name] = (1- (alpha*lambdaL2)/size)*self[name]
+      if name[-1] = 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
+      else: continue
 
   def update(self, gradient, alpha, historicalGradient = None):
 #    print 'updating theta'
@@ -80,9 +81,9 @@ class Theta(dict):
       grad = gradient[name]
       if historicalGradient is not None:
         histgrad = historicalGradient[name]
-      else: histgrad = False
+      else: histgrad = None
       if sparse.issparse(grad):
-        if histgrad:
+        if histgrad is not None:
           subtractFromDense(histgrad, -1*grad.multiply(grad))      # add the square of the grad to histgrad
           subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
         else: subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
