@@ -55,7 +55,6 @@ def getIORNNs(source,outDir,sennaVoc):
       for line in f:
         counter+=1
         try:
-        if True:
           tree = nltk.tree.Tree.fromstring(line)
           sennaLeaves(tree,sennaVoc)
 #          print tree.leaves()
@@ -67,17 +66,20 @@ def getIORNNs(source,outDir,sennaVoc):
             voc.add(word)
 
         except:
-          print 'transformation to IORNN failed.
+          print 'transformation to IORNN failed.'
           print line
         if counter % 50 == 0: print counter
-
-    with open(os.join(outDir,filename[-1]+'IORNNS.pik'),'wb') as f:
-      pickle.dump(nws)
+        if counter % 1000 == 0:
+          out =os.path.join(outDir,os.path.splitext(os.path.split(filename)[1])[0]+'IORNNS_'+str(counter//1000)+'.pik')
+          print 'writing to', out
+          with open(out,'wb') as f:
+            pickle.dump(nws,f)
+            nws = []
   print 'writing rules and vocabulary to file'
-  with open(os.join(outDir,'RULES.pik'),'wb') as f:
-    pickle.dump(rules)
-  with open(os.join(outDir,'VOC.pik'),'wb') as f:
-    pickle.dump(voc)
+  with open(os.path.join(outDir,'RULES.pik'),'wb') as f:
+    pickle.dump(rules,f)
+  with open(os.path.join(outDir,'VOC.pik'),'wb') as f:
+    pickle.dump(voc,f)
 
 
 
@@ -99,7 +101,7 @@ def sennaproof(word,sennaVoc):
 
 senna = os.path.join('data','sennaEMB'+'.pik')
 
-getSennaEmbs(senna)
+#getSennaEmbs(senna)
 
 with open(senna, 'rb') as f:
   V, voc =   pickle.load(f)
