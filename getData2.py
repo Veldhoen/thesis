@@ -48,10 +48,13 @@ def getIORNNs(source,outDir,sennaVoc):
 
 
   for filename in toOpen:
+    print 'converting trees from', filename
     nws = []
     with open(filename,'r') as f:
+      counter = 0
       for line in f:
-#        try:
+        counter+=1
+        try:
         if True:
           tree = nltk.tree.Tree.fromstring(line)
           sennaLeaves(tree,sennaVoc)
@@ -60,17 +63,17 @@ def getIORNNs(source,outDir,sennaVoc):
           for prod in tree.productions():
             if prod.is_nonlexical():
               rules[str(prod.lhs())][str(prod.rhs())]+=1
-#        except:
-#          print 'transformation to IORNN failed.
-#          print line
-        for word, pos in tree.pos():
-          voc.add(word)
-#        print 'loop in rootI:', nws[0].rootI.checkForLoop( nws[0].rootI)
-#        print 'loop in rootO:', nws[0].rootO.checkForLoop( nws[0].rootO)
-#        print nws[0]
-#        sys.exit()
+          for word, pos in tree.pos():
+            voc.add(word)
+
+        except:
+          print 'transformation to IORNN failed.
+          print line
+        if counter % 50 == 0: print counter
+
     with open(os.join(outDir,filename[-1]+'IORNNS.pik'),'wb') as f:
       pickle.dump(nws)
+  print 'writing rules and vocabulary to file'
   with open(os.join(outDir,'RULES.pik'),'wb') as f:
     pickle.dump(rules)
   with open(os.join(outDir,'VOC.pik'),'wb') as f:
