@@ -3,7 +3,7 @@ from NN import Node, Leaf
 import random
 import sys
 
-def this2Nodes(nltkTree, vocabulary):
+def this2Nodes(nltkTree):
 #  print 'this2Nodes', nltkTree
   if nltkTree.height()>2:
     cat = 'composition'
@@ -37,11 +37,7 @@ def this2Nodes(nltkTree, vocabulary):
     cat = ('word',)
     word = nltkTree[0]
 #    print 'word is:', word
-    try: index = vocabulary.index(word)
-    except:
-      if word.split('-')[-1] != 'UNK': word += '-UNK'
-      index = vocabulary.index('UNKNOWN')
-    thisInner = Leaf([],('word',), word, index,'identity')
+    thisInner = Leaf([],('word',), word, 0,'identity')
     thisOuter = Node([], [], 'TMP', 'sigmoid')
 
     uNode = Node([thisOuter,thisInner],[],('u',),'sigmoid')
@@ -59,8 +55,7 @@ class IORNN():
 #    (self,outputs,cat, word='', index=0,nonlinearity='identity'):
     self.rootO.__class__ = Leaf
     self.rootO.cat=('root',)
-    self.rootO.word='ROOT'
-    self.rootO.index=0
+    self.rootO.key=''
 
     # = Leaf(rootO.outputs,'root',index= 0,nonlinearity = 'sigmoid')
 #    self.rootO.inputs=[]
@@ -85,13 +80,13 @@ class IORNN():
       error += trainWord(scoreNode, theta, gradients, target)
     return gradients, error/ len(self.scoreNodes)
     
-  def evaluateNAR(self,theta):
+  def evaluateNAR(self,theta, vocabulary):
     ranks = 0
     num = 0
     nwords = len(theta[('word',)])
     self.activate(theta)
     for scoreNode in self.scoreNodes:
-      results = [score(scoreNode,theta,x, True, False) for x in xrange(nwords)]
+      results = [score(scoreNode,theta,x, True, False) for x in vocabulary]
       originals = [original for score, original in results]
       
       # reset the scoreNW
@@ -116,9 +111,8 @@ def activateScoreNW(uNode,wordNode,scoreNode,theta):
 def score(scoreNode,theta,x, activate=True, reset = True):
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat=='word'][0]
-
-  original = wordNode.index
-  wordNode.index = x
+  original = wordNode.key
+  wordNode.key = x
 
   if activate:# locally recompute activations for candidate
     activateScoreNW(uNode,wordNode,scoreNode,theta)
@@ -126,19 +120,20 @@ def score(scoreNode,theta,x, activate=True, reset = True):
 
   if reset:
     # restore observed node
-    self.index = original
+    wordNode.key = original
     # locally recompute activations for original observed node
     activateScoreNW(uNode,wordNode,scoreNode,theta)
   return score, original
 
-def trainWord(scoreNode, theta, gradients, target):
+def trainWord(scoreNode, theta, gradients, target, vocabulary):
   nwords = len(theta['word'])
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat=='word'][0]
   # pick a candidate x different from own index
   if target is None:
-    x = wordNode.index
-    while x == wordNode.index:  x = random.randint(0,nwords-1)
+    original = wordNode.key
+    x = original
+    while x == original or x == 'UNKNOWN':  x = random.choice(vocabulary)
   else: x = target
 
   # compute error for chosen candidate
@@ -152,8 +147,8 @@ def trainWord(scoreNode, theta, gradients, target):
 
     # backpropagate through candidate
     # save original settings
-    original = wordNode.index
-    wordNode.index = x
+    original = wordNode.key
+    wordNode.key = x
 
     # locally recompute activations for candidate
     activateScoreNW(uNode,wordNode,scoreNode,theta)
@@ -163,7 +158,7 @@ def trainWord(scoreNode, theta, gradients, target):
     scoreNode.backprop(delta, theta, gradients)
 
     # restore observed node
-    self.index = original
+    wordNode.key = original
     # locally recompute activations for original observed node
     activateScoreNW(uNode,wordNode,scoreNode,theta)
 

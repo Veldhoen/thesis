@@ -6,7 +6,7 @@ from collections import Counter
 
 class Theta(dict):
 
-  def __init__(self, style, dims, embeddings = None, grammar = None):
+  def __init__(self, style, dims, embeddings = None, grammar = None, vocabulary = ['UNKNOWN']):
     if dims is None:
       print 'No dimensions for initialization of theta'
       sys.exit()
@@ -18,7 +18,7 @@ class Theta(dict):
 
     self.grammar2cats(grammar)
     if style == 'IORNN':
-      self.forIORNN(embeddings)
+      self.forIORNN(embeddings, vocabulary)
     elif style == 'RNN': self.forRNN(embeddings)
     else:
       print 'Style not supported for theta initialization:', style
@@ -51,7 +51,7 @@ class Theta(dict):
           fakeKey=key[:2]+('('+','.join(['X']*len(rhsBits))+')',)+key[3:]
         return self[fakeKey]
 
-  def forIORNN(self, dims, embeddings = None):
+  def forIORNN(self, embeddings, vocabulary ):
     print 'create composition matrices'
     for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
@@ -64,8 +64,11 @@ class Theta(dict):
         self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,arity*self.din+self.dout))
         self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(self.dout))
     print 'create lookup tables'
+    self.lookup={('word',):vocabulary,('root',): ['']}
     self.newMatrix(('word',),embeddings,(self.nwords,self.dwords))
     self.newMatrix(('root',),None,(1,self.dout))
+
+
     print 'create score matrices'
     self.newMatrix(('u','M'), None,(self.dout,self.dout))
     self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing

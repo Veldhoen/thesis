@@ -3,6 +3,8 @@ import activation
 import numpy as np
 import sys
 
+import myTheta
+
 class Node():
   def __init__(self,inputs, outputs, cat,nonlinearity):
 #    print 'Node.init', cat, inputs
@@ -44,7 +46,7 @@ class Node():
     if addOut: True #add a delta message from its outputs (e.g., reconstructions)
 
 
-    if gradient is None: gradient = theta.zeros_like(self, sparseWords = True)
+    if gradient is None: gradient = myTheta.gradient(theta) #theta.zeros_like(sparseWords = True)
     inputsignal = np.concatenate([c.a for c in inputs])
     dinputsignal = np.concatenate([c.ad for c in inputs])
 
@@ -74,16 +76,16 @@ class Node():
 
 
 class Leaf(Node):
-  def __init__(self,outputs,cat, word='', index=0,nonlinearity='identity'):
+  def __init__(self,outputs,cat, key='',nonlinearity='identity'):
     Node.__init__(self,[], outputs, cat,nonlinearity)
-    self.word = word
+    self.key = key
     self.index = index
 
   def forward(self,theta, activateIn = True, activateOut = False):
-    print 'forward leaf',self.cat[0], self.cat[-1] , self, self.index
-    try: self.z = theta[self.cat][self.index]
+    print 'forward leaf',self.cat[0], self
+    try: self.z = theta[self.cat][theta.lookup[self.cat].indexOf(self.key)]
     except:
-      print 'Fail to foward Leaf:', self.cat, self.index
+      print 'Fail to foward Leaf:', self.cat, self.key
       sys.exit()
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
@@ -92,4 +94,4 @@ class Leaf(Node):
       [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def __str__(self):
-    return self.word#+'('+self.cat+')'
+    return self.key#+'('+self.cat+')'
