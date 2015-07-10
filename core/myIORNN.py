@@ -12,7 +12,7 @@ def this2Nodes(nltkTree):
     thisOuter = Node([], [], 'TMP', 'sigmoid')
 #    Node(inputs, outputs, cat,nonlinearity)
 
-    childrenNodes = [this2Nodes(child,vocabulary) for child in nltkTree]
+    childrenNodes = [this2Nodes(child) for child in nltkTree]
 
     childrenOuter= [outer for inner, outer in childrenNodes]
     thisOuter.outputs =childrenOuter
@@ -37,7 +37,7 @@ def this2Nodes(nltkTree):
     cat = ('word',)
     word = nltkTree[0]
 #    print 'word is:', word
-    thisInner = Leaf([],('word',), word, 0,'identity')
+    thisInner = Leaf([],('word',), word, 'identity')
     thisOuter = Node([], [], 'TMP', 'sigmoid')
 
     uNode = Node([thisOuter,thisInner],[],('u',),'sigmoid')
@@ -48,10 +48,10 @@ def this2Nodes(nltkTree):
   return thisInner, thisOuter
 
 class IORNN():
-  def __init__(self, nltkTree, vocabulary):
+  def __init__(self, nltkTree):
 #    print 'IORNN.init', nltkTree
 
-    self.rootI, self.rootO = this2Nodes( nltkTree, vocabulary)
+    self.rootI, self.rootO = this2Nodes( nltkTree)
 #    (self,outputs,cat, word='', index=0,nonlinearity='identity'):
     self.rootO.__class__ = Leaf
     self.rootO.cat=('root',)
@@ -61,8 +61,8 @@ class IORNN():
 #    self.rootO.inputs=[]
     self.scoreNodes = findScoreNodes(self.rootO)
 
-    print 'IORNN inside:', self.rootI
-    print 'IORNN outside:', self.rootO
+#    print 'IORNN inside:', self.rootI
+#    print 'IORNN outside:', self.rootO
   def __str__(self):
     return str(self.rootI)
 

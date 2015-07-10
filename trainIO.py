@@ -55,7 +55,7 @@ def initializeTheta(args,vocabulary, grammar):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('IORNN', dims, V, grammar)
+    theta = myTheta.Theta('IORNN', dims, V, grammar, vocabulary)
 
   theta.printDims()
   return theta

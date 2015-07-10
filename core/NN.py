@@ -79,11 +79,10 @@ class Leaf(Node):
   def __init__(self,outputs,cat, key='',nonlinearity='identity'):
     Node.__init__(self,[], outputs, cat,nonlinearity)
     self.key = key
-    self.index = index
 
   def forward(self,theta, activateIn = True, activateOut = False):
     print 'forward leaf',self.cat[0], self
-    try: self.z = theta[self.cat][theta.lookup[self.cat].indexOf(self.key)]
+    try: self.z = theta[self.cat][theta.lookup[self.cat].index(self.key)]
     except:
       print 'Fail to foward Leaf:', self.cat, self.key
       sys.exit()
