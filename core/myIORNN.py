@@ -1,6 +1,6 @@
 from __future__ import division
 from NN import Node, Leaf
-
+import random
 import sys
 
 def this2Nodes(nltkTree, vocabulary):
@@ -10,6 +10,7 @@ def this2Nodes(nltkTree, vocabulary):
     lhs = nltkTree.label()
     rhs = '('+ ', '.join([child.label() for child in nltkTree])+')'
     thisOuter = Node([], [], 'TMP', 'sigmoid')
+#    Node(inputs, outputs, cat,nonlinearity)
 
     childrenNodes = [this2Nodes(child,vocabulary) for child in nltkTree]
 
@@ -23,7 +24,7 @@ def this2Nodes(nltkTree, vocabulary):
     # append thisOuter to the childrenInner
     # to obtain the input to the childrenOuter nodes
 
-    for j in range(len(nltkTree)):
+    for j in range(len(childrenOuter)):
       # set the inputs for the child's outer representation
       childJInner = childrenOuterInput.pop(j)
       childrenOuter[j].inputs = childrenOuterInput
@@ -33,18 +34,18 @@ def this2Nodes(nltkTree, vocabulary):
       childrenOuterInput.insert(j,childJInner) # reset childrenInner
 
   else: #at a preterminal
-    cat = 'word'
+    cat = ('word',)
     word = nltkTree[0]
 #    print 'word is:', word
     try: index = vocabulary.index(word)
     except:
       if word.split('-')[-1] != 'UNK': word += '-UNK'
-      index = vocabulary.index('UNK')
-    thisInner = Leaf([],'word', word, index,'identity')
-    thisOuter = Node([], [], '', 'sigmoid')
-    
-    uNode = Node([thisOuter,thisInner],[],'u','sigmoid')
-    scoreNode = Node([uNode],[],'score','sigmoid')
+      index = vocabulary.index('UNKNOWN')
+    thisInner = Leaf([],('word',), word, index,'identity')
+    thisOuter = Node([], [], 'TMP', 'sigmoid')
+
+    uNode = Node([thisOuter,thisInner],[],('u',),'sigmoid')
+    scoreNode = Node([uNode],[],('score',),'sigmoid')
     uNode.outputs = [scoreNode]
 
     thisOuter.outputs = [uNode]
@@ -54,60 +55,116 @@ class IORNN():
   def __init__(self, nltkTree, vocabulary):
 #    print 'IORNN.init', nltkTree
 
-    self.rootI, rootO = this2Nodes( nltkTree, vocabulary)
-    self.rootO = Leaf(rootO.outputs,'root', 0,'identity')
-    self.rootO.inputs=[]
-    self.scoreNodes = self.findScoreNodes(self.rootO)
+    self.rootI, self.rootO = this2Nodes( nltkTree, vocabulary)
+#    (self,outputs,cat, word='', index=0,nonlinearity='identity'):
+    self.rootO.__class__ = Leaf
+    self.rootO.cat=('root',)
+    self.rootO.word='ROOT'
+    self.rootO.index=0
 
+    # = Leaf(rootO.outputs,'root',index= 0,nonlinearity = 'sigmoid')
+#    self.rootO.inputs=[]
+    self.scoreNodes = findScoreNodes(self.rootO)
+
+    print 'IORNN inside:', self.rootI
+    print 'IORNN outside:', self.rootO
   def __str__(self):
     return str(self.rootI)
 
-  def trainWords(self, theta, gradients = None, target = None):
+  def activate(self,theta):
+    print 'activate NW inside:'
+    self.rootI.forward(theta,activateIn = True, activateOut = False)
+    print 'activate NW outside:'
+    self.rootO.forward(theta,activateIn = False, activateOut = True)
+    print 'activated the network.'
+
+  def trainWords(self, theta, gradients = None, activate=True, target = None):
+    if activate: self.activate(theta)
+    error = 0
     for scoreNode in self.scoreNodes:
-      trainWord(scoreNode, theta, gradients, target)
+      error += trainWord(scoreNode, theta, gradients, target)
+    return gradients, error/ len(self.scoreNodes)
+    
+  def evaluateNAR(self,theta):
+    ranks = 0
+    num = 0
+    nwords = len(theta[('word',)])
+    self.activate(theta)
+    for scoreNode in self.scoreNodes:
+      results = [score(scoreNode,theta,x, True, False) for x in xrange(nwords)]
+      originals = [original for score, original in results]
+      
+      # reset the scoreNW
+      score(scoreNode,theta,originals[0], True, True)
+
+      scores = [score for score, original in results]
+      ranking = np.array(scores).argsort()[::-1].argsort()
+      ranks+= ranking[scoreNode.index]
+      num +=1
+    return ranks/(nwords*num)
 
 
 def findScoreNodes(node):
   if node.cat=='score': return [node]
   else: return [n for sublist in [findScoreNodes(c) for c in node.outputs] for n in sublist]
 
-def trainWord(self, scoreNode, theta, gradients, target):
+def activateScoreNW(uNode,wordNode,scoreNode,theta):
+  wordNode.forward(theta,activateIn=False, activateOut=False)
+  uNode.forward(theta,activateIn=False, activateOut=False)
+  scoreNode.forward(theta,activateIn=False, activateOut=False)
+
+def score(scoreNode,theta,x, activate=True, reset = True):
+  uNode = scoreNode.inputs[0]
+  wordNode = [node for node in uNode.inputs if node.cat=='word'][0]
+
+  original = wordNode.index
+  wordNode.index = x
+
+  if activate:# locally recompute activations for candidate
+    activateScoreNW(uNode,wordNode,scoreNode,theta)
+    score = scoreNode.a
+
+  if reset:
+    # restore observed node
+    self.index = original
+    # locally recompute activations for original observed node
+    activateScoreNW(uNode,wordNode,scoreNode,theta)
+  return score, original
+
+def trainWord(scoreNode, theta, gradients, target):
   nwords = len(theta['word'])
   uNode = scoreNode.inputs[0]
-  wordNode = uNode.inputs[0]
+  wordNode = [node for node in uNode.inputs if node.cat=='word'][0]
   # pick a candidate x different from own index
   if target is None:
-    x = myWord.index
-    while x == myWord.index:  x = random.randint(0,nwords-1)
+    x = wordNode.index
+    while x == wordNode.index:  x = random.randint(0,nwords-1)
   else: x = target
 
   # compute error for chosen candidate
-
-  error = 1 - self.score(theta, recompute= False)+self.score(theta, x, False)
+#  error = 1 - self.score(theta, recompute= False)+self.score(theta, x, False)
 
   if True: #error>1: # if the candidate scores too high: backpropagate error
     # backpropagate through observed node
-    delta = -1*scoreNode.Ad
+    realScore = scoreNode.a
+    delta = -1*scoreNode.ad
     scoreNode.backprop(delta, theta, gradients)
 
     # backpropagate through candidate
     # save original settings
-    original = myWord.index
+    original = wordNode.index
     wordNode.index = x
 
     # locally recompute activations for candidate
-    wordNode.forward(theta,activateIn=False, activateOut=False)
-    uNode.forward(theta,activateIn=False, activateOut=False)
-    scoreNode.forward(theta,activateIn=False, activateOut=False)
+    activateScoreNW(uNode,wordNode,scoreNode,theta)
 
-    delta = scoreNode.Ad
+    candidateScore = scoreNode.a
+    delta = scoreNode.ad
     scoreNode.backprop(delta, theta, gradients)
 
     # restore observed node
     self.index = original
     # locally recompute activations for original observed node
-    wordNode.forward(theta,activateIn=False, activateOut=False)
-    uNode.forward(theta,activateIn=False, activateOut=False)
-    scoreNode.forward(theta,activateIn=False, activateOut=False)
+    activateScoreNW(uNode,wordNode,scoreNode,theta)
 
-  return error
+  return 1-realScore+candidateScore

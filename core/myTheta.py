@@ -27,12 +27,14 @@ class Theta(dict):
   def grammar2cats(self, grammar):
     if grammar is None: grammar = Counter(Counter())
     self.heads = grammar.keys()
-    self.maxArity = 2
-    self.rulesC = Counter()
+    maxArity = 2
+    rulesC = Counter()
     for LHS, RHSS in grammar.iteritems():
       for RHS, count in RHSS.iteritems():
         maxArity = max(maxArity,len(RHS.split(',')))
-        rulesC[LHS+'_'+RHS]+=count
+        rulesC[(LHS,RHS)]+=count
+    self.maxArity = maxArity
+    self.rules = rulesC.most_common()
 
   def __missing__(self, key):
     if key[0] == 'composition':
@@ -42,36 +44,39 @@ class Theta(dict):
         print 'No theta entry for',lhs,rhs
         sys.exit
       else:
-        rhsBits = rhs[1:-2].split(',')
-
-        if all([x=='X' for x in rhsBits]): #already looking for a generic rhs
-          fakeKey=key[:1]+'X'+key[2:]      #change lhs to generic
+        rhsBits = rhs[1:-1].split(',')
+        if all(['X'in x for x in rhsBits]): #already looking for a generic rhs
+          fakeKey=key[:1]+('X',)+key[2:]      #change lhs to generic
         else:                              #change rhs to generic, but keep lhs
-          fakeKey=key[:1]+'('+','.join(['X']*len(rhsBits))+')'+key[3:]
+          fakeKey=key[:2]+('('+','.join(['X']*len(rhsBits))+')',)+key[3:]
         return self[fakeKey]
 
   def forIORNN(self, dims, embeddings = None):
-    for arity in xrange(self.maxArity):
+    print 'create composition matrices'
+    for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
       lhs = 'X'
       rhs = '('+','.join(['X']*arity)+')'
-      self.newMatrix((cat,lhs,rhs,'IM'), None, (self.din,arity*self.din))
-      self.newMatrix((cat,lhs,rhs,'IB'),None,(self.din))
+#      print lhs,rhs
+      self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
+      self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
       for j in xrange(arity):
-        self.newMatrix((cat,lhs,rhs,j,'OM'),None,(self.dout,arity*self.din+self.dout))
-        self.newMatrix((cat,lhs,rhs,j,'OB'),None,(self.dout))
+        self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,arity*self.din+self.dout))
+        self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(self.dout))
+    print 'create lookup tables'
+    self.newMatrix(('word',),embeddings,(self.nwords,self.dwords))
+    self.newMatrix(('root',),None,(1,self.dout))
+    print 'create score matrices'
+    self.newMatrix(('u','M'), None,(self.dout,self.dout))
+    self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
-    self.newMatrix(('word','IM'),embeddings,(self.nwords,self.dwords))
-    self.newMatrix(('word','OM'), None,(self.dout,self.din+self.dout))
-    self.newMatrix(('word','OB'), None,(self.dout))
-
-    self.newMatrix(('u','OM'), None,(1,self.dout))
-    self.newMatrix(('u','OB'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+    self.newMatrix(('score','M'), None,(1,self.dout))
+    self.newMatrix(('score','B'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
 
   def specializeHeads(self):
-    for arity in xrange(self.maxArity):
-      for lhs in self.heads:
+    for lhs in self.heads:
+      for arity in xrange(self.maxArity):
         rhs = ','.join([X]*arity)
         self.newMatrix((cat,lhs,rhs,'IM'), self[(cat,lhs,rhs,'IM')])
         self.newMatrix((cat,lhs,rhs,'IB'), self[(cat,lhs,rhs,'IB')])
@@ -81,16 +86,19 @@ class Theta(dict):
 
   def specializeRules(self,n=200):
     cat = 'composition'
-    for rule in self.rulesC.most_common(n):
-      lhs,rhs = rule.split('->')
+    for lhs,rhs in self.rules[:n]:
       self.newMatrix((cat,lhs,rhs,'IM'), self[(cat,lhs,rhs,'IM')])
       self.newMatrix((cat,lhs,rhs,'IB'), self[(cat,lhs,rhs,'IB')])
-      arity = len(tail.split(','))
+      arity = len(rhs.split(','))
       for j in xrange(arity):
         self.newMatrix((cat,lhs,rhs,j,'OM'),self[(cat,lhs,rhs,j,'OM')])
         self.newMatrix((cat,lhs,rhs,j,'OB'),self[(cat,lhs,rhs,j,'OB')])
 
   def newMatrix(self, name,M= None, size = (0,0)):
+    if name in self: 
+      print 'Adding a matrix to theta that is already there. Ignoring.'
+      return
+
     if M is not None: self[name] = M
     elif isinstance(size, (int,long)): self[name] = np.random.rand(size)*.2-.1
     elif len(size) == 2: self[name] = np.random.rand(size[0],size[1])*.02-.01

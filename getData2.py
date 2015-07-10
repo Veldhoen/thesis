@@ -48,6 +48,7 @@ def getIORNNs(source,outDir,sennaVoc):
 
 
   for filename in toOpen:
+    name = os.path.splitext(os.path.split(filename)[1])[0]
     print 'converting trees from', filename
     nws = []
     with open(filename,'r') as f:
@@ -70,15 +71,15 @@ def getIORNNs(source,outDir,sennaVoc):
           print line
         if counter % 50 == 0: print counter
         if counter % 1000 == 0:
-          out =os.path.join(outDir,os.path.splitext(os.path.split(filename)[1])[0]+'IORNNS_'+str(counter//1000)+'.pik')
+          out =os.path.join(outDir,name+'_IORNNS_'+str(counter//1000)+'.pik')
           print 'writing to', out
           with open(out,'wb') as f:
             pickle.dump(nws,f)
             nws = []
   print 'writing rules and vocabulary to file'
-  with open(os.path.join(outDir,'RULES.pik'),'wb') as f:
+  with open(os.path.join(outDir,name+'_RULES.pik'),'wb') as f:
     pickle.dump(rules,f)
-  with open(os.path.join(outDir,'VOC.pik'),'wb') as f:
+  with open(os.path.join(outDir,name+'_VOC.pik'),'wb') as f:
     pickle.dump(voc,f)
 
 
