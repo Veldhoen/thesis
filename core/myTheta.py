@@ -70,7 +70,7 @@ class Theta(dict):
 
 
     print 'create score matrices'
-    self.newMatrix(('u','M'), None,(self.dout,self.dout))
+    self.newMatrix(('u','M'), None,(self.dout,self.din+self.dout))
     self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
     self.newMatrix(('score','M'), None,(1,self.dout))

@@ -14,9 +14,9 @@ class Node():
     self.nonlin = nonlinearity
 
   def forward(self,theta, activateIn = True, activateOut = False):
-    print 'forward',self.cat[0], self.cat[-1] , self
+#    print 'forward',self.cat[0], self.cat[-1] , self
     if activateIn:
-      print 'do forward inputs'
+  #    print 'do forward inputs'
       [i.forward(theta, activateIn,activateOut) for i in self.inputs]
 
     inputsignal = []
@@ -33,13 +33,16 @@ class Node():
     M= theta[self.cat+('M',)]
     b= theta[self.cat+('B',)]
     if M is None or b is None:
-      print 'Fail to forward node:', self.cat
+      print 'Fail to forward node, no matrix and bias vector:', self.cat
       sys.exit()
 
+    try: self.z = M.dot(inputsignal)+b
+    except: print self.cat
     self.z = M.dot(inputsignal)+b
+
     self.a, self.ad = activation.activate(self.z, self.nonlin)
     if activateOut:
-      print 'do forward outputs'
+    #  print 'do forward outputs'
       [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient=None, addOut = False):
@@ -81,7 +84,7 @@ class Leaf(Node):
     self.key = key
 
   def forward(self,theta, activateIn = True, activateOut = False):
-    print 'forward leaf',self.cat[0], self
+#    print 'forward leaf',self.cat[0], self
     try: self.z = theta[self.cat][theta.lookup[self.cat].index(self.key)]
     except:
       print 'Fail to foward Leaf:', self.cat, self.key
@@ -89,7 +92,7 @@ class Leaf(Node):
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
     if activateOut:
-      print 'do forward outputs'
+#      print 'do forward outputs'
       [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def __str__(self):

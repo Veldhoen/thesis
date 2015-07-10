@@ -35,7 +35,7 @@ def getSennaEmbs(destination):
     pickle.dump([V,voc], f, -1)
   print 'Done.'
 
-def getIORNNs(source,outDir,sennaVoc):
+def getIORNNs(source,outDir):
   rules = defaultdict(Counter)
   voc = set()
   if os.path.isdir(source):
@@ -59,7 +59,7 @@ def getIORNNs(source,outDir,sennaVoc):
           tree = nltk.tree.Tree.fromstring(line)
           sennaLeaves(tree,sennaVoc)
 #          print tree.leaves()
-          nws.append(myIORNN.IORNN(tree,sennaVoc))
+          nws.append(myIORNN.IORNN(tree))
           for prod in tree.productions():
             if prod.is_nonlexical():
               rules[str(prod.lhs())][str(prod.rhs())]+=1
@@ -104,8 +104,8 @@ senna = os.path.join('data','sennaEMB'+'.pik')
 
 #getSennaEmbs(senna)
 
-with open(senna, 'rb') as f:
-  V, voc =   pickle.load(f)
+#with open(senna, 'rb') as f:
+#  V, voc =   pickle.load(f)
 
-getIORNNs('../originalData/WSJ','data/newWSJ',voc)
+getIORNNs('../originalData/WSJ','data/newWSJ')
 #getIORNNs('../originalData/BNC','data/newBNC',voc)

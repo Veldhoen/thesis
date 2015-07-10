@@ -105,7 +105,7 @@ def main(args):
   # training...
 
   with open(args['out'], 'wb') as f:
-    pickle.dump([theta,vocabulary],f)
+    pickle.dump(theta,f)
 
 
 
