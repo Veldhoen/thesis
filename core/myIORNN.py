@@ -75,7 +75,10 @@ def computeScore(scoreNode,theta,x, activate=True, reset = True):
   return score, original
 
 def trainWord(scoreNode, theta, gradients, target, vocabulary):
-  nwords = len(theta['word'])
+  print 'trainWord types:'
+  print'\t theta',type(theta),'gradients',type(gradients)
+
+
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
   # pick a candidate x different from own index
@@ -92,7 +95,8 @@ def trainWord(scoreNode, theta, gradients, target, vocabulary):
     # backpropagate through observed node
     realScore = scoreNode.a
     delta = -1*scoreNode.ad
-    scoreNode.backprop(delta, theta, gradients)
+    print  np.shape(scoreNode.a),np.shape(scoreNode.ad), np.shape(delta)
+    scoreNode.backprop(theta,delta, gradients)
 
     # backpropagate through candidate
     # save original settings
@@ -142,12 +146,16 @@ class IORNN():
     print 'activated the network.'
 
   def trainWords(self, theta, gradients = None, activate=True, target = None):
+    print 'trainWords types:'
+#    print'\t theta',type(theta),'gradients',type(gradients)
+
+
     if activate: self.activate(theta)
     error = 0
     for scoreNode in self.scoreNodes:
-      error += trainWord(scoreNode, theta, gradients, target)
+      error += trainWord(scoreNode, theta, gradients, target, theta.lookup[('word',)])
     return gradients, error/ len(self.scoreNodes)
-    
+
   def evaluateNAR(self,theta, vocabulary):
     ranks = 0
     num = 0
@@ -161,10 +169,9 @@ class IORNN():
 
 
       results = [computeScore(scoreNode,theta,x, True, False) for x in vocabulary]
-      originals = [original for score, original in results]
 
       # reset the scoreNW
-      score, original = computeScore(scoreNode,theta,originals[0], True, True)
+      computeScore(scoreNode,theta,results[0][0], True, False)
 #      print 'original score:',score
 
       scores = [score for score, original in results]

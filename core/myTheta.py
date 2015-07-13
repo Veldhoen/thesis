@@ -40,23 +40,23 @@ class Theta(dict):
     if key[0] == 'composition':
       lhs = key[1]
       rhs = key[2]
-      if lhs == 'X':  #already looking for the most generic rule
+      if lhs == '#X#':  #already looking for the most generic rule
         print 'No theta entry for',lhs,rhs
-        sys.exit
+        sys.exit()
       else:
         rhsBits = rhs[1:-1].split(',')
-        if all(['X'in x for x in rhsBits]): #already looking for a generic rhs
-          fakeKey=key[:1]+('X',)+key[2:]      #change lhs to generic
-        else:                              #change rhs to generic, but keep lhs
-          fakeKey=key[:2]+('('+','.join(['X']*len(rhsBits))+')',)+key[3:]
+        if all([x=='#X#' for x in rhsBits]): #already looking for a generic rhs
+          fakeKey=key[:1]+('#X#',)+key[2:]    #change lhs to generic
+        else:                               #change rhs to generic, but keep lhs
+          fakeKey=key[:2]+('('+','.join(['#X#']*len(rhsBits))+')',)+key[3:]
         return self[fakeKey]
 
   def forIORNN(self, embeddings, vocabulary ):
     print 'create composition matrices'
     for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
-      lhs = 'X'
-      rhs = '('+','.join(['X']*arity)+')'
+      lhs = '#X#'
+      rhs = '('+','.join(['#X#']*arity)+')'
 #      print lhs,rhs
       self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
       self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
