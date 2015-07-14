@@ -6,7 +6,7 @@ from collections import Counter
 
 class Theta(dict):
 
-  def __init__(self, style, dims, embeddings = None, grammar = None, vocabulary = ['UNKNOWN']):
+  def __init__(self, style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN']):
     if dims is None:
       print 'No dimensions for initialization of theta'
       sys.exit()
@@ -37,23 +37,17 @@ class Theta(dict):
     self.rules = rulesC.most_common()
 
   def __missing__(self, key):
-    if key[0] == 'composition':
-      lhs = key[1]
-      rhs = key[2]
-      if lhs == '#X#':  #already looking for the most generic rule
-        print 'No theta entry for',lhs,rhs
-        sys.exit()
-      else:
-        rhsBits = rhs[1:-1].split(',')
-        if all([x=='#X#' for x in rhsBits]): #already looking for a generic rhs
-          fakeKey=key[:1]+('#X#',)+key[2:]    #change lhs to generic
-        else:                               #change rhs to generic, but keep lhs
-          fakeKey=key[:2]+('('+','.join(['#X#']*len(rhsBits))+')',)+key[3:]
+    for fakeKey in generalizeKey(key):
+      if fakeKey in self.keys():
         return self[fakeKey]
+        break
+    else:
+      print key, 'not in theta and unable to create it.'
+      sys.exit()
 
   def forIORNN(self, embeddings, vocabulary ):
     print 'create composition matrices'
-    for arity in xrange(1,self.maxArity+1):
+    for arity in xrange(2,self.maxArity+1):         #NB replace 2 by 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       cat = 'composition'
       lhs = '#X#'
       rhs = '('+','.join(['#X#']*arity)+')'
@@ -61,7 +55,7 @@ class Theta(dict):
       self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
       self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
       for j in xrange(arity):
-        self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,arity*self.din+self.dout))
+        self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,(arity-1)*self.din+self.dout))
         self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(self.dout))
     print 'create lookup tables'
     self.lookup={('word',):vocabulary,('root',): ['']}
@@ -103,11 +97,7 @@ class Theta(dict):
       return
 
     if M is not None: self[name] = M
-    elif isinstance(size, (int,long)): self[name] = np.random.rand(size)*.2-.1
-    elif len(size) == 2: self[name] = np.random.rand(size[0],size[1])*.02-.01
-    else:
-      print 'problem in newMatrix', name, M, size
-      sys.exit()
+    else: self[name] = np.random.random_sample(size)*.2-.1
 
   def regularize(self, alphaDsize, lambdaL2):
     if lambdaL2==0: return
@@ -140,7 +130,8 @@ class Theta(dict):
 
   def unSparse(self):
     for name in self.keys():
-      self[name] = sparse.dense_from_sparse(self[name])
+      if sparse.issparse(self[name]):
+        self[name] = self[name].toarray()
 
   def gradient(self):
     return Gradient(self)
@@ -174,7 +165,29 @@ class Gradient(Theta):
     self.theta = theta
 
   def __missing__(self, key):
-    mold = self.theta[key]
+    if key in self.theta.keys():
+      mold = self.theta[key]
+      if key[0] == 'word': self.newMatrix(key,sparse.csc_matrix(mold.shape))
+      else: self.newMatrix(key, np.zeros_like(mold))
+      return self[key]
+    else:
+#      print 'generalizing', key
+      for fakeKey in generalizeKey(key):
+#        print 'fake:', fakeKey
+        if fakeKey in self.theta.keys():
+          self.newMatrix(fakeKey, np.zeros_like(self.theta[fakeKey]))
+          break
+      else:
+        print key,'not in gradient, and not able to create it.'
+        sys.exit()
+      return self[fakeKey]
 
-    if key[0] == 'word': self.newMatrix(key,sparse.csc_matrix(mold.shape))
-    else:   self.newMatrix(key, np.zeros_like(mold))
+
+def generalizeKey(key):
+  if key[0] == 'composition':
+    lhs = key[1]
+    rhs = key[2]
+    generalizedHead = '#X#'
+    generalizedTail = '('+','.join(['#X#']*len(rhs[1:-1].split(',')))+')'
+    return[key[:2]+(generalizedTail,)+key[3:],key[:1]+(generalizedHead,generalizedTail,)+key[3:]]
+  else: return []
