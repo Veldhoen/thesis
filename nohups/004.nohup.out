@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "trainIOCopy.py", line 9, in <module>
+    import myTheta
+  File "/home/sveldhoen/thesis/github/myTheta.py", line 74
+    if name[-1] = 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
+                ^
+SyntaxError: invalid syntax

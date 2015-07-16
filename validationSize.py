@@ -36,4 +36,4 @@ for bank in treebanks:
     #print nars
 
 with open('validationResults.tmp','wb') as f:
-   pickle.dump nars
+   pickle.dump(nars,f)

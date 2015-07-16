@@ -1,0 +1,32 @@
+Start part of experiment 103
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.
+Initializing networks.
+Loaded data. 22923 training examples, and 6010 test examples.
+Initializing theta.
+inside - 5
+nwords - 10689
+word - 5
+outside - 5
+bSize - 50
+alpha - 0.05
+lambda - 1.0
+nEpochs - 5
+number of cores - 5
+Start training...
+Start SGD training
+Epoch 0
+evaluating...
+Traceback (most recent call last):
+  File "trainIOCopy.py", line 148, in <module>
+    main(args)
+  File "trainIOCopy.py", line 106, in main
+    theta = SGD(theta, hyperParams, examples, [], cores, adagrad = True)
+  File "/home/sveldhoen/thesis/github/trainingParallel.py", line 130, in SGD
+    if adagrad: theta.update(grad,hyperParams['alpha'],historical_grad)
+  File "/home/sveldhoen/thesis/github/myTheta.py", line 85, in update
+    if histgrad:
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()

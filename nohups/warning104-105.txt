@@ -1,0 +1,1 @@
+NB in runs 104 and 105, the word dimensionality is 5! 

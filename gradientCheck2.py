@@ -93,17 +93,20 @@ def checkIORNN():
 
   theta = myTheta.Theta('IORNN', dims,gram,None,voc)
 #  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
-  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
-#  s = '(VP (NP (Q most) (N hippos)) (V bark))'
+#  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
+  s = '(Top (S (VP (NP (Q most) (N hippos)) (V bark))))'
 #  s = '(NP (Q most) (N hippos))'
 #  s = '(Top (Q most))'
 #  s = '(Q most)'
   tree = Tree.fromstring(s)
   print tree
   nw = myIORNN.IORNN(tree)
-#  nw.activateNW(theta)
-  gradientCheck(theta, nw, 'dogs')
-  print nw
+  nw.activate(theta)
+#  gradientCheck(theta, nw, 'dogs')
+#  print nw
 
+
+  theta.specializeHeads()
+  theta.specializeRules()
 checkIORNN()
 

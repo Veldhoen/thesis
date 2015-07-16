@@ -1,0 +1,60 @@
+Start part of experiment 007
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.
+Initializing networks.
+Loaded data. 45 training examples, and 53 test examples.
+Initializing theta.
+inside - 5
+nwords - 104
+word - 5
+outside - 5
+bSize - 10
+alpha - 0.05
+lambda - 0.1
+nEpochs - 5
+number of cores - 2
+Start training...
+Start SGD training
+Epoch 0
+	Batch 0 , average error: 0.999992713903 , theta norm: 0.268055627896
+	Batch 1 , average error: 0.999996706232 , theta norm: 0.268032800248
+	Batch 2 , average error: 0.99999060997 , theta norm: 0.268009975937
+	Batch 3 , average error: 1.00004465892 , theta norm: 0.267987094748
+	Batch 4 , average error: 1.00000903789 , theta norm: 0.267964264122
+Epoch 1
+	Batch 0 , average error: 1.00002846746 , theta norm: 0.267941405596
+	Batch 1 , average error: 1.00000736512 , theta norm: 0.26791859388
+	Batch 2 , average error: 0.999970513025 , theta norm: 0.267895820456
+	Batch 3 , average error: 1.00002025608 , theta norm: 0.267872981007
+	Batch 4 , average error: 1.00001134542 , theta norm: 0.267850159619
+Epoch 2
+	Batch 0 , average error: 1.00000659337 , theta norm: 0.267827352325
+	Batch 1 , average error: 1.00000881593 , theta norm: 0.267804533054
+	Batch 2 , average error: 0.999980918977 , theta norm: 0.267781763706
+	Batch 3 , average error: 1.00000655029 , theta norm: 0.267758947429
+	Batch 4 , average error: 0.999998686699 , theta norm: 0.267736157962
+Epoch 3
+	Batch 0 , average error: 1.00002087788 , theta norm: 0.267713331895
+	Batch 1 , average error: 1.0000158745 , theta norm: 0.26769052138
+	Batch 2 , average error: 0.999991243865 , theta norm: 0.267667749062
+	Batch 3 , average error: 0.999981759421 , theta norm: 0.267644988178
+	Batch 4 , average error: 0.999993659075 , theta norm: 0.267622219611
+Epoch 4
+	Batch 0 , average error: 1.00002308367 , theta norm: 0.26759941649
+	Batch 1 , average error: 0.999984546529 , theta norm: 0.267576666178
+	Batch 2 , average error: 0.999968262838 , theta norm: 0.267553935825
+	Batch 3 , average error: 0.999980311329 , theta norm: 0.267531187875
+	Batch 4 , average error: 1.00002222923 , theta norm: 0.267508388499
+Computing performance... 6
+Initial Performance on validation set: 0.525147928994
+Epoch 0, Performance on validation set: 0.524408284024
+Epoch 1, Performance on validation set: 0.523668639053
+Epoch 2, Performance on validation set: 0.522559171598
+Epoch 3, Performance on validation set: 0.522928994083
+Epoch 4, Performance on validation set: 0.521449704142
+Eventual performance on test set: 0.4854
+End of training.
+Writing model to file.

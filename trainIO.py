@@ -112,16 +112,21 @@ def main(args):
   if ada: print 'Adagrad is on.'
   else: print 'Adagrad is off.'
 
+  outDir = args['out']
+  if not os.path.isdir(outDir):
+    print 'Not a valid output directory:', outDir
+    sys.exit()
+
+
   tTreebank = training.Treebank(treebanksTrain)
   vTreebank = training.Treebank(treebanksValid[:1])
-  training.beginSmall(tTreebank, vTreebank, hyperParams, theta, cores=1)
+  training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores=1)
 
 
 
   # training...
 
-  with open(args['out'], 'wb') as f:
-    pickle.dump(theta,f)
+  
 
 
 
@@ -163,7 +168,7 @@ if __name__ == "__main__":
   parser.add_argument('-dout','--outside', type=int, help='Dimensionality of outside representations', required=False)
   # training hyperparameters:
   parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs to train', required=True)
-  parser.add_argument('-b','--bSize', type=int, default = 0, help='Batch size for minibatch training', required=False)
+  parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
   parser.add_argument('-l','--lambda', type=float, help='Regularization parameter lambdaL2', required=True)
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
   # computation:

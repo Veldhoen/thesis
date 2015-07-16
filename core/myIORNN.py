@@ -87,11 +87,11 @@ def trainWord(scoreNode, theta, gradients, target, vocabulary):
     while x == original or x == 'UNKNOWN':  x = random.choice(vocabulary)
   else: x = target
 
-  print '\ntraining score node of word:',original,', target:', target
+#  print '\ntraining score node of word:',original,', target:', target
 
   if True: #error>1: # if the candidate scores too high: backpropagate error
     # backpropagate through observed node
-    realScore = scoreNode.a[0]
+    realScore = scoreNode.a[0][0]
 #    print 'real score:', realScore, 'derivative:', scoreNode.ad[0]
     delta = -1*scoreNode.ad[0]
 #    cDelta = delta[:]
@@ -100,7 +100,7 @@ def trainWord(scoreNode, theta, gradients, target, vocabulary):
     # backpropagate through candidate
     wordNode.key = x
     activateScoreNW(uNode,wordNode,scoreNode,theta) # locally recompute activations for candidate
-    candidateScore = scoreNode.a[0]
+    candidateScore = scoreNode.a[0][0]
 #    print 'candidate score:', candidateScore,'derivative:', scoreNode.ad[0]
     delta = scoreNode.ad[0]
 #    print 'ddelta:',delta+cDelta
@@ -165,7 +165,7 @@ class IORNN():
     if sample <1 and sample>0:
       vocabulary = random.sample(vocabulary, int(sample*len(vocabulary)))
       for word in self.words():
-        if word not in vocabuary: vocabulary.append(word)
+        if word not in vocabulary: vocabulary.append(word)
 
     ranks = 0
     num = 0

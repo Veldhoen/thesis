@@ -1,0 +1,17 @@
+Starting Small:
+
+Unknown words:
+  Use 'UNK' token
+  OR
+  Use POS to create specialized UNKs
+
+Begin with sentences of length 10>n>20
+  (skip all other sentences)
+  Increment
+
+Begin with unspecialized composition function
+  Upgrade to ~kind~?
+  Upgrade to LHS
+  Upgrade to n most frequent rules (start with LHS-trained)
+  (Upgrade to all rules)
+

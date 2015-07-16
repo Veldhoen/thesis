@@ -1,0 +1,33 @@
+Start part of experiment 006
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.
+Initializing networks.
+Loaded data. 45 training examples, and 53 test examples.
+Initializing theta.
+inside - 5
+nwords - 104
+word - 5
+outside - 5
+bSize - 10
+alpha - 0.05
+lambda - 0.1
+nEpochs - 5
+number of cores - 2
+Start training...
+Start SGD training
+Epoch 0
+Traceback (most recent call last):
+  File "trainIOCopy.py", line 148, in <module>
+    main(args)
+  File "trainIOCopy.py", line 106, in main
+    theta = SGD(theta, hyperParams, examples, [], cores, adagrad = False)
+  File "/home/sveldhoen/thesis/github/trainingParallel.py", line 129, in SGD
+    else: theta.update(grad,hyperParams['alpha'])
+  File "/home/sveldhoen/thesis/github/myTheta.py", line 87, in update
+    subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
+  File "/home/sveldhoen/thesis/github/myTheta.py", line 117, in subtractFromDense
+    denseM = denseM - factor.multiply(incM)
+AttributeError: 'numpy.ndarray' object has no attribute 'multiply'

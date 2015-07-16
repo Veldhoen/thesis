@@ -1,0 +1,21 @@
+Le and Zuidema 2014:
+
+CFG-0:   a single composition weight matrix and bias
+CFG-200: parameter selection based on grammar rule, with the 200 most frequent rules according to Penn Treebank sections 2-21
+         all other rules are treated uniformly
+CCG:     with all (5?) combinatory rules
+Objective function: ranking criterion
+
+Initialization: Senna embeddings
+Vocabulary size: 130k
+
+Training: ca 3M sentences longer than 10 words in the BNC, parsed by the C&C parser and by the Berkeley Parser
+  Learning Rate: ?
+  LR scheme: Adagrad?
+  Regularization? Coefficient?
+  Minibatch size
+  Number of iterations (early stopping?)
+  Momentum?
+
+
+Testing: Penn Treebank section 22 (NAR)

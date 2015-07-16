@@ -1,0 +1,133 @@
+Start part of experiment 101
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Initializing networks.
+Loaded data. 22923 training examples, and 6010 test examples.
+Initializing theta.
+inside - 5
+nwords - 10689
+word - 5
+outside - 5
+bSize - 50
+alpha - 0.05
+lambda - 0.0
+nEpochs - 5
+number of cores - 5
+Start training...
+Start SGD training
+Epoch 0
+	Batch 0 , average error: 0.999996180191 , theta norm: 1.40401044696
+	Batch 10 , average error: 0.537802328082 , theta norm: 4.3818826149
+	Batch 20 , average error: 0.442405670685 , theta norm: 6.79994759779
+	Batch 30 , average error: 0.46908715686 , theta norm: 7.3054462078
+	Batch 40 , average error: 0.441411280443 , theta norm: 7.18914406939
+	Batch 50 , average error: 0.441004423121 , theta norm: 7.04692884162
+	Batch 60 , average error: 0.473342815039 , theta norm: 6.83724049362
+	Batch 70 , average error: 0.466847480432 , theta norm: 6.82952854544
+	Batch 80 , average error: 0.424058487767 , theta norm: 6.91563150804
+	Batch 90 , average error: 0.439380528099 , theta norm: 6.84706198455
+	Batch 100 , average error: 0.418688988002 , theta norm: 6.86906087146
+	Batch 110 , average error: 0.462925746531 , theta norm: 7.07687881416
+	Batch 120 , average error: 0.449000798259 , theta norm: 7.26408119031
+	Batch 130 , average error: 0.466019191251 , theta norm: 7.04112629646
+	Batch 140 , average error: 0.460994590047 , theta norm: 6.90124313015
+	Batch 150 , average error: 0.447409774945 , theta norm: 7.06310307359
+	Batch 160 , average error: 0.453881517528 , theta norm: 7.18425619703
+	Batch 170 , average error: 0.435732832595 , theta norm: 7.36470672322
+	Batch 180 , average error: 0.442975974518 , theta norm: 7.38316265589
+	Batch 190 , average error: 0.440042794941 , theta norm: 7.53464633332
+	Batch 200 , average error: 0.435597923516 , theta norm: 7.56123475977
+	Batch 210 , average error: 0.449352396218 , theta norm: 7.61828558293
+	Batch 220 , average error: 0.428022127835 , theta norm: 7.56943770187
+	Batch 230 , average error: 0.411572257385 , theta norm: 7.50108975793
+	Batch 240 , average error: 0.454890980497 , theta norm: 7.62358456445
+	Batch 250 , average error: 0.429598663975 , theta norm: 7.59230933564
+	Batch 260 , average error: 0.457803216215 , theta norm: 7.70809809571
+	Batch 270 , average error: 0.452829863221 , theta norm: 7.74174745031
+	Batch 280 , average error: 0.459798762741 , theta norm: 7.86621333081
+	Batch 290 , average error: 0.403872052707 , theta norm: 7.98589322772
+	Batch 300 , average error: 0.434843375275 , theta norm: 8.16313793014
+	Batch 310 , average error: 0.500794452825 , theta norm: 8.2102939787
+	Batch 320 , average error: 0.404815292329 , theta norm: 8.35827146824
+	Batch 330 , average error: 0.436711151555 , theta norm: 8.42335117255
+	Batch 340 , average error: 0.472116397012 , theta norm: 8.36843400807
+	Batch 350 , average error: 0.425311921092 , theta norm: 8.38210784293
+	Batch 360 , average error: 0.442459710771 , theta norm: 8.53481549047
+	Batch 370 , average error: 0.428798262476 , theta norm: 8.62481487088
+	Batch 380 , average error: 0.44188356993 , theta norm: 8.66609981083
+	Batch 390 , average error: 0.438395510228 , theta norm: 8.73382553021
+	Batch 400 , average error: 0.423947204392 , theta norm: 8.8720430617
+	Batch 410 , average error: 0.462383252106 , theta norm: 8.90356715976
+	Batch 420 , average error: 0.421718793396 , theta norm: 9.09008973132
+	Batch 430 , average error: 0.427037511499 , theta norm: 9.17351307516
+	Batch 440 , average error: 0.43174599297 , theta norm: 9.22017084242
+	Batch 450 , average error: 0.442934695277 , theta norm: 9.40051124963
+Epoch 1
+	Batch 0 , average error: 0.423347857628 , theta norm: 9.45119345663
+	Batch 10 , average error: 0.435697702636 , theta norm: 9.56622828623
+	Batch 20 , average error: 0.453232727 , theta norm: 9.72631825609
+	Batch 30 , average error: 0.432478835814 , theta norm: 9.71860282696
+	Batch 40 , average error: 0.441729175966 , theta norm: 9.79192691306
+	Batch 50 , average error: 0.429046330707 , theta norm: 9.84529414234
+	Batch 60 , average error: 0.430977455243 , theta norm: 9.88903394461
+	Batch 70 , average error: 0.414823685831 , theta norm: 9.95129951405
+	Batch 80 , average error: 0.443397407945 , theta norm: 10.0278540692
+	Batch 90 , average error: 0.444863065457 , theta norm: 10.0819225997
+	Batch 100 , average error: 0.422928348125 , theta norm: 10.1584511548
+	Batch 110 , average error: 0.412472066118 , theta norm: 10.1540917172
+	Batch 120 , average error: 0.448478069802 , theta norm: 10.1757153644
+	Batch 130 , average error: 0.46262620044 , theta norm: 10.1291812948
+	Batch 140 , average error: 0.433511497059 , theta norm: 10.1534598611
+	Batch 150 , average error: 0.432692859062 , theta norm: 10.2037795614
+	Batch 160 , average error: 0.438195415624 , theta norm: 10.2319655748
+	Batch 170 , average error: 0.461483383661 , theta norm: 10.3005460178
+	Batch 180 , average error: 0.423422287632 , theta norm: 10.38917285
+	Batch 190 , average error: 0.464269652619 , theta norm: 10.4672189352
+	Batch 200 , average error: 0.450991738542 , theta norm: 10.4368005382
+	Batch 210 , average error: 0.428766949698 , theta norm: 10.491900154
+	Batch 220 , average error: 0.435311657769 , theta norm: 10.4723715392
+	Batch 230 , average error: 0.437036172765 , theta norm: 10.4118431515
+	Batch 240 , average error: 0.428127329274 , theta norm: 10.4495409614
+	Batch 250 , average error: 0.459248752601 , theta norm: 10.4614088299
+	Batch 260 , average error: 0.422996850177 , theta norm: 10.3876367931
+	Batch 270 , average error: 0.452061026107 , theta norm: 10.3468058082
+	Batch 280 , average error: 0.445125830722 , theta norm: 10.4737519066
+	Batch 290 , average error: 0.477706221742 , theta norm: 10.4004606605
+	Batch 300 , average error: 0.436038609718 , theta norm: 10.4178713978
+	Batch 310 , average error: 0.415688438244 , theta norm: 10.3842831165
+	Batch 320 , average error: 0.4557558339 , theta norm: 10.3566021768
+	Batch 330 , average error: 0.43031074641 , theta norm: 10.3414650016
+	Batch 340 , average error: 0.455918659094 , theta norm: 10.3427991292
+	Batch 350 , average error: 0.466090294034 , theta norm: 10.3905835177
+	Batch 360 , average error: 0.449085647842 , theta norm: 10.4421260527
+	Batch 370 , average error: 0.4437956165 , theta norm: 10.4897093829
+	Batch 380 , average error: 0.435247505551 , theta norm: 10.6146195054
+	Batch 390 , average error: 0.424537955013 , theta norm: 10.611991802
+	Batch 400 , average error: 0.434796650416 , theta norm: 10.6245872434
+	Batch 410 , average error: 0.439927943025 , theta norm: 10.7195618032
+	Batch 420 , average error: 0.46147934462 , theta norm: 10.7806667816
+	Batch 430 , average error: 0.454967137146 , theta norm: 10.7727139729
+	Batch 440 , average error: 0.452877874767 , theta norm: 10.9877283171
+	Batch 450 , average error: 0.435044025449 , theta norm: 11.0328962906
+Epoch 2
+Process SyncManager-4596:
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/usr/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python2.7/multiprocessing/managers.py", line 550, in _run_server
+    server = cls._Server(registry, address, authkey, serializer)
+  File "/usr/lib/python2.7/multiprocessing/managers.py", line 162, in __init__
+    self.listener = Listener(address=address, backlog=16)
+  File "/usr/lib/python2.7/multiprocessing/connection.py", line 127, in __init__
+    address = address or arbitrary_address(family)
+  File "/usr/lib/python2.7/multiprocessing/connection.py", line 90, in arbitrary_address
+    return tempfile.mktemp(prefix='listener-', dir=get_temp_dir())
+  File "/usr/lib/python2.7/multiprocessing/util.py", line 138, in get_temp_dir
+    tempdir = tempfile.mkdtemp(prefix='pymp-')
+  File "/usr/lib/python2.7/tempfile.py", line 325, in mkdtemp
+    dir = gettempdir()
+  File "/usr/lib/python2.7/t

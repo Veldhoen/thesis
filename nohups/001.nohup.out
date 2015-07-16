@@ -1,0 +1,54 @@
+Start part of experiment 001
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.
+Initializing networks.
+Loaded data. 45 training examples, and 53 test examples.
+Initializing theta.
+inside - 5
+nwords - 104
+word - 5
+outside - 5
+bSize - 10
+alpha - 0.05
+lambda - 0.1
+nEpochs - 5
+number of cores - 2
+Start training...
+Start SGD training
+Epoch 0
+evaluating...
+Initial Performance on validation set: 0.575073964497
+	Batch 0 , average error: 1.00001087649 , theta norm: 0.266974749791
+Epoch 1
+evaluating...
+Epoch 0, Performance on validation set: 0.377218934911
+	Batch 0 , average error: 0.992583895981 , theta norm: 0.341871956505
+Epoch 2
+evaluating...
+Epoch 1, Performance on validation set: 0.291420118343
+	Batch 0 , average error: 0.834341399942 , theta norm: 0.519069402286
+Epoch 3
+evaluating...
+Epoch 2, Performance on validation set: 0.282914201183
+	Batch 0 , average error: 0.544068713129 , theta norm: 0.680114153667
+Epoch 4
+evaluating...
+Epoch 3, Performance on validation set: 0.288091715976
+	Batch 0 , average error: 0.482190035705 , theta norm: 0.815047938728
+Computing performance... 6
+Initial Performance on validation set: 0.575073964497
+Epoch 0, Performance on validation set: 0.377218934911
+Epoch 1, Performance on validation set: 0.291420118343
+Epoch 2, Performance on validation set: 0.282914201183
+Epoch 3, Performance on validation set: 0.288091715976
+evaluating...
+evaluating...
+Epoch 4, Performance on validation set: 0.27699704142
+Epoch 4, Performance on validation set: 0.27699704142
+Eventual performance on test set: 0.260307692308
+Eventual performance on test set: 0.260307692308
+End of training.
+Writing model to file.

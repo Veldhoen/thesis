@@ -1,0 +1,280 @@
+training on data/WSJ for 5 epochs
+NB Adagrad ON now
+initializing word embeddings from 
+parameters: batch size = 50, alpha = 0.05, lambda = 1.0.
+Start part of experiment 104
+Loading treebank.
+/home/sveldhoen/.local/lib/python2.7/site-packages/numpy/core/fromnumeric.py:2507: VisibleDeprecationWarning: `rank` is deprecated; use the `ndim` attribute or function instead. To find the rank of a matrix see `numpy.linalg.matrix_rank`.
+  VisibleDeprecationWarning)
+Loading vocabulary.
+Grammar-based parameter selection on. Initializing 400 most frequent grammar rules.
+Initializing networks.
+Loaded data. 22923 training examples, and 6010 test examples.
+Initializing theta.
+inside - 5
+nwords - 10689
+word - 5
+outside - 5
+bSize - 50
+alpha - 0.05
+lambda - 1.0
+nEpochs - 5
+number of cores - 5
+Start training...
+Start SGD training
+Epoch 0
+evaluating...
+	Batch 0 , average error: 0.999957578298 , theta norm: 0.270103817075
+	Batch 10 , average error: 0.465818170636 , theta norm: 0.583356795591
+	Batch 20 , average error: 0.369204459563 , theta norm: 0.679488749596
+	Batch 30 , average error: 0.375742831789 , theta norm: 0.717694840525
+	Batch 40 , average error: 0.345035551281 , theta norm: 0.733620944205
+	Batch 50 , average error: 0.366963939879 , theta norm: 0.756325650796
+	Batch 60 , average error: 0.342448743007 , theta norm: 0.771994766271
+	Batch 70 , average error: 0.376224146423 , theta norm: 0.795269838699
+	Batch 80 , average error: 0.368040615107 , theta norm: 0.811011516594
+	Batch 90 , average error: 0.355918239557 , theta norm: 0.823819726815
+	Batch 100 , average error: 0.343692919976 , theta norm: 0.830051614914
+	Batch 110 , average error: 0.334831479507 , theta norm: 0.842472535961
+	Batch 120 , average error: 0.318323998612 , theta norm: 0.853786759585
+	Batch 130 , average error: 0.349725233289 , theta norm: 0.864677688501
+	Batch 140 , average error: 0.326645840072 , theta norm: 0.874937823112
+	Batch 150 , average error: 0.344070633256 , theta norm: 0.883770582413
+	Batch 160 , average error: 0.356395634269 , theta norm: 0.88847206482
+	Batch 170 , average error: 0.340709982568 , theta norm: 0.893271311264
+	Batch 180 , average error: 0.372281028314 , theta norm: 0.901166691331
+	Batch 190 , average error: 0.344566417159 , theta norm: 0.910073022891
+	Batch 200 , average error: 0.364786656448 , theta norm: 0.921226239209
+	Batch 210 , average error: 0.334291809403 , theta norm: 0.926294908227
+	Batch 220 , average error: 0.310165029066 , theta norm: 0.934167123973
+	Batch 230 , average error: 0.349561416579 , theta norm: 0.941979138608
+	Batch 240 , average error: 0.337297070492 , theta norm: 0.949570116779
+	Batch 250 , average error: 0.351517115765 , theta norm: 0.956183848473
+	Batch 260 , average error: 0.323511954611 , theta norm: 0.961196781744
+	Batch 270 , average error: 0.328403959893 , theta norm: 0.963595300485
+	Batch 280 , average error: 0.299628543865 , theta norm: 0.965700623992
+	Batch 290 , average error: 0.322047431673 , theta norm: 0.972410226516
+	Batch 300 , average error: 0.343144004806 , theta norm: 0.978089205208
+	Batch 310 , average error: 0.375992265221 , theta norm: 0.985805019826
+	Batch 320 , average error: 0.339094926464 , theta norm: 0.994762271813
+	Batch 330 , average error: 0.3401328358 , theta norm: 0.99949650995
+	Batch 340 , average error: 0.329405373087 , theta norm: 1.0080210949
+	Batch 350 , average error: 0.33807155782 , theta norm: 1.01300686357
+	Batch 360 , average error: 0.33209669066 , theta norm: 1.01893655474
+	Batch 370 , average error: 0.283457744797 , theta norm: 1.02557252867
+	Batch 380 , average error: 0.326114825074 , theta norm: 1.0303553557
+	Batch 390 , average error: 0.330149744966 , theta norm: 1.03776460284
+	Batch 400 , average error: 0.329176495157 , theta norm: 1.04404571145
+	Batch 410 , average error: 0.355428146744 , theta norm: 1.04992860175
+	Batch 420 , average error: 0.324889207093 , theta norm: 1.05716974577
+	Batch 430 , average error: 0.360092295004 , theta norm: 1.06296327866
+	Batch 440 , average error: 0.318634977879 , theta norm: 1.06679322536
+	Batch 450 , average error: 0.319772552159 , theta norm: 1.06982850659
+Epoch 1
+evaluating...
+	Batch 0 , average error: 0.342439386025 , theta norm: 1.07442295924
+	Batch 10 , average error: 0.322816848634 , theta norm: 1.07907362493
+	Batch 20 , average error: 0.364381336367 , theta norm: 1.08337821862
+	Batch 30 , average error: 0.306651512375 , theta norm: 1.08843142029
+	Batch 40 , average error: 0.357561041628 , theta norm: 1.08980325837
+	Batch 50 , average error: 0.327075195459 , theta norm: 1.09597192151
+	Batch 60 , average error: 0.312005324389 , theta norm: 1.10221089421
+	Batch 70 , average error: 0.351798892534 , theta norm: 1.11043314187
+	Batch 80 , average error: 0.339592047695 , theta norm: 1.11403820504
+	Batch 90 , average error: 0.309367486174 , theta norm: 1.11642216699
+	Batch 100 , average error: 0.316098773896 , theta norm: 1.11869538676
+	Batch 110 , average error: 0.333608369628 , theta norm: 1.1221102845
+	Batch 120 , average error: 0.323513321917 , theta norm: 1.12549744509
+	Batch 130 , average error: 0.299875953561 , theta norm: 1.12890867025
+	Batch 140 , average error: 0.331232804074 , theta norm: 1.1321877064
+	Batch 150 , average error: 0.292954794564 , theta norm: 1.13633331268
+	Batch 160 , average error: 0.310258929546 , theta norm: 1.13914790376
+	Batch 170 , average error: 0.323463351117 , theta norm: 1.14272217711
+	Batch 180 , average error: 0.359117344131 , theta norm: 1.14847312169
+	Batch 190 , average error: 0.30670350442 , theta norm: 1.15366591378
+	Batch 200 , average error: 0.326322762913 , theta norm: 1.15832123332
+	Batch 210 , average error: 0.324600149259 , theta norm: 1.16247646164
+	Batch 220 , average error: 0.336974587727 , theta norm: 1.16516771587
+	Batch 230 , average error: 0.332508320752 , theta norm: 1.16800767829
+	Batch 240 , average error: 0.344253185684 , theta norm: 1.17303449498
+	Batch 250 , average error: 0.293811745102 , theta norm: 1.173339458
+	Batch 260 , average error: 0.323113163314 , theta norm: 1.17681643677
+	Batch 270 , average error: 0.315112398945 , theta norm: 1.17946860935
+	Batch 280 , average error: 0.331805825835 , theta norm: 1.18175059287
+	Batch 290 , average error: 0.326449414062 , theta norm: 1.18469024081
+	Batch 300 , average error: 0.291201008211 , theta norm: 1.18708423674
+	Batch 310 , average error: 0.317134948631 , theta norm: 1.19089060957
+	Batch 320 , average error: 0.346404941844 , theta norm: 1.19472164548
+	Batch 330 , average error: 0.293139922304 , theta norm: 1.19592425931
+	Batch 340 , average error: 0.294410829195 , theta norm: 1.19911583428
+	Batch 350 , average error: 0.310650078619 , theta norm: 1.20304149518
+	Batch 360 , average error: 0.309657101061 , theta norm: 1.20559299969
+	Batch 370 , average error: 0.282313533672 , theta norm: 1.2076772947
+	Batch 380 , average error: 0.34187991536 , theta norm: 1.21049541965
+	Batch 390 , average error: 0.324210857964 , theta norm: 1.21347012605
+	Batch 400 , average error: 0.303803662329 , theta norm: 1.21632354114
+	Batch 410 , average error: 0.355119194005 , theta norm: 1.21975660033
+	Batch 420 , average error: 0.338929129816 , theta norm: 1.22042868755
+	Batch 430 , average error: 0.358935506978 , theta norm: 1.22213852218
+	Batch 440 , average error: 0.310160114212 , theta norm: 1.22491148804
+	Batch 450 , average error: 0.303890554639 , theta norm: 1.22760084424
+Epoch 2
+evaluating...
+	Batch 0 , average error: 0.332305650983 , theta norm: 1.2304906317
+	Batch 10 , average error: 0.305925845797 , theta norm: 1.23375837144
+	Batch 20 , average error: 0.309952646546 , theta norm: 1.23627843514
+	Batch 30 , average error: 0.312310172992 , theta norm: 1.2384873974
+	Batch 40 , average error: 0.342021540979 , theta norm: 1.24070579886
+	Batch 50 , average error: 0.306349885317 , theta norm: 1.24518972253
+	Batch 60 , average error: 0.294683064359 , theta norm: 1.2473414891
+	Batch 70 , average error: 0.30614538718 , theta norm: 1.24933263226
+	Batch 80 , average error: 0.344446842866 , theta norm: 1.2517028444
+	Batch 90 , average error: 0.331603957729 , theta norm: 1.25318622744
+	Batch 100 , average error: 0.306677865287 , theta norm: 1.25765793505
+	Batch 110 , average error: 0.32908051897 , theta norm: 1.25938278588
+	Batch 120 , average error: 0.354357752549 , theta norm: 1.25805577447
+	Batch 130 , average error: 0.322488330054 , theta norm: 1.26091470912
+	Batch 140 , average error: 0.301014691523 , theta norm: 1.2628385876
+	Batch 150 , average error: 0.32576539662 , theta norm: 1.26657553496
+	Batch 160 , average error: 0.317103091853 , theta norm: 1.2681081579
+	Batch 170 , average error: 0.312597428333 , theta norm: 1.27110375945
+	Batch 180 , average error: 0.337455730615 , theta norm: 1.27272349402
+	Batch 190 , average error: 0.324404894279 , theta norm: 1.27549326752
+	Batch 200 , average error: 0.293359181293 , theta norm: 1.27911705663
+	Batch 210 , average error: 0.35046583069 , theta norm: 1.28165308076
+	Batch 220 , average error: 0.295082556933 , theta norm: 1.28346014661
+	Batch 230 , average error: 0.310422599853 , theta norm: 1.28512919043
+	Batch 240 , average error: 0.334057065658 , theta norm: 1.28733951202
+	Batch 250 , average error: 0.307246869224 , theta norm: 1.28875876652
+	Batch 260 , average error: 0.329459724628 , theta norm: 1.28983633351
+	Batch 270 , average error: 0.325927128877 , theta norm: 1.29098004326
+	Batch 280 , average error: 0.318347941535 , theta norm: 1.29287424506
+	Batch 290 , average error: 0.302562882683 , theta norm: 1.29360739731
+	Batch 300 , average error: 0.310329986724 , theta norm: 1.29458294957
+	Batch 310 , average error: 0.322934477974 , theta norm: 1.29660639693
+	Batch 320 , average error: 0.308865998352 , theta norm: 1.29745325116
+	Batch 330 , average error: 0.342718410296 , theta norm: 1.30016385568
+	Batch 340 , average error: 0.331684693945 , theta norm: 1.30119663266
+	Batch 350 , average error: 0.323885944882 , theta norm: 1.30226135219
+	Batch 360 , average error: 0.34129107194 , theta norm: 1.30508225979
+	Batch 370 , average error: 0.320650816648 , theta norm: 1.30828200571
+	Batch 380 , average error: 0.29739494683 , theta norm: 1.31153356019
+	Batch 390 , average error: 0.3010122194 , theta norm: 1.31155502207
+	Batch 400 , average error: 0.352290704242 , theta norm: 1.31299770063
+	Batch 410 , average error: 0.315315797103 , theta norm: 1.31507719456
+	Batch 420 , average error: 0.290266282747 , theta norm: 1.31645569702
+	Batch 430 , average error: 0.307327564949 , theta norm: 1.31690681858
+	Batch 440 , average error: 0.320120922228 , theta norm: 1.32048210199
+	Batch 450 , average error: 0.312959324283 , theta norm: 1.32273389502
+Epoch 3
+evaluating...
+	Batch 0 , average error: 0.319208816899 , theta norm: 1.32422383895
+	Batch 10 , average error: 0.311371917776 , theta norm: 1.32544108741
+	Batch 20 , average error: 0.331109833011 , theta norm: 1.32773679969
+	Batch 30 , average error: 0.269971045112 , theta norm: 1.32909371281
+	Batch 40 , average error: 0.31042783137 , theta norm: 1.3304915777
+	Batch 50 , average error: 0.312029689072 , theta norm: 1.33118488511
+	Batch 60 , average error: 0.31807627928 , theta norm: 1.33248724141
+	Batch 70 , average error: 0.327035083018 , theta norm: 1.33465385219
+	Batch 80 , average error: 0.345023602062 , theta norm: 1.33843563743
+	Batch 90 , average error: 0.345209949083 , theta norm: 1.34034076395
+	Batch 100 , average error: 0.341424390389 , theta norm: 1.343680594
+	Batch 110 , average error: 0.322584750095 , theta norm: 1.34557524397
+	Batch 120 , average error: 0.331754887889 , theta norm: 1.34907198163
+	Batch 130 , average error: 0.326187664893 , theta norm: 1.3501717667
+	Batch 140 , average error: 0.30653174568 , theta norm: 1.35303378729
+	Batch 150 , average error: 0.308786488591 , theta norm: 1.35417654593
+	Batch 160 , average error: 0.345680208083 , theta norm: 1.35516434009
+	Batch 170 , average error: 0.320756515669 , theta norm: 1.35618186774
+	Batch 180 , average error: 0.335931143577 , theta norm: 1.35985419628
+	Batch 190 , average error: 0.328257117157 , theta norm: 1.3615398642
+	Batch 200 , average error: 0.320582897609 , theta norm: 1.36319687517
+	Batch 210 , average error: 0.286839427499 , theta norm: 1.3648642041
+	Batch 220 , average error: 0.328389890611 , theta norm: 1.3663603424
+	Batch 230 , average error: 0.304566333112 , theta norm: 1.36686601917
+	Batch 240 , average error: 0.298505780141 , theta norm: 1.36843218268
+	Batch 250 , average error: 0.328810917471 , theta norm: 1.36929166567
+	Batch 260 , average error: 0.288018262873 , theta norm: 1.37130838068
+	Batch 270 , average error: 0.309947138124 , theta norm: 1.37045263017
+	Batch 280 , average error: 0.332345073722 , theta norm: 1.37296504644
+	Batch 290 , average error: 0.32526925564 , theta norm: 1.37385697983
+	Batch 300 , average error: 0.302184285561 , theta norm: 1.37526024514
+	Batch 310 , average error: 0.301038046696 , theta norm: 1.3774681202
+	Batch 320 , average error: 0.324906560963 , theta norm: 1.37871040387
+	Batch 330 , average error: 0.294427547334 , theta norm: 1.38004267069
+	Batch 340 , average error: 0.328463528355 , theta norm: 1.38026295958
+	Batch 350 , average error: 0.292777242228 , theta norm: 1.38175469508
+	Batch 360 , average error: 0.327199394802 , theta norm: 1.38359060981
+	Batch 370 , average error: 0.315177841503 , theta norm: 1.38478795445
+	Batch 380 , average error: 0.297637139213 , theta norm: 1.38535410844
+	Batch 390 , average error: 0.302979626664 , theta norm: 1.38631622992
+	Batch 400 , average error: 0.306899508153 , theta norm: 1.38807919694
+	Batch 410 , average error: 0.305039619175 , theta norm: 1.38973760262
+	Batch 420 , average error: 0.345445409558 , theta norm: 1.39163552268
+	Batch 430 , average error: 0.310652971959 , theta norm: 1.39286507673
+	Batch 440 , average error: 0.323061636771 , theta norm: 1.39452990723
+	Batch 450 , average error: 0.297128656768 , theta norm: 1.3954933395
+Epoch 4
+evaluating...
+	Batch 0 , average error: 0.316061125646 , theta norm: 1.39595304208
+	Batch 10 , average error: 0.322721813568 , theta norm: 1.39642744117
+	Batch 20 , average error: 0.310656742382 , theta norm: 1.39705103164
+	Batch 30 , average error: 0.316379396748 , theta norm: 1.40009583479
+	Batch 40 , average error: 0.294925243413 , theta norm: 1.40263392169
+	Batch 50 , average error: 0.312406927998 , theta norm: 1.40478686126
+	Batch 60 , average error: 0.31161630569 , theta norm: 1.40602042181
+	Batch 70 , average error: 0.32737191112 , theta norm: 1.40800537505
+	Batch 80 , average error: 0.33051017647 , theta norm: 1.40949854825
+	Batch 90 , average error: 0.326555748025 , theta norm: 1.41124143661
+	Batch 100 , average error: 0.318054447192 , theta norm: 1.41274228973
+	Batch 110 , average error: 0.297150545753 , theta norm: 1.41269583772
+	Batch 120 , average error: 0.338364914678 , theta norm: 1.41320347295
+	Batch 130 , average error: 0.300936155343 , theta norm: 1.41553036154
+	Batch 140 , average error: 0.294449137298 , theta norm: 1.41820903179
+	Batch 150 , average error: 0.314892072571 , theta norm: 1.42119319781
+	Batch 160 , average error: 0.264443000488 , theta norm: 1.42285244774
+	Batch 170 , average error: 0.305031152631 , theta norm: 1.42546384084
+	Batch 180 , average error: 0.287357718054 , theta norm: 1.42683015708
+	Batch 190 , average error: 0.295565402256 , theta norm: 1.42691944419
+	Batch 200 , average error: 0.322522022388 , theta norm: 1.42728267161
+	Batch 210 , average error: 0.331064250789 , theta norm: 1.42757207342
+	Batch 220 , average error: 0.293263095472 , theta norm: 1.42718005756
+	Batch 230 , average error: 0.340741148059 , theta norm: 1.42809304268
+	Batch 240 , average error: 0.300743757726 , theta norm: 1.42983195505
+	Batch 250 , average error: 0.318128598146 , theta norm: 1.4315865543
+	Batch 260 , average error: 0.335698022096 , theta norm: 1.43284923692
+	Batch 270 , average error: 0.354868727417 , theta norm: 1.43316069929
+	Batch 280 , average error: 0.326067829291 , theta norm: 1.43382143578
+	Batch 290 , average error: 0.323628562765 , theta norm: 1.43579053876
+	Batch 300 , average error: 0.283842995061 , theta norm: 1.43791813253
+	Batch 310 , average error: 0.309717648408 , theta norm: 1.43926427436
+	Batch 320 , average error: 0.310165172559 , theta norm: 1.44125768094
+	Batch 330 , average error: 0.285506263662 , theta norm: 1.44262134221
+	Batch 340 , average error: 0.304119872627 , theta norm: 1.44380899708
+	Batch 350 , average error: 0.309087527662 , theta norm: 1.44536698935
+	Batch 360 , average error: 0.312928674025 , theta norm: 1.44836910312
+	Batch 370 , average error: 0.298351429347 , theta norm: 1.44941252184
+	Batch 380 , average error: 0.315183696594 , theta norm: 1.45185480896
+	Batch 390 , average error: 0.288812213864 , theta norm: 1.45329882392
+	Batch 400 , average error: 0.307021644468 , theta norm: 1.45486177224
+	Batch 410 , average error: 0.302126757535 , theta norm: 1.45690026677
+	Batch 420 , average error: 0.272121171419 , theta norm: 1.45707481085
+	Batch 430 , average error: 0.310959624324 , theta norm: 1.45812186743
+	Batch 440 , average error: 0.3246440875 , theta norm: 1.45863274032
+	Batch 450 , average error: 0.317322539878 , theta norm: 1.45822740071
+evaluating...
+Computing performance... 6
+Initial Performance on validation set: 0.455580827398
+Initial Performance on validation set: 0.455580827398
+Epoch 0, Performance on validation set:Epoch 0, Performance on validation set: 0.146987515186
+ 0.146987515186
+Epoch 1, Performance on validation set: 0.14756837592
+Epoch 1, Performance on validation set: 0.14756837592
+Epoch 2, Performance on validation set: 0.148540059602
+Epoch 2, Performance on validation set: 0.148540059602
+Epoch 3, Performance on validation set: 0.148259631374
+Epoch 3, Performance on validation set: 0.148259631374
+Epoch 4, Performance on validation set: 0.149190938165
+Epoch 4, Performance on validation set: 0.149190938165
+End of training.
+Writing model to file.

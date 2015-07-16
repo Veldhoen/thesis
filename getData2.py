@@ -35,7 +35,7 @@ def getSennaEmbs(destination):
     pickle.dump([V,voc], f, -1)
   print 'Done.'
 
-def getIORNNs(source,outDir):
+def getIORNNs(source,outDir, sennaVoc):
   rules = defaultdict(Counter)
   voc = set()
   if os.path.isdir(source):
@@ -104,8 +104,8 @@ senna = os.path.join('data','sennaEMB'+'.pik')
 
 #getSennaEmbs(senna)
 
-#with open(senna, 'rb') as f:
-#  V, voc =   pickle.load(f)
+with open(senna, 'rb') as f:
+  V, voc =   pickle.load(f)
 
-getIORNNs('../originalData/WSJ','data/newWSJ')
+getIORNNs('../originalData/WSJ','data/newWSJ',voc)
 #getIORNNs('../originalData/BNC','data/newBNC',voc)
