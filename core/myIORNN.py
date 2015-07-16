@@ -57,7 +57,7 @@ def activateScoreNW(uNode,wordNode,scoreNode,theta):
 def computeError(scoreNode,theta,x,reset = True):
   candidateScore,original  = computeScore(scoreNode, theta, x, reset = True)
   realScore = scoreNode.a[0][0]
-  return max(0,1-realScore+candidateScore)
+  return max(0,1-realScore+candidateScore), original
 
 '''compute the score for the given scoreNode if the wordNode's key is replaced by the target: x '''
 def computeScore(scoreNode,theta,x, reset = True):
@@ -133,8 +133,11 @@ class IORNN():
 
   def words(self):
     words = []
-    for scoreNod in self.scoreNodes:
-      words.append(wordNode.key for wordNode in [node for node in scoreNode.inputs[0].inputs if node.cat==('word',)][0])
+    for scoreNode in self.scoreNodes:
+      uNode = scoreNode.inputs[0]
+      wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
+      words.append(wordNode.key)
+#      words.append(wordNode.key for wordNode in [node for node in scoreNode.inputs[0].inputs if node.cat==('word',)][0])
     return words
 
   def activate(self,theta):
@@ -144,7 +147,7 @@ class IORNN():
     self.rootO.forward(theta,activateIn = False, activateOut = True)
 #    print 'activated the network.'
 
-  def trainWords(self, theta, gradient = None, activate=True, target = None):
+  def train(self, theta, gradient = None, activate=True, target = None):
     if gradient is None: gradient = theta.gradient()
     if activate: self.activate(theta)
     error = 0
@@ -157,9 +160,10 @@ class IORNN():
     errors = [computeError(node,theta,target, reset = True) for node in self.scoreNodes]
     return sum(errors)
 
-  def evaluateNAR(self,theta, vocabulary):
-    if vocabulary is None: vocabulary = theta.lookup[('word',)]
-    else:
+  def evaluate(self,theta, sample=1):
+    vocabulary = theta.lookup[('word',)]
+    if sample <1 and sample>0:
+      vocabulary = random.sample(vocabulary, int(sample*len(vocabulary)))
       for word in self.words():
         if word not in vocabuary: vocabulary.append(word)
 

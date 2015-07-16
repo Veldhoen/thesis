@@ -34,9 +34,10 @@ class Theta(dict):
         maxArity = max(maxArity,len(RHS.split(',')))
         rulesC[(LHS,RHS)]+=count
     self.maxArity = maxArity
-    self.rules = rulesC.most_common()
+    self.rules = [rule for rule, c in rulesC.most_common()]
 
   def __missing__(self, key):
+#    print 'Theta missing', key
     for fakeKey in generalizeKey(key):
       if fakeKey in self.keys():
         return self[fakeKey]
@@ -47,7 +48,7 @@ class Theta(dict):
 
   def forIORNN(self, embeddings, vocabulary ):
     print 'create composition matrices'
-    for arity in xrange(2,self.maxArity+1):         #NB replace 2 by 1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
       lhs = '#X#'
       rhs = '('+','.join(['#X#']*arity)+')'
@@ -68,32 +69,35 @@ class Theta(dict):
     self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
     self.newMatrix(('score','M'), None,(1,self.dout))
-    self.newMatrix(('score','B'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+    self.newMatrix(('score','B'),np.zeros((1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
 
   def specializeHeads(self):
+    print 'Theta, specializing composition parameters for heads'
+    cat = 'composition'
     for lhs in self.heads:
-      for arity in xrange(self.maxArity):
-        rhs = ','.join([X]*arity)
-        self.newMatrix((cat,lhs,rhs,'IM'), self[(cat,lhs,rhs,'IM')])
-        self.newMatrix((cat,lhs,rhs,'IB'), self[(cat,lhs,rhs,'IB')])
+      for arity in xrange(1,self.maxArity+1):
+        rhs = '('+','.join(['#X#']*arity)+')'
+        self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,'#X#',rhs,'I','M')])
+        self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,'#X#',rhs,'I','B')])
         for j in xrange(arity):
-          self.newMatrix((cat,lhs,rhs,j,'OM'),self[(cat,lhs,rhs,j,'OM')])
-          self.newMatrix((cat,lhs,rhs,j,'OB'),self[(cat,lhs,rhs,j,'OB')])
+          self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,'#X#',rhs,j,'O','M')])
+          self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,'#X#',rhs,j,'O','B')])
 
   def specializeRules(self,n=200):
+    print 'Theta, specializing composition parameters for rules'
     cat = 'composition'
+
     for lhs,rhs in self.rules[:n]:
-      self.newMatrix((cat,lhs,rhs,'IM'), self[(cat,lhs,rhs,'IM')])
-      self.newMatrix((cat,lhs,rhs,'IB'), self[(cat,lhs,rhs,'IB')])
+      self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,lhs,rhs,'I','M')])
+      self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,lhs,rhs,'I','B')])
       arity = len(rhs.split(','))
       for j in xrange(arity):
-        self.newMatrix((cat,lhs,rhs,j,'OM'),self[(cat,lhs,rhs,j,'OM')])
-        self.newMatrix((cat,lhs,rhs,j,'OB'),self[(cat,lhs,rhs,j,'OB')])
+        self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,lhs,rhs,j,'O','M')])
+        self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
 
   def newMatrix(self, name,M= None, size = (0,0)):
-    if name in self: 
-      print 'Adding a matrix to theta that is already there. Ignoring.'
+    if name in self:
       return
 
     if M is not None: self[name] = M
@@ -102,7 +106,7 @@ class Theta(dict):
   def regularize(self, alphaDsize, lambdaL2):
     if lambdaL2==0: return
     for name in self.keys():
-      if name[-1][-1] == 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
+      if name[-1] == 'M': self[name] = (1- alphaDsize*lambdaL2)*self[name]
       else: continue
 
   def update(self, gradient, alpha, historicalGradient = None):

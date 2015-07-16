@@ -1,9 +1,12 @@
 import argparse
 import core.myIORNN as myIORNN
 import core.myTheta as myTheta
+import core.trainingRoutines as training
 from collections import defaultdict, Counter
 import sys, os, pickle
 import numpy as np
+
+
 
 def getVocabulary(vocabularies):
   print 'Loading vocabulary.'
@@ -21,13 +24,12 @@ def getVocabulary(vocabularies):
 def getGrammar(option, grammars):
   rules = defaultdict(Counter)
   print 'Grammar-based parameter selection:', option
-  if option != 'None':
-    if len(grammars)<1:
-      print 'No RULES.pik file found. Exit program'
-      sys.exit()
-    for m in grammars:
-      with open(m, 'rb') as f:
-        rules.update(pickle.load(f))
+  if len(grammars)<1:
+    print 'No RULES.pik file found. Exit program'
+    sys.exit()
+  for m in grammars:
+    with open(m, 'rb') as f:
+      rules.update(pickle.load(f))
   return rules
 
 def initializeTheta(args,vocabulary, grammar):
@@ -55,7 +57,7 @@ def initializeTheta(args,vocabulary, grammar):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('IORNN', dims, V, grammar, vocabulary)
+    theta = myTheta.Theta('IORNN', dims, grammar, V, vocabulary)
 
   theta.printDims()
   return theta
@@ -66,41 +68,55 @@ def main(args):
   source = args['sourceTrain']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksTrain = [f for f in files if 'TREES.pik' in f]
+    treebanksTrain = [f for f in files if 'IORNNS' in f]
     vocabularies = [f for f in files if 'VOC.pik' in f]
     grammars = [f for f in files if 'RULES.pik' in f]
   else:
     print 'no valid source directory:',source
     sys.exit()
-    
+
   source = args['sourceValid']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksValid = [f for f in files if 'TREES.pik' in f]
+    treebanksValid = [f for f in files if 'IORNNS' in f]
     vocabularies.extend([f for f in files if 'VOC.pik' in f])
     grammars.extend([f for f in files if 'RULES.pik' in f])
   else:
     print 'no valid source directory:',source
     sys.exit()
 
+  if len(treebanksTrain)<1 or len(treebanksValid)<1: 
+    print 'no training or validation data obtained. Abort execution.'
+    sys.exit()
+
   vocabulary = getVocabulary(vocabularies)
 
   grammar = getGrammar(args['grammar'][0], grammars)
-  if len(args['grammar'])>1: n=args['grammar'][1]
-  else: n=200
 
   theta=initializeTheta(args,vocabulary, grammar)
 
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
   cores = args['cores']
+  if len(args['grammar'])>1: hyperParams['nRules']=args['grammar'][1]
+  else: hyperParams['nRules']=200
+
+
   print 'Hyper parameters:'
   for param, value in hyperParams.iteritems():
     print '\t',param, '-' ,value
+
+
   print '\tnumber of cores -', cores
 
   ada = True
   if ada: print 'Adagrad is on.'
   else: print 'Adagrad is off.'
+
+  tTreebank = training.Treebank(treebanksTrain)
+  vTreebank = training.Treebank(treebanksValid[:1])
+  training.beginSmall(tTreebank, vTreebank, hyperParams, theta, cores=1)
+
+
 
   # training...
 
@@ -155,5 +171,5 @@ if __name__ == "__main__":
   args = vars(parser.parse_args())
 
   main(args)
-  
+
 

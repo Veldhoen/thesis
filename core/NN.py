@@ -30,8 +30,12 @@ class Node():
       sys.exit()
 
     try: self.z = M.dot(inputsignal)+b
-    except: print self.cat
-    self.z = M.dot(inputsignal)+b
+    except: 
+      print 'Unable to forward', self.cat
+      print 'inputs:', self.inputs, len(inputsignal)
+      print 'shape M:', np.shape(M)
+      sys.exit()
+
 
     self.a, self.ad = activation.activate(self.z, self.nonlin)
     if activateOut:
