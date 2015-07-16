@@ -10,7 +10,7 @@ def this2Nodes(nltkTree):
     cat = 'composition'
     lhs = nltkTree.label()
     rhs = '('+ ', '.join([child.label() for child in nltkTree])+')'
-    thisOuter = Node([], [], 'TMP', 'identity')
+    thisOuter = Node([], [], 'TMP', 'tanh')
 #    Node(inputs, outputs, cat,nonlinearity)
 
     childrenNodes = [this2Nodes(child) for child in nltkTree]
@@ -18,7 +18,7 @@ def this2Nodes(nltkTree):
     childrenOuter= [outer for inner, outer in childrenNodes]
     thisOuter.outputs =childrenOuter
     childrenInner= [inner for inner, outer in childrenNodes]
-    thisInner = Node(childrenInner, [], (cat,lhs,rhs,'I'), 'identity')
+    thisInner = Node(childrenInner, [], (cat,lhs,rhs,'I'), 'tanh')
 
     childrenOuterInput = childrenInner[:]
     childrenOuterInput.append(thisOuter)
@@ -26,12 +26,10 @@ def this2Nodes(nltkTree):
     # to obtain the input to the childrenOuter nodes
     for j in range(len(childrenOuter)):
       # set the inputs for the child's outer representation
-      childJInner = childrenOuterInput.pop(j)
-      childrenOuter[j].inputs = childrenOuterInput[:]
+      childrenOuter[j].inputs = childrenOuterInput[:j]+childrenOuterInput[j+1:]
       childrenOuter[j].cat = (cat,lhs,rhs,j,'O')
       # the category of an outside node is what happens above it.
       # it also needs to know j: which child it is
-      childrenOuterInput.insert(j,childJInner) # reset childrenInner
 
   else: #at a preterminal
     cat = ('word',)
@@ -41,7 +39,7 @@ def this2Nodes(nltkTree):
     thisOuter = Node([], [], 'TMP', 'tanh')
 
     uNode = Node([thisOuter,thisInner],[],('u',),'tanh')
-    scoreNode = Node([uNode],[],('score',),'tanh')
+    scoreNode = Node([uNode],[],('score',),'identity')
     uNode.outputs = [scoreNode]
 
     thisOuter.outputs = [uNode]
@@ -133,6 +131,12 @@ class IORNN():
 
   def setScoreNodes(self): self.scoreNodes = findScoreNodes(self.rootO)
 
+  def words(self):
+    words = []
+    for scoreNod in self.scoreNodes:
+      words.append(wordNode.key for wordNode in [node for node in scoreNode.inputs[0].inputs if node.cat==('word',)][0])
+    return words
+
   def activate(self,theta):
 #    print 'activate NW inside:'
     self.rootI.forward(theta,activateIn = True, activateOut = False)
@@ -154,27 +158,24 @@ class IORNN():
     return sum(errors)
 
   def evaluateNAR(self,theta, vocabulary):
+    if vocabulary is None: vocabulary = theta.lookup[('word',)]
+    else:
+      for word in self.words():
+        if word not in vocabuary: vocabulary.append(word)
+
     ranks = 0
     num = 0
-    nwords = len(theta[('word',)])
+
     self.activate(theta)
-    if len(self.scoreNodes) <1:
-      print 'this network has no score nodes?!', self
-      return 0
+
     for scoreNode in self.scoreNodes:
-#      print 'at a scoreNode'
-
-
       results = [computeError(scoreNode,theta,x, reset=False) for x in vocabulary]
-
       # reset the scoreNW
       nothing = computeScore(scoreNode,theta,results[0][1], reset=True)
-#      print 'original score:',score
-
       scores = [score for score, original in results]
       ranking = np.array(scores).argsort()[::-1].argsort()
       rank = ranking[vocabulary.index(results[0][1])]
 #      print 'rank:', rank
       ranks+= rank
-    return ranks/(nwords*len(self.scoreNodes))
+    return ranks/(len(vocabulary)*len(self.scoreNodes))
 
