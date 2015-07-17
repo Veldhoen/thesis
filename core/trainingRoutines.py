@@ -57,29 +57,32 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
     performance = [nw.evaluate(theta,0.05) for nw in vData]
     validLoss.append(sum(performance)/len(performance))
 
-    print '\tTraining error:', trainLoss[-1], 'Estimated performance:', validLoss[-1]
+    print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
 def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
-  if adagrad: histGrad = theta.gradient()
+  if adagrad: 
+    histGrad = theta.gradient()
+    histGrad.unSparse()
   else: histGrad = None
-  histGrad.unSparse()
+
   print '\tStart training'
 
   trainLoss = []
   validLoss = []
 
-  for i in range(10):
+  for i in xrange(hyperParams['nEpochs']):
     if stopNow(trainLoss, validLoss): break#converged/ overfitting:
     tData = tTreebank.getExamples()
     print '\tIteration',i,'('+str(len(tData))+' examples)'
 
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
+    print '\tComputing performance...'
     performance = [nw.evaluate(theta,0.05) for nw in vData]
     validLoss.append(sum(performance)/len(performance))
 
-    print '\tTraining error:', trainLoss[-1], 'Estimated performance:', validLoss[-1]
+    print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
 
@@ -135,7 +138,6 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   for p in pPs: p.join()
 
 def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
-  print 'train on set', len(examples)
   mgr = Manager()
   ns = mgr.Namespace()
   ns.lamb = hyperParams['lambda']

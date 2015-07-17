@@ -10,7 +10,7 @@ def this2Nodes(nltkTree):
     cat = 'composition'
     lhs = nltkTree.label()
     rhs = '('+ ', '.join([child.label() for child in nltkTree])+')'
-    thisOuter = Node([], [], 'TMP', 'tanh')
+    thisOuter = Node([], [], (), 'tanh')
 #    Node(inputs, outputs, cat,nonlinearity)
 
     childrenNodes = [this2Nodes(child) for child in nltkTree]
@@ -65,13 +65,14 @@ def computeScore(scoreNode,theta,x, reset = True):
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
 
   original = wordNode.key  # save original key
-
+#  print '\tcompute score:', original,x
   # locally recompute activations for candidate
   wordNode.key = x
   activateScoreNW(uNode,wordNode,scoreNode,theta)
   score = scoreNode.a[0][0]
 
   if reset: # restore observed node
+#    print '\trestore observed node'
     wordNode.key = original
     # locally recompute activations for original observed node
     activateScoreNW(uNode,wordNode,scoreNode,theta)
@@ -157,7 +158,13 @@ class IORNN():
 
   def error(self,theta, target, activate=True):
     if activate: self.activate(theta)
-    errors = [computeError(node,theta,target, reset = True) for node in self.scoreNodes]
+#    print '\tgonna compute error!'
+#    errors = [error for error, original in [computeError(node,theta,target, reset = True) for node in self.scoreNodes]]
+    errors = []
+    for node in self.scoreNodes:
+#      print '\n\tgonna compute error!'
+      error, original = computeError(node,theta,target, reset = True)
+      errors.append(error)
     return sum(errors)
 
   def evaluate(self,theta, sample=1):

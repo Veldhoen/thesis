@@ -43,6 +43,7 @@ def initializeTheta(args,vocabulary, grammar):
     if args['emb']:
       with open(args['emb'], 'rb') as f:
         V,voc = pickle.load(f)
+      if 'UNKNOWN' not in voc: voc.insert('UNKNOWN',0)
       vocabulary = [w for w in vocabulary if w in voc]
       V = np.vstack(tuple([V[i] for i in [voc.index(w) for w in vocabulary]]))
       nwords = len(vocabulary)
@@ -85,7 +86,7 @@ def main(args):
     print 'no valid source directory:',source
     sys.exit()
 
-  if len(treebanksTrain)<1 or len(treebanksValid)<1: 
+  if len(treebanksTrain)<1 or len(treebanksValid)<1:
     print 'no training or validation data obtained. Abort execution.'
     sys.exit()
 
@@ -126,7 +127,7 @@ def main(args):
 
   # training...
 
-  
+
 
 
 
@@ -167,7 +168,7 @@ if __name__ == "__main__":
   parser.add_argument('-dwrd','--word', type=int, help='Dimensionality of leaves (word nodes)', required=False)
   parser.add_argument('-dout','--outside', type=int, help='Dimensionality of outside representations', required=False)
   # training hyperparameters:
-  parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs to train', required=True)
+  parser.add_argument('-n','--nEpochs', type=int, help='Maximal number of epochs to train per phase', required=True)
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
   parser.add_argument('-l','--lambda', type=float, help='Regularization parameter lambdaL2', required=True)
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)

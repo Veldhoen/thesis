@@ -31,15 +31,16 @@ class Theta(dict):
     rulesC = Counter()
     for LHS, RHSS in grammar.iteritems():
       for RHS, count in RHSS.iteritems():
-        maxArity = max(maxArity,len(RHS.split(',')))
+        maxArity = max(maxArity,len(RHS.split(', ')))
         rulesC[(LHS,RHS)]+=count
     self.maxArity = maxArity
     self.rules = [rule for rule, c in rulesC.most_common()]
 
   def __missing__(self, key):
-#    print 'Theta missing', key
+#    if key[1]=='S' : print 'Theta missing', key
     for fakeKey in generalizeKey(key):
       if fakeKey in self.keys():
+#        print fakeKey
         return self[fakeKey]
         break
     else:
@@ -51,7 +52,7 @@ class Theta(dict):
     for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
       lhs = '#X#'
-      rhs = '('+','.join(['#X#']*arity)+')'
+      rhs = '('+', '.join(['#X#']*arity)+')'
 #      print lhs,rhs
       self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
       self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
@@ -69,7 +70,8 @@ class Theta(dict):
     self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
     self.newMatrix(('score','M'), None,(1,self.dout))
-    self.newMatrix(('score','B'),np.zeros((1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+    self.newMatrix(('score','B'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+#    self.newMatrix(('score','B'),np.zeros((1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 
 
   def specializeHeads(self):
@@ -77,7 +79,7 @@ class Theta(dict):
     cat = 'composition'
     for lhs in self.heads:
       for arity in xrange(1,self.maxArity+1):
-        rhs = '('+','.join(['#X#']*arity)+')'
+        rhs = '('+', '.join(['#X#']*arity)+')'
         self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,'#X#',rhs,'I','M')])
         self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,'#X#',rhs,'I','B')])
         for j in xrange(arity):
@@ -91,7 +93,7 @@ class Theta(dict):
     for lhs,rhs in self.rules[:n]:
       self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,lhs,rhs,'I','M')])
       self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,lhs,rhs,'I','B')])
-      arity = len(rhs.split(','))
+      arity = len(rhs.split(', '))
       for j in xrange(arity):
         self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,lhs,rhs,j,'O','M')])
         self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
@@ -100,7 +102,9 @@ class Theta(dict):
     if name in self:
       return
 
-    if M is not None: self[name] = M
+    if M is not None: 
+      if sparse.issparse(M): self[name] = M
+      else: self[name] = np.copy(M)
     else: self[name] = np.random.random_sample(size)*.2-.1
 
   def regularize(self, alphaDsize, lambdaL2):
@@ -180,11 +184,11 @@ class Gradient(Theta):
 #        print 'fake:', fakeKey
         if fakeKey in self.theta.keys():
           self.newMatrix(fakeKey, np.zeros_like(self.theta[fakeKey]))
-          break
+          return self[fakeKey]
       else:
         print key,'not in gradient, and not able to create it.'
         sys.exit()
-      return self[fakeKey]
+
 
 
 def generalizeKey(key):
@@ -192,6 +196,6 @@ def generalizeKey(key):
     lhs = key[1]
     rhs = key[2]
     generalizedHead = '#X#'
-    generalizedTail = '('+','.join(['#X#']*len(rhs[1:-1].split(',')))+')'
+    generalizedTail = '('+', '.join(['#X#']*len(rhs[1:-1].split(', ')))+')'
     return[key[:2]+(generalizedTail,)+key[3:],key[:1]+(generalizedHead,generalizedTail,)+key[3:]]
   else: return []

@@ -14,9 +14,7 @@ class Node():
     self.nonlin = nonlinearity
 
   def forward(self,theta, activateIn = True, activateOut = False):
-#    print 'forward',self.cat[0], self.cat[-1] , self
     if activateIn:
-  #    print 'do forward inputs'
       [i.forward(theta, activateIn,activateOut) for i in self.inputs]
 
     inputsignal = np.concatenate([c.a for c in self.inputs])
@@ -79,7 +77,7 @@ class Leaf(Node):
     self.key = key
 
   def forward(self,theta, activateIn = True, activateOut = False):
-#    print 'forward leaf',self.cat[0], self
+#    print '\t\tforward leaf',self.cat[0], self
 
     try: index = theta.lookup[self.cat].index(self.key)
     except: index = theta.lookup[self.cat].index('UNKNOWN')
@@ -91,7 +89,6 @@ class Leaf(Node):
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
     if activateOut:
-#      print 'do forward outputs'
       [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False):
@@ -99,7 +96,7 @@ class Leaf(Node):
     try: index = theta.lookup[self.cat].index(self.key)
     except: index = theta.lookup[self.cat].index('UNKNOWN')
     words = gradient[self.cat]
-    words[index] += delta
+    words[index] = words[index]+delta
 
 
 
