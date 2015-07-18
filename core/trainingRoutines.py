@@ -74,9 +74,8 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
 
-    print '\tComputing performance...'
-    performance = evaluate(theta, testData, q = None, description = '', sample=0.05, cores=cores) #[nw.evaluate(theta,0.05) for nw in vData]
-    validLoss.append(sum(performance)/len(performance))
+    print '\tComputing performance ('+str(len(vData))+' examples)...'
+    validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
 
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
@@ -99,9 +98,8 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
-    print '\tComputing performance...'
-    performance = evaluate(theta, testData, q = None, description = '', sample=1, cores=cores)#[nw.evaluate(theta,0.05) for nw in vData]
-    validLoss.append(sum(performance)/len(performance))
+    print '\tComputing performance ('+str(len(vData))+' examples)...'
+    validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
