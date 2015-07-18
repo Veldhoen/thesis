@@ -27,12 +27,32 @@ class Treebank():
     random.shuffle(self.files)
     self.it = iter(self.files)
 
-
-
-def evaluateQueue(theta, testData, q = None, description = '', sample=1):
+def evaluateBit(theta, testData, q, sample=1):
   performance = [nw.evaluate(theta,sample) for nw in testData]
-  confusion = None
-  q.put((description, sum(performance)/len(performance),confusion))
+  q.put(sum(performance)/len(performance))
+
+def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
+  if cores>1:
+    myQueue = Queue()
+    pPs = []
+    bitSize = len(testData)//cores+1
+    for i in len(cores):
+      databit = testData[i*bitSize:(i+1)*bitSize]
+      p = Process(name='evaluate', target=evaluateBit, args=(theta, databit, myQueue,sample))
+      pPs.append(p)
+      p.start()
+
+    performance = [myQueue.get() for p in len(pPs)]
+  else: performance = [nw.evaluate(theta,sample) for nw in testData]
+
+  if q is None:  return sum(performance)/len(performance)
+  else:
+    confusion = None
+    q.put((description, sum(performance)/len(performance),confusion))
+
+
+
+
 
 def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
   if adagrad: histGrad = theta.gradient()
@@ -48,20 +68,21 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
     tData = [e for e in examples if len(e.scoreNodes)<i]
     while len(tData)<len(examples):
       tData.extend([e for e in tTreebank.getExamples() if len(e.scoreNodes)<i])
-
+    tData = tData[:len(examples)]
 
     print '\tIteration with sentences up to length',i,'('+str(len(tData))+' examples)'
 
-
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
-    performance = [nw.evaluate(theta,0.05) for nw in vData]
+
+    print '\tComputing performance...'
+    performance = evaluate(theta, testData, q = None, description = '', sample=0.05, cores=cores) #[nw.evaluate(theta,0.05) for nw in vData]
     validLoss.append(sum(performance)/len(performance))
 
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
 def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
-  if adagrad: 
+  if adagrad:
     histGrad = theta.gradient()
     histGrad.unSparse()
   else: histGrad = None
@@ -79,9 +100,8 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
     print '\tComputing performance...'
-    performance = [nw.evaluate(theta,0.05) for nw in vData]
+    performance = evaluate(theta, testData, q = None, description = '', sample=1, cores=cores)#[nw.evaluate(theta,0.05) for nw in vData]
     validLoss.append(sum(performance)/len(performance))
-
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
@@ -89,17 +109,17 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
 def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
   vData = vTreebank.getExamples()
-  
+
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluateQueue, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
   pPs.append(p)
   p.start()
 
   print 'Phase 0: no grammar specialization'
   phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
   # evaluate
-  p = Process(name='evaluatePhase1', target=evaluateQueue, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
+  p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
   pPs.append(p)
   p.start()
   # store theta
@@ -111,7 +131,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
 
   # evaluate
-  p = Process(name='evaluatePhase1', target=evaluateQueue, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:'))
+  p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:'))
   pPs.append(p)
   p.start()
   # store theta
@@ -123,7 +143,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
 
   # evaluate
-  p = Process(name='evaluatePhase1', target=evaluateQueue, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:'))
+  p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:'))
   pPs.append(p)
   p.start()
   # store theta
@@ -151,7 +171,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
     trainPs = []
     q = Queue()
 
-    if cores<2: 
+    if cores<2:
       trainBatch(ns, minibatch,q) #don't start a subprocess
       trainPs.append('')  # But do put a placeholder in the queue
     else:
@@ -171,7 +191,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
       errors.append(error)
 
     # make sure all worker processes have finished and are killed
-    if cores>1: 
+    if cores>1:
       for p in trainPs: p.join()
 
     try: avError = sum(errors)/len(errors)

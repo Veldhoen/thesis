@@ -114,7 +114,7 @@ class Theta(dict):
       else: continue
 
   def update(self, gradient, alpha, historicalGradient = None):
-#    print 'updating theta'
+    print 'updating theta'
     for name in gradient.keys():
 #      print name, 'before:',self[name].shape
       grad = gradient[name]
