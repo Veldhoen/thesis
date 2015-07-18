@@ -2,11 +2,14 @@
 
 
 def stopNow(trainLoss, validLoss):
-  if len(trainLoss)<1 or len(validLoss)<1: return False
   k = 10
-  alpha = 1
-  PQ = GL(validLoss)/Pk(trainLoss, k)
-  print 'stopping criterion PQ:', PQ
+  if len(trainLoss)<k or len(validLoss)<k: return False
+
+  alpha = 0.75
+  gl = GL(validLoss)
+  pk = Pk(trainLoss, k)
+  PQ = gl/pk
+  print 'Stopping criterion. GL:',gl,'Pk:',pk,'PQ:', PQ
   return PQ>alpha
 
 # generalization loss
@@ -15,4 +18,5 @@ def GL(validLoss):
 
 # training progress
 def Pk(trainLoss,k):
+  k=min(k,len(trainLoss))
   return sum(trainLoss[-k:])/(k*min(trainLoss[-k:]))-1

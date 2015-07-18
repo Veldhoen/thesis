@@ -57,13 +57,12 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
 def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
   if adagrad: histGrad = theta.gradient()
   else: histGrad = None
-  histGrad.unSparse()
   print '\tStart training'
 
   trainLoss = []
   validLoss = []
 
-  for i in range(10,40,2): # slowy increase sentence length
+  for i in range(10,40,0.5): # slowy increase sentence length
     examples = tTreebank.getExamples()
     tData = [e for e in examples if len(e.scoreNodes)<i]
     while len(tData)<len(examples):
@@ -81,9 +80,7 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
 
 def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
-  if adagrad:
-    histGrad = theta.gradient()
-    histGrad.unSparse()
+  if adagrad: histGrad = theta.gradient()
   else: histGrad = None
 
   print '\tStart training'
@@ -92,7 +89,7 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
   validLoss = []
 
   for i in xrange(hyperParams['nEpochs']):
-    if stopNow(trainLoss, validLoss): break#converged/ overfitting:
+#    if stopNow(trainLoss, validLoss): break#converged/ overfitting:
     tData = tTreebank.getExamples()
     print '\tIteration',i,'('+str(len(tData))+' examples)'
 
@@ -115,7 +112,8 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   p.start()
 
   print 'Phase 0: no grammar specialization'
-  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
+  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
+#  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
   # evaluate
   p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
   pPs.append(p)
@@ -203,6 +201,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
 
 
 def trainBatch(ns, examples, q=None):
+#  print 'trainBatch'
   if len(examples)>0:
     theta = ns.theta
     lambdaL2 = ns.lamb
@@ -212,7 +211,8 @@ def trainBatch(ns, examples, q=None):
     for nw in examples:
       dgrads,derror = nw.train(theta)
       error+= derror
-      for name in grads.keys():
+      for name in dgrads.keys():
+#        print 'obtain grads for:', name
         grads[name] = grads[name] + dgrads[name]/len(examples)
     q.put((grads, error/len(examples)))
   else:

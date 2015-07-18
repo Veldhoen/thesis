@@ -114,32 +114,20 @@ class Theta(dict):
       else: continue
 
   def update(self, gradient, alpha, historicalGradient = None):
-    print 'updating theta'
     for name in gradient.keys():
-      print name#, 'before:',self[name].shape
       grad = gradient[name]
+      oldtheta = np.copy(self[name])
       if historicalGradient is not None:
         histgrad = historicalGradient[name]
-        if sparse.issparse(grad): sq = grad.multiply(grad)
-        else: sq = np.multiply(grad,grad)
-        subtractFromDense(histgrad, -1*sq)      # add the square of the grad to histgrad
-        subtractFromDense(self[name],grad, alpha/(np.sqrt(histgrad)+1e-6))#subtract gradient * alpha/root(histgrad)
+        histgrad+= np.multiply(grad,grad)
+        self[name] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
       else:
-        subtractFromDense(self[name],grad, alpha/np.ones_like(self[name]))
+        self[name] -=alpha*grad
 
   def norm(self):
     names = self.keys()
     return sum([np.linalg.norm(self[name]) for name in names])/len(names)
     #return 0
-
-  def sparse(self):
-    for name in self.keys():
-      self[name] = sparse.csc_from_dense(self[name])
-
-  def unSparse(self):
-    for name in self.keys():
-      if sparse.issparse(self[name]):
-        self[name] = self[name].toarray()
 
   def gradient(self):
     return Gradient(self)
@@ -152,21 +140,6 @@ class Theta(dict):
     print '\td outside -', self.dout
 
 
-def subtractFromDense(denseM,decM, factor = None):
-#  print 'adding sparse to dense. Sparse:', incM.shape,'Dense:', denseM.shape
-  if not sparse.issparse(decM):
-    if factor is None: denseM = denseM - decM
-    else: denseM = denseM - np.multiply(factor,decM)
-
-  elif sparse.isspmatrix_csc(decM):
-    rows, columns = decM.nonzero()
-    for i,j in zip(rows, columns):
-      val = decM[i,j]
-      if factor is not None: f = factor[i,j]
-      else: f = 1
-#      print i,j
-      denseM[i,j] = denseM[i,j] - f*val
-  else: print 'subtractFromDense not implemented for this format.'
 
 class Gradient(Theta):
   def __init__(self,theta):
@@ -175,13 +148,10 @@ class Gradient(Theta):
   def __missing__(self, key):
     if key in self.theta.keys():
       mold = self.theta[key]
-      if key[0] == 'word': self.newMatrix(key,sparse.csc_matrix(mold.shape))
-      else: self.newMatrix(key, np.zeros_like(mold))
+      self.newMatrix(key, np.zeros_like(mold))
       return self[key]
     else:
-#      print 'generalizing', key
       for fakeKey in generalizeKey(key):
-#        print 'fake:', fakeKey
         if fakeKey in self.theta.keys():
           self.newMatrix(fakeKey, np.zeros_like(self.theta[fakeKey]))
           return self[fakeKey]
