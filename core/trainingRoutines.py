@@ -62,7 +62,7 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
   trainLoss = []
   validLoss = []
 
-  for i in range(10,40,0.5): # slowy increase sentence length
+  for i in range(10,40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
     tData = [e for e in examples if len(e.scoreNodes)<i]
     while len(tData)<len(examples):
@@ -112,8 +112,8 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   p.start()
 
   print 'Phase 0: no grammar specialization'
-  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
-#  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
+#  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
+  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
   # evaluate
   p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
   pPs.append(p)

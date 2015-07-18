@@ -44,8 +44,9 @@ class Theta(dict):
         return self[fakeKey]
         break
     else:
-      print key, 'not in theta and unable to create it.'
-      sys.exit()
+      print key, 'not in theta.'
+      return None
+      #sys.exit()
 
   def forIORNN(self, embeddings, vocabulary ):
     print 'create composition matrices'
@@ -102,7 +103,7 @@ class Theta(dict):
     if name in self:
       return
 
-    if M is not None: 
+    if M is not None:
       if sparse.issparse(M): self[name] = M
       else: self[name] = np.copy(M)
     else: self[name] = np.random.random_sample(size)*.2-.1
@@ -115,14 +116,16 @@ class Theta(dict):
 
   def update(self, gradient, alpha, historicalGradient = None):
     for name in gradient.keys():
-      grad = gradient[name]
-      oldtheta = np.copy(self[name])
-      if historicalGradient is not None:
-        histgrad = historicalGradient[name]
-        histgrad+= np.multiply(grad,grad)
-        self[name] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
-      else:
-        self[name] -=alpha*grad
+      try:
+        grad = gradient[name]
+        oldtheta = np.copy(self[name])
+        if historicalGradient is not None:
+          histgrad = historicalGradient[name]
+          histgrad+= np.multiply(grad,grad)
+          self[name] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
+        else:
+          self[name] -=alpha*grad
+      except: print 'updating theta unsuccesful'
 
   def norm(self):
     names = self.keys()
@@ -157,7 +160,7 @@ class Gradient(Theta):
           return self[fakeKey]
       else:
         print key,'not in gradient, and not able to create it.'
-        sys.exit()
+        return None
 
 
 
