@@ -49,7 +49,8 @@ class Node():
     inputsignal = np.concatenate([c.a for c in self.inputs])
     dinputsignal = np.concatenate([c.ad for c in self.inputs])
 
-    try:
+#    try:
+    if True:
       M= theta[self.cat+('M',)]
       # something goes wrong in this multiplication:
       # for the u node, the result is a square (15x15) instead of a vector (1x15).
@@ -63,8 +64,8 @@ class Node():
   
       gradient[self.cat+('M',)]+= np.outer(delta,inputsignal)
       gradient[self.cat+('B',)]+=delta
-    except: 
-      print 'An error occured in backprop node'
+#    except:
+#     print 'An error occured in backprop node'
 
   def __str__(self):
     if self.cat[-1]=='I': return '('+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+')'
@@ -74,31 +75,24 @@ class Node():
 
 
 class Leaf(Node):
-  def __init__(self,outputs,cat, key='',nonlinearity='identity'):
+  def __init__(self,outputs,cat, key=0,nonlinearity='identity'):
     Node.__init__(self,[], outputs, cat,nonlinearity)
     self.key = key
 
   def forward(self,theta, activateIn = True, activateOut = False):
-#    print '\t\tforward leaf',self.cat[0], self
-
-    try: index = theta.lookup[self.cat].index(self.key)
-    except: index = theta.lookup[self.cat].index('UNKNOWN')
-
-    try: self.z = theta[self.cat][index]
-    except:
-      print 'Fail to forward Leaf:', self.cat, self.key
-      sys.exit()
+#    print 'forward leaf', self.cat, self.key, type(self.key)
+    self.z = theta[self.cat][self.key]
+#     try: self.z = theta[self.cat][self.key]
+#     except:
+#       print 'Fail to forward Leaf:', self.cat, self.key
+#       sys.exit()
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
     if activateOut:
       [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False):
-#    print 'backprop Leaf,',self.cat, self#,' types:'
-    try: index = theta.lookup[self.cat].index(self.key)
-    except: index = theta.lookup[self.cat].index('UNKNOWN')
-    words = gradient[self.cat]
-    words[index] = words[index]+delta
+    gradient[self.cat][self.key] += delta
 
 
 

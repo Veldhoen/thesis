@@ -1,5 +1,6 @@
 import random
-import pickle
+try: import cPickle as pickle
+except: import pickle
 from earlyStopping import stopNow
 from multiprocessing import Process, Queue, Pool, Manager
 import sys, os, pickle
@@ -36,13 +37,13 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
     myQueue = Queue()
     pPs = []
     bitSize = len(testData)//cores+1
-    for i in len(cores):
+    for i in xrange(cores):
       databit = testData[i*bitSize:(i+1)*bitSize]
       p = Process(name='evaluate', target=evaluateBit, args=(theta, databit, myQueue,sample))
       pPs.append(p)
       p.start()
 
-    performance = [myQueue.get() for p in len(pPs)]
+    performance = [myQueue.get() for p in pPs]
   else: performance = [nw.evaluate(theta,sample) for nw in testData]
 
   if q is None:  return sum(performance)/len(performance)
@@ -65,6 +66,9 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
   for i in range(10,40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
     tData = [e for e in examples if len(e.scoreNodes)<i]
+    if len(tData)<1:
+      print 'skip iteration with sentences up to length',i,'(no examples)'
+      continue
     while len(tData)<len(examples):
       tData.extend([e for e in tTreebank.getExamples() if len(e.scoreNodes)<i])
     tData = tData[:len(examples)]
@@ -107,12 +111,11 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
-  pPs.append(p)
-  p.start()
+#   p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
+#   pPs.append(p)
+#   p.start()
 
   print 'Phase 0: no grammar specialization'
-#  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
   phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
   # evaluate
   p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
@@ -155,13 +158,16 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 
 def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
   mgr = Manager()
-  ns = mgr.Namespace()
+  ns= mgr.Namespace()
   ns.lamb = hyperParams['lambda']
+  ns.theta = theta
+
+
   batchsize = hyperParams['bSize']
   random.shuffle(examples) # randomly split the data into parts of batchsize
   avErrors = []
+#  print 'trainonset', theta
   for batch in xrange((len(examples)+batchsize-1)//batchsize):
-    ns.theta = theta
     minibatch = examples[batch*batchsize:(batch+1)*batchsize]
     s = (len(minibatch)+cores-1)//cores
     trainPs = []
@@ -175,7 +181,6 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
         p = Process(name='minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
         trainPs.append(p)
         p.start()
-
 
     errors = []
     theta.regularize(hyperParams['alpha']/len(examples), hyperParams['lambda'])
@@ -201,19 +206,15 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
 
 
 def trainBatch(ns, examples, q=None):
-#  print 'trainBatch'
+  theta = ns.theta
+  lambdaL2 = ns.lamb
+
   if len(examples)>0:
-    theta = ns.theta
-    lambdaL2 = ns.lamb
     grads = theta.gradient()
-  #  regularization = lambdaL2/2 * theta.norm()**2
     error = 0
     for nw in examples:
-      dgrads,derror = nw.train(theta)
+      derror = nw.train(theta,grads)
       error+= derror
-      for name in dgrads.keys():
-#        print 'obtain grads for:', name
-        grads[name] = grads[name] + dgrads[name]/len(examples)
     q.put((grads, error/len(examples)))
   else:
     print '\tPart of minibatch with no training examples.'

@@ -45,9 +45,8 @@ def initializeTheta(args,vocabulary, grammar):
         V,voc = pickle.load(f)
       if 'UNKNOWN' not in voc: voc.insert('UNKNOWN',0)
       vocabulary = [w for w in vocabulary if w in voc]
+
       V = np.vstack(tuple([V[i] for i in [voc.index(w) for w in vocabulary]]))
-      nwords = len(vocabulary)
-      print '\tLoaded embeddings. Vocabulary size is', nwords
       dims['word'] = len(V[0])
     else:
       V = None
@@ -121,7 +120,7 @@ def main(args):
 
   tTreebank = training.Treebank(treebanksTrain)
   vTreebank = training.Treebank(treebanksValid[:1])
-  training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores=1)
+  training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
 
 
 

@@ -39,7 +39,7 @@ def this2Nodes(nltkTree):
     thisOuter = Node([], [], 'TMP', 'tanh')
 
     uNode = Node([thisOuter,thisInner],[],('u',),'tanh')
-    scoreNode = Node([uNode],[],('score',),'identity')
+    scoreNode = Node([uNode],[],('score',),'tanh')
     uNode.outputs = [scoreNode]
 
     thisOuter.outputs = [uNode]
@@ -121,7 +121,7 @@ class IORNN():
 #    (self,outputs,cat, word='', index=0,nonlinearity='identity'):
     self.rootO.__class__ = Leaf
     self.rootO.cat=('root',)
-    self.rootO.key=''
+    self.rootO.key=0
     self.rootO.nonlin = 'identity'
     self.scoreNodes = findScoreNodes(self.rootO)
 
@@ -153,8 +153,8 @@ class IORNN():
     if activate: self.activate(theta)
     error = 0
     for scoreNode in self.scoreNodes:
-      error += trainWord(scoreNode, theta, gradient, target, theta.lookup[('word',)])
-    return gradient, error/ len(self.scoreNodes)
+      error += trainWord(scoreNode, theta, gradient, target, theta[('word',)].keys())
+    return error/ len(self.scoreNodes)
 
   def error(self,theta, target, activate=True):
     if activate: self.activate(theta)
@@ -168,7 +168,7 @@ class IORNN():
     return sum(errors)
 
   def evaluate(self,theta, sample=1):
-    vocabulary = theta.lookup[('word',)]
+    vocabulary = theta[('word',)].keys()
     if sample <1 and sample>0:
       vocabulary = random.sample(vocabulary, int(sample*len(vocabulary)))
       for word in self.words():
@@ -176,9 +176,7 @@ class IORNN():
 
     ranks = 0
     num = 0
-
     self.activate(theta)
-
     for scoreNode in self.scoreNodes:
       results = [computeError(scoreNode,theta,x, reset=False) for x in vocabulary]
       # reset the scoreNW

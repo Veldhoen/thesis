@@ -54,9 +54,9 @@ def getIORNNs(source,outDir, sennaVoc):
     with open(filename,'r') as f:
       counter = 0
       for line in f:
-        counter+=1
         try:
           tree = nltk.tree.Tree.fromstring(line)
+          if len(tree.leaves())<10: continue
           sennaLeaves(tree,sennaVoc)
 #          print tree.leaves()
           nws.append(myIORNN.IORNN(tree))
@@ -65,13 +65,15 @@ def getIORNNs(source,outDir, sennaVoc):
               rules[str(prod.lhs())][str(prod.rhs())]+=1
           for word, pos in tree.pos():
             voc.add(word)
+          counter+=1
 
         except:
-          print 'transformation to IORNN failed.'
-          print line
+          print 'transformation to IORNN failed.', line
         if counter % 50 == 0: print counter
-        if counter % 1000 == 0:
-          out =os.path.join(outDir,name+'_IORNNS_'+str(counter//1000)+'.pik')
+        if counter % 100 == 0:         # replace 100 by 1000 when not creating a sample
+          if counter>1000: break     # remove this line when not creating a sample
+
+          out =os.path.join(outDir,name+'_IORNNS_'+str(counter//100)+'.pik')
           print 'writing to', out
           with open(out,'wb') as f:
             pickle.dump(nws,f)
@@ -107,5 +109,5 @@ senna = os.path.join('data','sennaEMB'+'.pik')
 with open(senna, 'rb') as f:
   V, voc =   pickle.load(f)
 
-getIORNNs('../originalData/WSJ','data/newWSJ',voc)
+getIORNNs('../../../AI/thesisData/originalData/WSJ','data/newWSJSample',voc)
 #getIORNNs('../originalData/BNC','data/newBNC',voc)
