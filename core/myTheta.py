@@ -61,8 +61,51 @@ class Theta(dict):
         sys.exit()
     return self
 
+  def __add__(self, other):
+    newT = self.gradient()
+    for key in self:
+      if type(self[key]) == np.ndarray:
+        newT[key] = self[key]+other[key]
+      elif type(self[key]) == WordMatrix:
+        for word in other[key]:
+          newT[key][word] = self[key][word]+ other[key][word]
+      else:
+        print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
+        sys.exit()
+    return newT
+
+  def __itruediv__(self,other):
+    for key in self:
+      if type(self[key]) == np.ndarray:
+        self[key]/=other[key]
+      elif type(self[key]) == WordMatrix:
+        for word in other[key]:
+          self[key][word]/= other[key][word]
+      else:
+        print 'Inplace division of theta failed:', key, 'of type',str(type(self[key]))
+        sys.exit()
+    return self
+
+  def __idiv__(self,other):
+    return self.__itruediv__(other)
+
+
+
+  def __iadd__(self, other):
+    for key in self:
+      if type(self[key]) == np.ndarray:
+        self[key]+=other[key]
+      elif type(self[key]) == WordMatrix:
+        for word in other[key]:
+          self[key][word]+= other[key][word]
+      else:
+        print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
+        sys.exit()
+    return self
+
+
   def forIORNN(self, embeddings, vocabulary ):
-    print 'create composition matrices'
+    print '\tCreate composition matrices'
     for arity in xrange(1,self.maxArity+1):
       cat = 'composition'
       lhs = '#X#'
@@ -73,7 +116,7 @@ class Theta(dict):
       for j in xrange(arity):
         self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,(arity-1)*self.din+self.dout))
         self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(self.dout))
-    print 'create lookup tables'
+    print '\tCreate lookup tables'
     self[('word',)] = WordMatrix(vocabulary, default = ('UNKNOWN',None))
     for i in range(len(vocabulary)):
       if embeddings is None: self[('word',)][vocabulary[i]]=np.random.random_sample(self.dwords)*.2-.1
@@ -83,7 +126,7 @@ class Theta(dict):
     self.newMatrix(('root',),None,(1,self.dout))
 
 
-    print 'create score matrices'
+    print '\tCreate score matrices'
     self.newMatrix(('u','M'), None,(self.dout,self.din+self.dout))
     self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
 

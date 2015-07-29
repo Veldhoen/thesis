@@ -55,7 +55,7 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
 
 
 
-def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
+def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
   if adagrad: histGrad = theta.gradient()
   else: histGrad = None
   print '\tStart training'
@@ -65,10 +65,11 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
   for i in range(10,40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
-    tData = [e for e in examples if len(e.scoreNodes)<i]
-    if len(tData)<1:
-      print 'skip iteration with sentences up to length',i,'(no examples)'
+    tData = [e for e in examples if len(e.scoreNodes)<=i]
+    if len(tData)<2:
+      print 'skip iteration with sentences up to length',i,'(too few examples)'
       continue
+    else: print 'creating training set with sentences up to length',i
     while len(tData)<len(examples):
       tData.extend([e for e in tTreebank.getExamples() if len(e.scoreNodes)<i])
     tData = tData[:len(examples)]
@@ -77,13 +78,15 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
 
+    storeTheta(theta, outFile)
+
     print '\tComputing performance ('+str(len(vData))+' examples)...'
     validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
 
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
-def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
+def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
   if adagrad: histGrad = theta.gradient()
   else: histGrad = None
 
@@ -99,12 +102,19 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores):
 
 
     trainLoss.append(trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores))
+    storeTheta(theta, outFile)
     print '\tComputing performance ('+str(len(vData))+' examples)...'
     validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
 
 
-
+def storeTheta(theta, outFile):
+  # secure storage: keep back-up of old version until writing is complete
+  try: os.rename(outFile, outFile+'.back-up')
+  except: True
+  with open(outFile,'wb') as f: pickle.dump(theta,f)
+  try: os.remove(outFile+'.back-up')
+  except: True
 
 def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
   vData = vTreebank.getExamples()
@@ -116,38 +126,41 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 #   p.start()
 
   print 'Phase 0: no grammar specialization'
-  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores)
+  outFile = os.path.join(outDir,'phase0.theta.pik')
+  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
   # evaluate
   p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
   pPs.append(p)
   p.start()
   # store theta
-  with open(os.path.join(outDir,'phase0.theta.pik'),'wb') as f:
-    pickle.dump(theta,f)
+#  with open(os.path.join(outDir,'phase0.theta.pik'),'wb') as f:
+#    pickle.dump(theta,f)
 
   print 'Phase 1: head specialization'
   theta.specializeHeads()
-  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
+  outFile = os.path.join(outDir,'phase1.theta.pik')
+  phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
   p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:'))
   pPs.append(p)
   p.start()
   # store theta
-  with open(os.path.join(outDir,'phase1.theta.pik'),'wb') as f:
-    pickle.dump(theta,f)
+#  with open(os.path.join(outDir,'phase1.theta.pik'),'wb') as f:
+#    pickle.dump(theta,f)
 
   print 'Phase 2: rule specialization - most frequent', hyperParams['nRules']
   theta.specializeRules(hyperParams['nRules'])
-  phase(tTreebank, vData, hyperParams, adagrad, theta, cores)
+  outFile = os.path.join(outDir,'phase2.theta.pik')
+  phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
   p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:'))
   pPs.append(p)
   p.start()
   # store theta
-  with open(os.path.join(outDir,'phase2Final.theta.pik'),'wb') as f:
-    pickle.dump(theta,f)
+#  with open(os.path.join(outDir,'phase2Final.theta.pik'),'wb') as f:
+#    pickle.dump(theta,f)
 
   # print results of evaluation
   for j in xrange(len(pPs)):
@@ -214,7 +227,9 @@ def trainBatch(ns, examples, q=None):
     error = 0
     for nw in examples:
       derror = nw.train(theta,grads)
+      if derror == 0: print 'zero error?!', nw
       error+= derror
+    grads /= len(examples)
     q.put((grads, error/len(examples)))
   else:
     print '\tPart of minibatch with no training examples.'
