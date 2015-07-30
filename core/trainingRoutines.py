@@ -31,10 +31,11 @@ class Treebank():
 def evaluateBit(theta, testData, q, sample=1):
 
   if len(testData)==0:
-    print 'empty evaluationBit'
+#    print 'empty evaluationBit'
     q.put(None)
-  performance = [nw.evaluate(theta,sample) for nw in testData]
-  q.put(sum(performance)/len(performance))
+  else:
+    performance = [nw.evaluate(theta,sample) for nw in testData]
+    q.put(sum(performance)/len(performance))
 
 def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
   if cores>1:
@@ -47,7 +48,8 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
       pPs.append(p)
       p.start()
 
-    for p in pPos:
+    performanc = []
+    for p in pPs:
       p = myQueue.get()
       if p is None: continue
       else: performance.append(p)
@@ -129,7 +131,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   cores = max(1,cores-4)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
 
   vData = vTreebank.getExamples()
-  vDataBit = random.sample(vData,int(0.3*len(vData))
+  vDataBit = random.sample(vData,int(0.3*len(vData)))
   qPerformance = Queue()
   pPs = []
   p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
@@ -238,10 +240,10 @@ def trainBatch(ns, examples, q=None):
     error = 0
     for nw in examples:
       derror = nw.train(theta,grads)
-      if derror == 0: print 'zero error?!', nw
+#      if derror == 0: print 'zero error?!', nw
       error+= derror
     grads /= len(examples)
     q.put((grads, error/len(examples)))
   else:
-    print '\tPart of minibatch with no training examples.'
+#    print '\tPart of minibatch with no training examples.'
     q.put((None,None))
