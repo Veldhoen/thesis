@@ -51,9 +51,9 @@ class Theta(dict):
 
   def __iadd__(self, other):
     for key in self:
-      if type(self[key]) == np.ndarray:
+      if isinstance(self[key],np.ndarray):
         self[key]+=other[key]
-      elif type(self[key]) == WordMatrix:
+      elif isinstance(self[key],dict):
         for word in other[key]:
           self[key][word]+= other[key][word]
       else:
@@ -64,9 +64,9 @@ class Theta(dict):
   def __add__(self, other):
     newT = self.gradient()
     for key in self:
-      if type(self[key]) == np.ndarray:
+      if isinstance(self[key],np.ndarray):
         newT[key] = self[key]+other[key]
-      elif type(self[key]) == WordMatrix:
+      elif isinstance(self[key],dict):
         for word in other[key]:
           newT[key][word] = self[key][word]+ other[key][word]
       else:
@@ -75,10 +75,14 @@ class Theta(dict):
     return newT
 
   def __itruediv__(self,other):
+    if isinstance(other,dict): th=True
+    elif isinstance(other,int): th=False
+    else: print 'unknown type of other in theta.itruediv'
+
     for key in self:
-      if type(self[key]) == np.ndarray:
+      if isinstance(self[key],np.ndarray):
         self[key]/=other[key]
-      elif type(self[key]) == WordMatrix:
+      elif isinstance(self[key],dict):
         for word in other[key]:
           self[key][word]/= other[key][word]
       else:
@@ -93,9 +97,9 @@ class Theta(dict):
 
   def __iadd__(self, other):
     for key in self:
-      if type(self[key]) == np.ndarray:
+      if isinstance(self[key],np.ndarray):
         self[key]+=other[key]
-      elif type(self[key]) == WordMatrix:
+      elif isinstance(self[key],dict):
         for word in other[key]:
           self[key][word]+= other[key][word]
       else:
