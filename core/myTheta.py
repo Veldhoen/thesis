@@ -52,23 +52,30 @@ class Theta(dict):
   def __iadd__(self, other):
     for key in self:
       if isinstance(self[key],np.ndarray):
-        self[key]+=other[key]
+        if th: self[key] = self[key]+other[key]
+        else: self[key] = self[key]+other
       elif isinstance(self[key],dict):
         for word in other[key]:
-          self[key][word]+= other[key][word]
+          if th: self[key][word] = self[key][word]+other[key][word]
+          else: self[key][word] = self[key][word]+other
       else:
         print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
         sys.exit()
     return self
 
   def __add__(self, other):
+    if isinstance(other,dict): th=True
+    elif isinstance(other,int): th=False
+
     newT = self.gradient()
     for key in self:
       if isinstance(self[key],np.ndarray):
-        newT[key] = self[key]+other[key]
+        if th: newT[key] = self[key]+other[key]
+        else: newT[key] = self[key]+other
       elif isinstance(self[key],dict):
         for word in other[key]:
-          newT[key][word] = self[key][word]+ other[key][word]
+          if th: newT[key][word] = self[key][word]+other[key][word]
+          else: newT[key][word] = self[key][word]+other
       else:
         print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
         sys.exit()
@@ -81,10 +88,12 @@ class Theta(dict):
 
     for key in self:
       if isinstance(self[key],np.ndarray):
-        self[key]/=other[key]
+        if th: self[key]/=other[key]
+        else: self[key]/=other
       elif isinstance(self[key],dict):
         for word in other[key]:
-          self[key][word]/= other[key][word]
+          if th: self[key][word]/=other[key][word]
+          else: self[key][word]/=other
       else:
         print 'Inplace division of theta failed:', key, 'of type',str(type(self[key]))
         sys.exit()
@@ -95,17 +104,7 @@ class Theta(dict):
 
 
 
-  def __iadd__(self, other):
-    for key in self:
-      if isinstance(self[key],np.ndarray):
-        self[key]+=other[key]
-      elif isinstance(self[key],dict):
-        for word in other[key]:
-          self[key][word]+= other[key][word]
-      else:
-        print 'Inplace addition of theta failed:', key, 'of type',str(type(self[key]))
-        sys.exit()
-    return self
+
 
 
   def forIORNN(self, embeddings, vocabulary ):
