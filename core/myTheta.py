@@ -91,9 +91,12 @@ class Theta(dict):
         if th: self[key]/=other[key]
         else: self[key]/=other
       elif isinstance(self[key],dict):
-        for word in other[key]:
-          if th: self[key][word]/=other[key][word]
-          else: self[key][word]/=other
+        if th: 
+          for word in other[key]:
+            self[key][word]/=other[key][word]
+        else:
+          for word in self[key]:
+            self[key][word]/=other
       else:
         print 'Inplace division of theta failed:', key, 'of type',str(type(self[key]))
         sys.exit()

@@ -29,6 +29,10 @@ class Treebank():
     self.it = iter(self.files)
 
 def evaluateBit(theta, testData, q, sample=1):
+
+  if len(testData)==0:
+    print 'empty evaluationBit'
+    q.put(None)
   performance = [nw.evaluate(theta,sample) for nw in testData]
   q.put(sum(performance)/len(performance))
 
@@ -43,13 +47,18 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
       pPs.append(p)
       p.start()
 
-    performance = [myQueue.get() for p in pPs]
-  else: performance = [nw.evaluate(theta,sample) for nw in testData]
+    for p in pPos:
+      p = myQueue.get()
+      if p is None: continue
+      else: performance.append(p)
 
-  if q is None:  return sum(performance)/len(performance)
+  else: performance = [nw.evaluate(theta,sample) for nw in testData]
+  performance = sum(performance)/len(performance)
+  if q is None:  return performance
   else:
     confusion = None
-    q.put((description, sum(performance)/len(performance),confusion))
+    print description,performance
+    q.put((description, performance,confusion))
 
 
 
@@ -117,17 +126,19 @@ def storeTheta(theta, outFile):
   except: True
 
 def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
-  vData = vTreebank.getExamples()
+  cores = max(1,cores-4)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
 
+  vData = vTreebank.getExamples()
+  vDataBit = random.sample(vData,int(0.3*len(vData))
   qPerformance = Queue()
   pPs = []
-#   p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
-#   pPs.append(p)
-#   p.start()
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
+  pPs.append(p)
+  p.start()
 
   print 'Phase 0: no grammar specialization'
   outFile = os.path.join(outDir,'phase0.theta.pik')
-  phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
+  phaseZero(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
   # evaluate
   p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
   pPs.append(p)
@@ -139,7 +150,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   print 'Phase 1: head specialization'
   theta.specializeHeads()
   outFile = os.path.join(outDir,'phase1.theta.pik')
-  phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
+  phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
   p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:'))
