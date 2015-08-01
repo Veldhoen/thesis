@@ -37,6 +37,18 @@ class Theta(dict):
     self.maxArity = maxArity
     self.rules = [rule for rule, c in rulesC.most_common()]
 
+#   def __setitem__(self, key,val):
+# #    if self.default not in self.keys(): True #raise KeyError("Default must be in the vocabulary")
+# #    dict.__setitem__(self, key, val)
+#     if key in self: dict.__setitem__(self, key, val)
+#     else:
+#       for fakeKey in generalizeKey(key):
+#         if fakeKey in self.keys(): dict.__setitem__(self, fakeKey, val)
+#         break
+#       else: print key, 'not in theta (for setitem).'
+# #
+
+
   def __missing__(self, key):
 #    if key[1]=='S' : print 'Theta missing', key
     for fakeKey in generalizeKey(key):
@@ -45,7 +57,7 @@ class Theta(dict):
         return self[fakeKey]
         break
     else:
-      print key, 'not in theta.'
+      print key, 'not in theta (missing).'
       return None
       #sys.exit()
 
@@ -91,7 +103,7 @@ class Theta(dict):
         if th: self[key]/=other[key]
         else: self[key]/=other
       elif isinstance(self[key],dict):
-        if th: 
+        if th:
           for word in other[key]:
             self[key][word]/=other[key][word]
         else:
@@ -221,12 +233,14 @@ class Theta(dict):
     return txt
 
 class Gradient(Theta):
-  def __init__(self,theta):
+#  molds = dict()
+  def __init__(self,theta,wordM=None):
     self.molds = dict()
     for key in theta.keys():
-      if type(theta[key]) == np.ndarray:
+      if isinstance(theta[key], np.ndarray):
         self.molds[key] = np.shape(theta[key])
-      elif type(theta[key]) == WordMatrix:
+      elif isinstance(theta[key],WordMatrix):
+        self.molds[key] = 'wordM'
         voc = theta[key].keys()
 #        print len(voc)
         if 'UNKNOWN' in voc: defaultkey = 'UNKNOWN'
@@ -235,11 +249,18 @@ class Gradient(Theta):
           sys.exit()
         defaultvalue = np.zeros_like(theta[key][defaultkey])
         self[key] = WordMatrix(vocabulary=voc, default = (defaultkey,defaultvalue))
+      elif isinstance(theta[key],tuple):
+        self.molds[key]=theta[key]
+      elif theta[key] == 'wordM':
+        self.molds[key]='wordM'
+        self[key] = wordM
       else:
         print 'Creating gradient. Cannot instantiate', key, 'of type',str(type(theta[key]))
         sys.exit()
-#  def __add__(self,other):
 
+
+  def __reduce__(self):
+    return(self.__class__,(self.molds,self[('word',)]))
 
   def __missing__(self, key):
     if key in self.molds:
@@ -251,12 +272,26 @@ class Gradient(Theta):
           self.newMatrix(fakeKey, np.zeros(self.molds[fakeKey]))
           return self[fakeKey]
       else:
-        print key,'not in gradient, and not able to create it.'
+        print key,'not in gradient(missing), and not able to create it.'
         return None
+  def __setitem__(self, key,val):
+#    if self.default not in self.keys(): True #raise KeyError("Default must be in the vocabulary")
+#    dict.__setitem__(self, key, val)
+    if key in self.molds: dict.__setitem__(self, key, val)
+    else:
+      for fakeKey in generalizeKey(key):
+        if fakeKey in self.molds: dict.__setitem__(self, fakeKey, val)
+        break
+      else:
+        print key,'not in gradient(setting), and not able to create it.'
+#        print 'molds:', [ mold for mold in self.molds.keys() if mold[0]!='composition']
+        sys.exit()
+
+
 
 class WordMatrix(dict):
-  voc = set()
-  default = ''
+#  voc = set()
+#  default = ''
   def __init__(self,vocabulary=None, default = ('UNKNOWN',0), dicItems={}):
 #    print 'Wordmatrix initialization'
     self.voc = vocabulary

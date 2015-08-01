@@ -29,7 +29,10 @@ def getGrammar(option, grammars):
     sys.exit()
   for m in grammars:
     with open(m, 'rb') as f:
-      rules.update(pickle.load(f))
+      newRules =pickle.load(f)
+      for lhs, rhss in newRules.iteritems():
+        for rhs, count in rhss.iteritems():
+          rules[lhs][rhs]+= count
   return rules
 
 def initializeTheta(args,vocabulary, grammar):
@@ -85,18 +88,30 @@ def main(args):
     print 'no valid source directory:',source
     sys.exit()
 
+  if len(vocabularies)<2:
+    print 'no two vocabulary files.'
+    sys.exit()
+
+  if len(grammars)<2:
+    print 'no two grammar files.'
+    sys.exit()
+
+
   if len(treebanksTrain)<1 or len(treebanksValid)<1:
     print 'no training or validation data obtained. Abort execution.'
     sys.exit()
 
   vocabulary = getVocabulary(vocabularies)
 
-  grammar = getGrammar(args['grammar'][0], grammars)
+  style =args['grammar'][0]
+  grammar = getGrammar(style, grammars)
 
   theta=initializeTheta(args,vocabulary, grammar)
 
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
-  cores = args['cores']
+  cores = max(1,args['cores']-1) # keep one core free for optimal efficiency
+
+
   if len(args['grammar'])>1: hyperParams['nRules']=args['grammar'][1]
   else: hyperParams['nRules']=200
 
@@ -120,11 +135,19 @@ def main(args):
 
   tTreebank = training.Treebank(treebanksTrain)
   vTreebank = training.Treebank(treebanksValid[:1])
-  training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
 
 
-
+  training.storeTheta(theta, os.path.join(outDir,'initialTheta.pik'))
   # training...
+
+  if style == 'beginSmall': training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+  elif style == 'None': plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+  elif style == 'LHS':
+    theta.specializeHeads()
+    training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+  elif style == 'Rules':
+    theta.specializeRules(hyperParams['nRules'])
+    training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
 
 
 

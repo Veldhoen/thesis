@@ -37,7 +37,7 @@ def evaluateBit(theta, testData, q, sample=1):
     performance = [nw.evaluate(theta,sample) for nw in testData]
     q.put(sum(performance)/len(performance))
 
-def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
+def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, writeFile=None):
   if cores>1:
     myQueue = Queue()
     pPs = []
@@ -48,7 +48,7 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
       pPs.append(p)
       p.start()
 
-    performanc = []
+    performance = []
     for p in pPs:
       p = myQueue.get()
       if p is None: continue
@@ -59,7 +59,9 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1):
   if q is None:  return performance
   else:
     confusion = None
-    print description,performance
+    if not writeFile is None:
+      with open(writeFile,'a') as f:
+        f.write(description,performance)
     q.put((description, performance,confusion))
 
 
@@ -95,7 +97,7 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
     validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
 
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
-
+  print '\tEnd of training phase'
 
 def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
   if adagrad: histGrad = theta.gradient()
@@ -117,24 +119,56 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
     print '\tComputing performance ('+str(len(vData))+' examples)...'
     validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
     print '\tTraining error:', trainLoss[-1], ', Estimated performance:', validLoss[-1]
-
+  print '\tEnd of training phase'
 
 def storeTheta(theta, outFile):
   # secure storage: keep back-up of old version until writing is complete
   try: os.rename(outFile, outFile+'.back-up')
-  except: True
+  except: True #file did not exist, don't bother
   with open(outFile,'wb') as f: pickle.dump(theta,f)
   try: os.remove(outFile+'.back-up')
-  except: True
+  except: True #file did not exist, don't bother
+  print '\tWrote theta to file: outFile'
 
-def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
+def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
   cores = max(1,cores-4)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
+  print 'Using', cores,'core(s) for parallel training and evaluation.'
+  print 'Starting plain training'
+  performanceOut = os.path.join(outDir,'performance.txt')
+  outFile = os.path.join(outDir,'plainTrain.theta.pik')
 
   vData = vTreebank.getExamples()
   vDataBit = random.sample(vData,int(0.3*len(vData)))
+
+  # evaluate start
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:'))
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:',1,1,performanceOut))
+  pPs.append(p)
+  p.start()
+
+
+  phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
+
+  # evaluate result
+  p = Process(name='evaluatePlain', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after plain training:',1,1,performanceOut))
+  pPs.append(p)
+  p.start()
+
+
+
+
+def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
+  cores = max(1,cores-4)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
+  print 'Using', cores,'cores for parallel training and evaluation.'
+
+
+  vData = vTreebank.getExamples()
+  vDataBit = random.sample(vData,int(0.3*len(vData)))
+  performanceOut = os.path.join(outDir,'performance.txt')
+  qPerformance = Queue()
+  pPs = []
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:',1,1,performanceOut))
   pPs.append(p)
   p.start()
 
@@ -142,7 +176,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   outFile = os.path.join(outDir,'phase0.theta.pik')
   phaseZero(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
   # evaluate
-  p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:'))
+  p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -155,7 +189,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
-  p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:'))
+  p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -168,7 +202,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
-  p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:'))
+  p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -183,6 +217,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   for p in pPs: p.join()
 
 def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
+
   mgr = Manager()
   ns= mgr.Namespace()
   ns.lamb = hyperParams['lambda']
@@ -234,7 +269,6 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
 def trainBatch(ns, examples, q=None):
   theta = ns.theta
   lambdaL2 = ns.lamb
-
   if len(examples)>0:
     grads = theta.gradient()
     error = 0
@@ -242,6 +276,7 @@ def trainBatch(ns, examples, q=None):
       derror = nw.train(theta,grads)
 #      if derror == 0: print 'zero error?!', nw
       error+= derror
+      if len(grads)>len(theta)+5: sys.exit()
     grads /= len(examples)
     q.put((grads, error/len(examples)))
   else:

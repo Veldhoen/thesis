@@ -85,7 +85,7 @@ def trainWord(scoreNode, theta, gradients, target, vocabulary):
   original = wordNode.key
   if target is None:
     x = original
-    while x == original or x == 'UNKNOWN':  x = random.choice(vocabulary)
+    while x == original:  x = random.choice(vocabulary)
   else: x = target
 
 #  print '\ntraining score node of word:',original,', target:', target
@@ -148,8 +148,8 @@ class IORNN():
     self.rootO.forward(theta,activateIn = False, activateOut = True)
 #    print 'activated the network.'
 
-  def train(self, theta, gradient = None, activate=True, target = None):
-    if gradient is None: gradient = theta.gradient()
+  def train(self, theta, gradient, activate=True, target = None):
+#    if gradient is None: gradient = theta.gradient()
     if activate: self.activate(theta)
     error = 0
     for scoreNode in self.scoreNodes:
