@@ -141,7 +141,7 @@ def main(args):
   # training...
 
   if style == 'beginSmall': training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
-  elif style == 'None': plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+  elif style == 'None': training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
   elif style == 'LHS':
     theta.specializeHeads()
     training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)

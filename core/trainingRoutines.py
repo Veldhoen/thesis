@@ -61,7 +61,7 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, wri
     confusion = None
     if not writeFile is None:
       with open(writeFile,'a') as f:
-        f.write(description,performance)
+        f.write((description,performance))
     q.put((description, performance,confusion))
 
 
@@ -107,6 +107,11 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
 
   trainLoss = []
   validLoss = []
+
+  print '\tComputing initial performance ('+str(len(vData))+' examples)...'
+  validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
+  print '\tEstimated performance:', validLoss[-1]
+
 
   for i in xrange(hyperParams['nEpochs']):
 #    if stopNow(trainLoss, validLoss): break#converged/ overfitting:
@@ -221,7 +226,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
   mgr = Manager()
   ns= mgr.Namespace()
   ns.lamb = hyperParams['lambda']
-  ns.theta = theta
+
 
 
   batchsize = hyperParams['bSize']
@@ -229,6 +234,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
   avErrors = []
 #  print 'trainonset', theta
   for batch in xrange((len(examples)+batchsize-1)//batchsize):
+    ns.theta = theta
     minibatch = examples[batch*batchsize:(batch+1)*batchsize]
     s = (len(minibatch)+cores-1)//cores
     trainPs = []
