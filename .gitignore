@@ -56,5 +56,6 @@ target/
 # data directories
 data/*
 models/*
+githubs/*
 
 psIds.txt
