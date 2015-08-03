@@ -12,23 +12,31 @@ def numericalGradient(nw, theta, target = None):
     numgrad = theta.gradient()
 
     for name in theta.keys():
-        print '\t',name
+#        print '\t',name
     # create an iterator to iterate over the array, no matter its shape
         it = np.nditer(theta[name], flags=['multi_index'])
-        
+
         while not it.finished:
-#          nw.recomputeNW(theta)
+#          nw.activate(theta)
           i = it.multi_index
+#          print '\n\t',i
           old = theta[name][i]
           theta[name][i] = old + epsilon
  #         errorPlus = max(0,1-score0+nw.score(theta,target))
+ #         print 'errorPlus'
           errorPlus=nw.error(theta,target,True)
           theta[name][i] = old - epsilon
 #          errorMin = max(0,1-score0+nw.score(theta,target))
+  #        print 'errorMin'
           errorMin=nw.error(theta,target,True)
           d =(errorPlus-errorMin)/(2*epsilon)
-#          if d!=0: print '\t\tchange gradient',i,', diff:', d
-#          else: print '\t\tnot change gradient',i
+#           if len(name)>1:
+#             #if name[1]=='S':
+#               if d!=0:
+#                 print '\tchange gradient',i,', diff:', d
+#                 break
+              #  sys.exit()
+        #  else: print '\n\tnot change gradient',i,'\n'
           numgrad[name][i] = d
           theta[name][i] = old  # restore theta
           it.iternext()
@@ -40,16 +48,9 @@ def gradientCheck(theta, network, target):
   #network.activateNW(theta)
 
   # compute analyticial and numerical gradient
-  #grad = network.backprop(theta, target)
   print 'computing analytical gradient'
   grad = theta.gradient()
-  network.trainWords(theta, grad, activate=True, target=target)
-#  grad, err = network.train(theta, None, target)
-#   if err<=1:
-#     print 'no backpropagation.'
-#     return
-#  print 'computing numerical gradient'
-#  numgrad = network.numericalGradient(theta,target)
+  network.train(theta, grad, activate=True, target=target)
   numgrad = numericalGradient(network, theta, target)
 
   print 'unsparse angrad:'
@@ -68,7 +69,7 @@ def gradientCheck(theta, network, target):
     if np.array_equal(gr,ngr): diff = 0
     else: diff = np.linalg.norm(ngr-gr)/(np.linalg.norm(ngr)+np.linalg.norm(gr))
     print 'Difference '+str(name)+' :', diff
-    if diff>0.01:
+    if diff==1:##diff>0.01:
       print '    ','gr\t\tngr\t\td'
       for i in range(len(gr)):
         if gr[i]==0 and ngr[i]==0: v = str(0)
@@ -81,7 +82,7 @@ def gradientCheck(theta, network, target):
 
 def checkIORNN():
   voc = ['UNKNOWN','most','large', 'hippos','bark','chase','dogs']
-  gram = {'S':{'(NP,VP)':2},'NP':{'(Q,N)':2}}
+  gram = {'S':{'(NP, VP)':2},'NP':{'(Q, N)':2}}
 #  gram = ['S->(NP,VP)']
   heads = ['NP']
 #  gram = []
@@ -93,20 +94,24 @@ def checkIORNN():
 
   theta = myTheta.Theta('IORNN', dims,gram,None,voc)
 #  s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
-#  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
-  s = '(Top (S (VP (NP (Q most) (N hippos)) (V bark))))'
+  s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
+#  s = '(Top (S (NP (Q most) (N hippos)) (VP (V bark))))'
 #  s = '(NP (Q most) (N hippos))'
 #  s = '(Top (Q most))'
 #  s = '(Q most)'
   tree = Tree.fromstring(s)
   print tree
+  print tree.productions()
   nw = myIORNN.IORNN(tree)
-  nw.activate(theta)
-#  gradientCheck(theta, nw, 'dogs')
+#  nw.activate(theta)
+  gradientCheck(theta, nw, 'dogs')
 #  print nw
 
 
   theta.specializeHeads()
+  nw.activate(theta)
+  gradientCheck(theta, nw, 'dogs')
   theta.specializeRules()
+  gradientCheck(theta, nw, 'dogs')
 checkIORNN()
 

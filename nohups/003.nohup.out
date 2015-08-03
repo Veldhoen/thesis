@@ -1,7 +1,0 @@
-Traceback (most recent call last):
-  File "trainIOCopy.py", line 4, in <module>
-    from trainingParallel import *
-  File "/home/sveldhoen/thesis/github/trainingParallel.py", line 125
-    for j in xrange(len(trainPs)):
-                                 ^
-SyntaxError: invalid syntax
