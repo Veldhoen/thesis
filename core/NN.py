@@ -5,7 +5,7 @@ import sys
 
 import myTheta
 
-class Node(object):
+class Node():
   def __init__(self,inputs, outputs, cat,nonlinearity):
 #    print 'Node.init', cat, inputs
     self.inputs = inputs
@@ -14,7 +14,6 @@ class Node(object):
     self.nonlin = nonlinearity
 
   def forward(self,theta, activateIn = True, activateOut = False):
-#    print 'Node.forward', self.cat, self
     if activateIn:
       [i.forward(theta, activateIn,activateOut) for i in self.inputs]
 
