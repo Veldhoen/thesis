@@ -61,7 +61,7 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, wri
     confusion = None
     if not writeFile is None:
       with open(writeFile,'a') as f:
-        f.write((description,performance))
+        f.write(description+str(performance))
     q.put((description, performance,confusion))
 
 
@@ -75,6 +75,7 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
 
   trainLoss = []
   validLoss = []
+
 
   for i in range(10,40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
@@ -108,11 +109,6 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
   trainLoss = []
   validLoss = []
 
-  print '\tComputing initial performance ('+str(len(vData))+' examples)...'
-  validLoss.append(evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores))
-  print '\tEstimated performance:', validLoss[-1]
-
-
   for i in xrange(hyperParams['nEpochs']):
 #    if stopNow(trainLoss, validLoss): break#converged/ overfitting:
     tData = tTreebank.getExamples()
@@ -133,7 +129,7 @@ def storeTheta(theta, outFile):
   with open(outFile,'wb') as f: pickle.dump(theta,f)
   try: os.remove(outFile+'.back-up')
   except: True #file did not exist, don't bother
-  print '\tWrote theta to file: outFile'
+  print '\tWrote theta to file:', outFile
 
 def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
   cores = max(1,cores-4)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
@@ -148,7 +144,7 @@ def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   # evaluate start
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:',1,1,performanceOut))
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
 
@@ -156,7 +152,7 @@ def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate result
-  p = Process(name='evaluatePlain', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after plain training:',1,1,performanceOut))
+  p = Process(name='evaluatePlain', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after plain training: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
 
@@ -173,15 +169,20 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   performanceOut = os.path.join(outDir,'performance.txt')
   qPerformance = Queue()
   pPs = []
-  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set:',1,1,performanceOut))
+  p = Process(name='evaluateINI', target=evaluate, args=(theta, vData, qPerformance,'Initial Performance on validation set: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
+
+  print '\tEstimating initial performance ('+str(len(vDataBit))+' examples)...'
+  validLoss.append(evaluate(theta, vDataBit, q = None, description = '', sample=0.05, cores=cores))
+  print '\tEstimated performance: ', validLoss[-1]
+
 
   print 'Phase 0: no grammar specialization'
   outFile = os.path.join(outDir,'phase0.theta.pik')
   phaseZero(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
   # evaluate
-  p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0:',1,1,performanceOut))
+  p = Process(name='evaluatePhase0', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 0: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -194,7 +195,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
-  p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1:',1,1,performanceOut))
+  p = Process(name='evaluatePhase1', target=evaluate, args=(theta, vData, qPerformance,'Performance on validation set after phase 1: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -207,7 +208,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
 
   # evaluate
-  p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2:',1,1,performanceOut))
+  p = Process(name='evaluatePhase2', target=evaluate, args=(theta, vData, qPerformance,'Eventual performance on validation set after phase 2: ',1,1,performanceOut))
   pPs.append(p)
   p.start()
   # store theta
@@ -272,7 +273,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
   return sum(avErrors)/len(avErrors)
 
 
-def trainBatch(ns, examples, q=None):
+def trainBatch(ns, examples, q):
   theta = ns.theta
   lambdaL2 = ns.lamb
   if len(examples)>0:

@@ -11,53 +11,24 @@ class Theta(dict):
     if dims is None:
       print 'No dimensions for initialization of theta'
       sys.exit()
-    self.dims = dims
-#    self.dims['nwords'] =len(vocabulary)
-    if style not in ['RAE', 'IORNN','RNN']:
+    self.nwords = dims['nwords']
+    self.dwords = dims['word']
+    self.din = dims['inside']
+    self.dout = dims['outside']
+
+
+    self.grammar2cats(grammar)
+    print 'arity:',self.maxArity
+    if style == 'IORNN':
+      self.forIORNN(embeddings, vocabulary)
+    elif style == 'RAE': self.forRAE(embeddings, vocabulary)
+    elif style == 'RNN': 
       print 'Style not supported for theta initialization:', style
       sys.exit()
-    else: self.style = style
-    self.grammar2cats(grammar)
-    print '\tSet up matrix shapes'
-    self.makeMolds(embeddings)
-    print '\tCreate lookup tables'
-    dict.__setitem__(self,('word',),WordMatrix(vocabulary, default = ('UNKNOWN',None)))
-    for i in range(len(vocabulary)):
-      if embeddings is None: self[('word',)][vocabulary[i]]=np.random.random_sample(self.dwords)*.2-.1
-      else: self[('word',)][vocabulary[i]]=embeddings[i]
-
-  def makeMolds(self,embeddings):
-    # set local dimensionality variables
-    din=self.dims['inside']
-    if self.style == 'IORNN':
-      dout=self.dims['outside']
-
-    # create molds
-    self.molds = {}
-    for arity in xrange(1,self.maxArity+1):
-      lhs = '#X#'
-      rhs = '('+', '.join(['#X#']*arity)+')'
-      cat ='composition'
-      self.molds[(cat,lhs,rhs,'I','M')]= (din,arity*din)
-      self.molds[(cat,lhs,rhs,'I','B')]= (din)
-      if self.style == 'RAE':
-        cat = 'reconstruction'
-        self.molds[(cat,lhs,rhs,'I','M')]= (arity*din,din)
-        self.molds[(cat,lhs,rhs,'I','B')]= (arity*din)
-      if self.style == 'IORNN':
-        for j in xrange(arity):
-          self.molds[(cat,lhs,rhs,j,'O','M')]=(dout,(arity-1)*din+dout)
-          self.molds[(cat,lhs,rhs,j,'O','B')]=(dout)
-
-    if self.style == 'RAE':
-      self.newMatrix(('reconstructionLeaf','M'),None,(din,din))
-      self.newMatrix(('reconstructionLeaf','B'),None,(din))
-    if self.style == 'IORNN':
-      print '\tCreate score matrices'
-      self.newMatrix(('u','M'), None,(dout,din+dout))
-      self.newMatrix(('u','B'),None,(dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
-      self.newMatrix(('score','M'), None,(1,dout))
-      self.newMatrix(('score','B'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+    #  self.forRNN(embeddings, vocabulary)
+    else:
+      print 'Style not supported for theta initialization:', style
+      sys.exit()
 
   def grammar2cats(self, grammar):
     if grammar is None: grammar = Counter(Counter())
@@ -72,37 +43,17 @@ class Theta(dict):
     self.rules = [rule for rule, c in rulesC.most_common()]
 
   def __missing__(self, key):
-    if key in self.molds:
-      # if the key is supposed to be in theta, create a matrix for it and return it
-      for fakeKey in generalizeKey(key):
-        if fakeKey in self:
-          self.newMatrix(key, self[fakeKey])
-          break
-      else:
-        self.newMatrix(key, None,self.molds[key])
-      return self[key]
-    else:
-      # else, return the generalized version of it
-      for fakeKey in generalizeKey(key):
-        if fakeKey in self.molds:
-          return self[fakeKey]
-      else:
-        print key, 'not in theta (missing).'
-        return None
-        #sys.exit()
-
-  def __setitem__(self, key,val):
-    print 'theta.setitem',key
-    if key in self.keys(): dict.__setitem__(self, key, val)
-    elif key in self.molds: dict.__setitem__(self, key, val)
-    else:
-      for fakeKey in generalizeKey(key):
-        if fakeKey in self.molds: dict.__setitem__(self, fakeKey, val)
+#    print 'searching key:',key
+    for fakeKey in generalizeKey(key):
+#      print fakeKey
+      if fakeKey in self.keys():
+#        print fakeKey
+        return self[fakeKey]
         break
-      else:
-        raise KeyError(str(key)+' not in theta(setting), and not able to create it.')
-
-
+    else:
+      print key, 'not in theta (missing).'
+      return None
+      #sys.exit()
 
   def __iadd__(self, other):
     for key in self:
@@ -161,43 +112,88 @@ class Theta(dict):
     return self.__itruediv__(other)
 
 
+  def forRAE(self,embeddings,vocabulary):
+    print '\tCreate composition and reconstruction matrices'
+    for arity in xrange(1,self.maxArity+1):
+      lhs = '#X#'
+      rhs = '('+', '.join(['#X#']*arity)+')'
+      cat ='composition'
+      self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
+      self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
+      cat = 'reconstruction'
+      self.newMatrix((cat,lhs,rhs,'M'), None, (arity*self.din,self.din))
+      self.newMatrix((cat,lhs,rhs,'B'),None,(arity*self.din))
+    self.newMatrix(('reconstructionLeaf','M'),None,(self.din,self.din))
+    self.newMatrix(('reconstructionLeaf','B'),None,(self.din))
+    print '\tCreate lookup tables'
+    self[('word',)] = WordMatrix(vocabulary, default = ('UNKNOWN',None))
+    for i in range(len(vocabulary)):
+      if embeddings is None: self[('word',)][vocabulary[i]]=np.random.random_sample(self.dwords)*.2-.1
+      else: self[('word',)][vocabulary[i]]=embeddings[i]
+
+
+
+  def forIORNN(self, embeddings, vocabulary ):
+    print '\tCreate composition matrices'
+    for arity in xrange(1,self.maxArity+1):
+      cat = 'composition'
+      lhs = '#X#'
+      rhs = '('+', '.join(['#X#']*arity)+')'
+#      print lhs,rhs
+      self.newMatrix((cat,lhs,rhs,'I','M'), None, (self.din,arity*self.din))
+      self.newMatrix((cat,lhs,rhs,'I','B'),None,(self.din))
+      for j in xrange(arity):
+        self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(self.dout,(arity-1)*self.din+self.dout))
+        self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(self.dout))
+    print '\tCreate lookup tables'
+    self[('word',)] = WordMatrix(vocabulary, default = ('UNKNOWN',None))
+    for i in range(len(vocabulary)):
+      if embeddings is None: self[('word',)][vocabulary[i]]=np.random.random_sample(self.dwords)*.2-.1
+      else: self[('word',)][vocabulary[i]]=embeddings[i]
+
+#    self.newMatrix(('word',),embeddings,(self.nwords,self.dwords))
+    self.newMatrix(('root',),None,(1,self.dout))
+
+
+    print '\tCreate score matrices'
+    self.newMatrix(('u','M'), None,(self.dout,self.din+self.dout))
+    self.newMatrix(('u','B'),None,(self.dout)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+
+    self.newMatrix(('score','M'), None,(1,self.dout))
+    self.newMatrix(('score','B'),None,(1,1)) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+#    self.newMatrix(('score','B'),np.zeros((1,1))) #matrix with one value, a 1-D array with only one value is a float and that's problematic with indexing
+
 
   def specializeHeads(self):
     print 'Theta, specializing composition parameters for heads'
-
-    for key,value in self.molds.iteritems():
-      if key[0]=='composition' or key[0]=='reconstruction':
-        for head in self.heads:
-          newKey=key[:1]+(head,)+key[2:]
-          self.molds[newKey] = self.molds[key]
+    cat = 'composition'
+    for lhs in self.heads:
+      for arity in xrange(1,self.maxArity+1):
+        rhs = '('+', '.join(['#X#']*arity)+')'
+        self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,'#X#',rhs,'I','M')])
+        self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,'#X#',rhs,'I','B')])
+        for j in xrange(arity):
+          self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,'#X#',rhs,j,'O','M')])
+          self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,'#X#',rhs,j,'O','B')])
 
   def specializeRules(self,n=200):
-    print 'Theta, specializing parameters for rules'
+    print 'Theta, specializing composition parameters for rules'
+    cat = 'composition'
 
-    din = self.dims['inside']
-    if 'dout' in self.dims: dout = self.dims['outside']
     for lhs,rhs in self.rules[:n]:
+      self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,lhs,rhs,'I','M')])
+      self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,lhs,rhs,'I','B')])
       arity = len(rhs.split(', '))
-
-      cat ='composition'
-      self.molds[(cat,lhs,rhs,'I','M')]= (din,arity*din)
-      self.molds[(cat,lhs,rhs,'I','B')]= (din)
-      if style == 'RAE':
-        cat = 'reconstruction'
-        self.molds[(cat,lhs,rhs,'I','M')]= (arity*din,din)
-        self.molds[(cat,lhs,rhs,'I','B')]= (arity*din)
-      if style == 'IORNN':
-        for j in xrange(arity):
-          self.molds[(cat,lhs,rhs,j,'O','M')]=(dout,(arity-1)*din+dout)
-          self.molds[(cat,lhs,rhs,j,'O','B')]=(dout)
+      for j in xrange(arity):
+        self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,lhs,rhs,j,'O','M')])
+        self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
 
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
       return
 
-    if M is not None: dict.__setitem__(self, name, np.copy(M))
-#    self[name] = np.copy(M)
-    else: dict.__setitem__(self, name, np.random.random_sample(size)*.2-.1)
+    if M is not None: self[name] = np.copy(M)
+    else: self[name] = np.random.random_sample(size)*.2-.1
 
   def regularize(self, alphaDsize, lambdaL2):
     if lambdaL2==0: return
@@ -212,16 +208,20 @@ class Theta(dict):
         if historicalGradient is not None:
           histgrad = historicalGradient[key]
           if type(self[key]) == np.ndarray:
+            oldh = np.copy(histgrad)
             histgrad+= np.multiply(grad,grad)
-            self[key] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
+            try: self[key] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
+            except RuntimeWarning: raise NameError("invalid sqrt of histgrad? "+str(histgrad))
           elif type(self[key]) == WordMatrix:
             for word in grad:
               histgrad[word]+= np.multiply(grad[word],grad[word])
               self[key][word] -=(alpha/(np.sqrt(histgrad[word])+1e-6))*grad[word]
+          else: raise NameError("Cannot update theta")
         else:
           try: self[key] -=alpha*grad
           except:
             for word in grad: self[key][word] -=alpha*grad[word]
+      #except: print 'updating theta unsuccesful'
 
   def norm(self):
     names = [name for name in self.keys() if name[-1] == 'M']
@@ -233,12 +233,10 @@ class Theta(dict):
 
   def printDims(self):
     print 'Model dimensionality:'
-    for key, value in self.dims.iteritems():
-      print '\t'+key+' - '+str(value)
-#     print '\tnwords -', self.nwords
-#     print '\td word -', self.dwords
-#     print '\td inside -', self.din
-#     print '\td outside -', self.dout
+    print '\tnwords -', self.nwords
+    print '\td word -', self.dwords
+    print '\td inside -', self.din
+    print '\td outside -', self.dout
 
   def __str__(self):
     txt = '<<THETA>>'
