@@ -1,5 +1,5 @@
 import argparse
-import core.myIORNN as myIORNN
+import core.myRAE as myRAE
 import core.myTheta as myTheta
 import core.trainingRoutines as training
 from collections import defaultdict, Counter
@@ -61,7 +61,7 @@ def initializeTheta(args,vocabulary, grammar,maxArity):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('IORNN', dims, grammar, V, vocabulary)
+    theta = myTheta.Theta('RAE', dims, grammar, V, vocabulary)
 
   theta.printDims()
   return theta
@@ -72,7 +72,7 @@ def main(args):
   source = args['sourceTrain']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksTrain = [f for f in files if 'IORNNS' in f]
+    treebanksTrain = [f for f in files if 'RAES' in f]
     vocabularies = [f for f in files if 'VOC.pik' in f]
     grammars = [f for f in files if 'RULES.pik' in f]
   else:
@@ -82,7 +82,7 @@ def main(args):
   source = args['sourceValid']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksValid = [f for f in files if 'IORNNS' in f]
+    treebanksValid = [f for f in files if 'RAES' in f]
     vocabularies.extend([f for f in files if 'VOC.pik' in f])
     grammars.extend([f for f in files if 'RULES.pik' in f])
   else:
@@ -103,6 +103,7 @@ def main(args):
     sys.exit()
 
   vocabulary = getVocabulary(vocabularies)
+
   style =args['grammar'][0]
   grammar = getGrammar(style, grammars)
   maxArity=6
@@ -136,6 +137,7 @@ def main(args):
 
   tTreebank = training.Treebank(treebanksTrain,maxArity)
   vTreebank = training.Treebank(treebanksValid[:1],maxArity)
+  print vTreebank.files
 
 
   training.storeTheta(theta, os.path.join(outDir,'initialTheta.pik'))
@@ -171,6 +173,7 @@ class ValidateGrammar(argparse.Action):
       print '-g grammar options',values[2:], 'are ignored'
 #    kind, n = values
 
+    Credits = ('Credits', 'subject required')
     setattr(args, self.dest, (kind,n))
 
 

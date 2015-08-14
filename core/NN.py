@@ -13,13 +13,13 @@ class Node():
     self.cat = cat
     self.nonlin = nonlinearity
 
-  def forward(self,theta, activateIn = True, activateOut = False):
+  def forward(self,theta, activateIn = True, activateOut = False, inputSet=False):
+#    print 'forward',theta[('composition', '#X#', '(#X#, #X#)', 'I', 'M')][0][:3]
     if activateIn:
       [i.forward(theta, activateIn,activateOut) for i in self.inputs]
-
+    if not inputSet:
       self.inputsignal = np.concatenate([c.a for c in self.inputs])
       self.dinputsignal = np.concatenate([c.ad for c in self.inputs])
-
     M= theta[self.cat+('M',)]
     b= theta[self.cat+('B',)]
     if M is None or b is None:
@@ -39,11 +39,11 @@ class Node():
 #         node.forward(a,ad,theta)
 
       for node in self.outputs:
-        if type(node) == Node: node.forward(theta, activateIn,activateOut)
-        elif type(node) == Leaf: print 'a leaf cannot be an output of another node!'
-        else:
-#          print type(node), self.a.shape
-          node.forward(self.a,self.ad, theta)
+        node.forward(theta, False,activateOut)
+#         elif type(node) == Leaf: print 'a leaf cannot be an output of another node!'
+#         else:
+#           print type(node), self.a.shape
+#           node.forward(self.a,self.ad, theta)
 
 #       if len(self.outputs)==1:
 # #        assert isinstance(self.outputs[0],myRAE.Reconstruction)
@@ -55,16 +55,22 @@ class Node():
    #   [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False, moveOn=True):
-#    print 'backprop Node,',self#delta, self.cat#[0], self#,'types:'
+#    if self.a.shape != delta.shape:
+#    print 'backprop Node,',self.cat, 'a:', self.a.shape,'delta:', delta.shape, 'input:', self.inputsignal.shape
 #    print'\t theta',type(theta),'gradients',type(gradient)
 
     if addOut: #add a delta message from its outputs (e.g., reconstructions)
+      print 'addOut'
       delta += np.concatenate([out.backprop(theta, gradient) for out in self.outputs])
 
     M= theta[self.cat+('M',)]
+#    grm =
     gradient[self.cat+('M',)]+= np.outer(delta,self.inputsignal)
     gradient[self.cat+('B',)]+=delta
-    
+    # except:
+#       print 'backprop fails for', self.cat, 'delta:', delta.shape, 'input:', self.inputsignal.shape
+#       sys.exit()
+
     deltaB =np.multiply(np.transpose(M).dot(delta),self.dinputsignal)
     if moveOn:
       lens = [len(c.a) for c in self.inputs]
@@ -88,15 +94,15 @@ class Leaf(Node):
 
   def forward(self,theta, activateIn = True, activateOut = False):
 #    print 'forward leaf', self.cat, self.key, type(self.key)
-    self.z = theta[self.cat][self.key]
+    try: self.z = theta[self.cat][self.key]
 #     try: self.z = theta[self.cat][self.key]
-#     except:
-#       print 'Fail to forward Leaf:', self.cat, self.key
-#       sys.exit()
+    except:
+      print 'Fail to forward Leaf:', self.cat, self.key
+      sys.exit()
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
     if activateOut:
-      [i.forward(theta, activateIn,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
+      [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False):
     gradient[self.cat][self.key] += delta

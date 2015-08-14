@@ -19,7 +19,7 @@ class Reconstruction(Node):
   def forward(self,inA,inAd, theta):
     self.inputsignal = inA
     self.dinputsignal = inAd
-    Node.forward(self, theta, activateIn=False, activateOut = False)    #set activation and its derivative for THIS
+    Node.forward(self, theta, activateIn=False, activateOut = False, inputSet=True)    #set activation and its derivative for THIS
 
     lens = [int(np.shape(theta[c.cat+('M',)])[1]) for c in self.nodes] #but they are not activated yet!
     splitter = [sum(lens[:i]) for i in range(len(lens))][1:]

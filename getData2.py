@@ -79,11 +79,9 @@ def getIORNNs(source,outDir, sennaVoc):
         if counter % 100 == 0:         # replace 100 by 1000 when not creating a sample
           out =os.path.join(outDir,name+'_IORNNS_'+str(counter//100)+'.pik')
           print 'writing to', out
-         with open(out,'wb') as f:
-           pickle.dump(nws,f)
-           nws = []
-
-  print '(NNP, ,, NNP, ,, NNP, ,, NNP, ,, NNP, CC, NNP)' in rules['NP']
+          with open(out,'wb') as f:
+            pickle.dump(nws,f)
+            nws = []
 
 
   print 'writing rules and vocabulary to file'
@@ -92,7 +90,59 @@ def getIORNNs(source,outDir, sennaVoc):
   with open(os.path.join(outDir,name+'_VOC.pik'),'wb') as f:
     pickle.dump(voc,f)
 
+def getRAEs(source,outDir, sennaVoc):
+  rules = defaultdict(Counter)
+  voc = set()
+  if os.path.isdir(source):
+    toOpen = [os.path.join(source,f) for f in os.listdir(source)]
+    toOpen = [f for f in toOpen if os.path.isfile(f)]
+  elif os.path.isfile(source): toOpen = [source]
+  else:
+    print 'cannot open source', source
+    sys.exit()
 
+
+  for filename in toOpen[:1]:
+    name = os.path.splitext(os.path.split(filename)[1])[0]
+    print 'converting trees from', filename
+    nws = []
+    with open(filename,'r') as f:
+      counter = 0
+      for line in f:
+        if counter>1000: break     # remove this line when not creating a sample
+        try:
+          tree = nltk.tree.Tree.fromstring(line)
+          if len(tree.leaves())<10: continue
+          sennaLeaves(tree,sennaVoc)
+#          print tree.leaves()
+ #         nws.append(myIORNN.IORNN(tree))
+        except:
+          print 'transformation to RAE failed.'#, line
+          continue
+
+        for prod in tree.productions():
+          if prod.is_nonlexical():
+            lhs = str(prod.lhs())
+            rhs=str(prod.rhs())
+            rules[lhs][rhs]+=1
+        for word, pos in tree.pos():
+          voc.add(word)
+        counter+=1
+
+
+        if counter % 50 == 0: print counter
+        if counter % 100 == 0:         # replace 100 by 1000 when not creating a sample
+          out =os.path.join(outDir,name+'_RAES_'+str(counter//100)+'.pik')
+          print 'writing to', out
+          with open(out,'wb') as f:
+            pickle.dump(nws,f)
+            nws = []
+
+#  print 'writing rules and vocabulary to file'
+#  with open(os.path.join(outDir,name+'_RULES.pik'),'wb') as f:
+#    pickle.dump(rules,f)
+#  with open(os.path.join(outDir,name+'_VOC.pik'),'wb') as f:
+#    pickle.dump(voc,f)
 
 
 
@@ -118,6 +168,6 @@ with open(senna, 'rb') as f:
   V, voc =   pickle.load(f)
 
 #getIORNNs('../../../AI/thesisData/originalData/WSJ','data/WSJsample',voc)
-getIORNNs('../../../AI/thesisData/originalData/BNC','data/BNCsample',voc)
+getRAEs('../../../AI/thesisData/originalData/BNC','data/BNCsample',voc)
 #getIORNNs('../../../AI/thesisData/originalData/WSJ','data/WSJ',voc)
 #getIORNNs('../originalData/BNC','data/newBNC',voc)

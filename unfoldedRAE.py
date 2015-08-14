@@ -2,7 +2,7 @@ from __future__ import division
 
 from nltk import tree
 import numpy as np
-from numericalGradient2 import *
+#from numericalGradient2 import *
 '''
 there are two kinds of nodes. Both node types have (0 or 2) children. There is no explicit link to a parent.
  - class Node: node in the RNN
@@ -249,7 +249,7 @@ def main():
     network = Node.fromTree(thistree,vocabulary)
     network.forward(theta, True)
     grad = wrap(network.backprop(np.zeros(d),Wc,bc,Wr,br,L)+(np.zeros_like(L),))
-    numgrad = numericalGradient(network, theta, None)
-    compare(grad,numgrad)
+#    numgrad = numericalGradient(network, theta, None)
+#    compare(grad,numgrad)
 
 main()
