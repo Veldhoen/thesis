@@ -50,20 +50,23 @@ def activateScoreNW(uNode,wordNode,scoreNode,theta):
   scoreNode.forward(theta,activateIn=False, activateOut=False)
 
 '''compute the score for the given scoreNode if the wordNode's key is replaced by the target: x '''
-def computeScore(scoreNode,theta,x, reset = True):
+def computeScore(scoreNode,theta,x=None, reset = True):
 
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
 
   original = wordNode.key  # save original key
-  # locally recompute activations for candidate
-  wordNode.key = x
-  activateScoreNW(uNode,wordNode,scoreNode,theta)
-  score = scoreNode.a[0]#[0]
-  if reset: # restore observed node
-    wordNode.key = original
-    # locally recompute activations for original observed node
+  
+  if x is None: score = scoreNode.a[0]
+  else:
+    # locally recompute activations for candidate
+    wordNode.key = x
     activateScoreNW(uNode,wordNode,scoreNode,theta)
+    score = scoreNode.a[0]
+    if reset: # restore observed node
+      wordNode.key = original
+      # locally recompute activations for original observed node
+      activateScoreNW(uNode,wordNode,scoreNode,theta)
   return score, original
 
 def trainWord(scoreNode, theta, gradients, target, vocabulary):
@@ -132,6 +135,15 @@ class IORNN():
     for scoreNode in self.scoreNodes:
       error += trainWord(scoreNode, theta, gradient, target, theta[('word',)].keys())
     return error/ len(self.scoreNodes)
+
+  def error(self,theta, target, activate=True):
+    if activate: self.activate(theta)
+    errors = []
+    for node in self.scoreNodes:
+     originalscore,o = computeScore(node,theta,None)
+     candidatescore,o = computeScore(node,theta,target, reset = True)
+     errors.append(max(0,1-originalscore+candidatescore))
+    return sum(errors)
 
   def evaluate(self,theta, sample=1):
     vocabulary = theta[('word',)].keys()

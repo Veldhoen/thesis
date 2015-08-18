@@ -19,7 +19,6 @@ class Treebank():
         aFile = self.it.next()
     with open(aFile,'rb') as f:
       examples = pickle.load(f)
-    print len(examples)
     examples = [example for example in examples if example.maxArity()<self.maxArity]
     return examples
 
@@ -123,11 +122,11 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
 def storeTheta(theta, outFile):
   # secure storage: keep back-up of old version until writing is complete
   try: os.rename(outFile, outFile+'.back-up')
-  except: True #file did not exist, don't bother
+  except: True #file did probably not exist, don't bother
   with open(outFile,'wb') as f: pickle.dump(theta,f)
   try: os.remove(outFile+'.back-up')
   except: True #file did not exist, don't bother
-  print '\tWrote theta to file: outFile'
+  print '\tWrote theta to file: ',outFile
 
 def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
   cores = max(1,cores-1)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
@@ -151,7 +150,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   vData = vTreebank.getExamples()
   vDataBit = random.sample(vData,int(0.3*len(vData)))
 
-  print 'skip phase 0'
+#  print 'skip phase 0'
   print 'Phase 0: no grammar specialization'
   outFile = os.path.join(outDir,'phase0.theta.pik')
   phaseZero(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)

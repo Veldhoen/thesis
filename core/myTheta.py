@@ -14,7 +14,7 @@ class Theta(dict):
     self.heads,self.rules = self.grammar2rules(grammar)
     self.style = style
     self.installMatrices()
-    
+
     if embeddings is None: default = ('UNKNOWN',np.random.random_sample(self.dims['word'])*.2-.1)
     else: default = ('UNKNOWN',embeddings[vocabulary.index('UNKNOWN')])
     self[('word',)] = WordMatrix(vocabulary, default, {})
@@ -48,36 +48,38 @@ class Theta(dict):
       self.newMatrix((cat,lhs,rhs,'I','B'),None,(din,))
       if self.style == 'RAE':
         cat = 'reconstruction'
-        self.newMatrix((cat,lhs,rhs,'I','M'),None,(arity*din,din))
-        self.newMatrix((cat,lhs,rhs,'I','B'),None,(arity*din,))
+        self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
+        self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
       if self.style == 'IORNN':
         for j in xrange(arity):
           self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(dout,(arity-1)*din+dout))
           self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(dout,))
 
-    if self.style == 'RAE':
-      self.newMatrix(('reconstructionLeaf','M'),None,(din,din))
-      self.newMatrix(('reconstructionLeaf','B'),None,(din,))
     if self.style == 'IORNN':
       print '\tCreate score matrices'
       self.newMatrix(('u','M'),None,(dout,din+dout))
       self.newMatrix(('u','B'),None,(dout,))
       self.newMatrix(('score','M'),None,(1,dout))
       self.newMatrix(('score','B'),None,(1,))
-      self.newMatrix(('root',),None,(dout,))
+      self.newMatrix(('root',),None,(1,dout))
 
 
   def specializeHeads(self):
     print 'Theta, specializing composition parameters for heads'
     cat = 'composition'
     for lhs in self.heads:
-      for arity in xrange(1,5):
+      for arity in xrange(1,self.dims['maxArity']+1):
         rhs = '('+', '.join(['#X#']*arity)+')'
         self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,'#X#',rhs,'I','M')])
         self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,'#X#',rhs,'I','B')])
-        for j in xrange(arity):
-          self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,'#X#',rhs,j,'O','M')])
-          self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,'#X#',rhs,j,'O','B')])
+        if self.style == 'IORNN':
+          for j in xrange(arity):
+            self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,'#X#',rhs,j,'O','M')])
+            self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,'#X#',rhs,j,'O','B')])
+        if self.style == 'RAE':
+          cat = 'reconstruction'
+          self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
+          self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
 
   def specializeRules(self,n=200):
     print 'Theta, specializing composition parameters for rules'
@@ -87,10 +89,14 @@ class Theta(dict):
       self.newMatrix((cat,lhs,rhs,'I','M'), self[(cat,lhs,rhs,'I','M')])
       self.newMatrix((cat,lhs,rhs,'I','B'), self[(cat,lhs,rhs,'I','B')])
       arity = len(rhs.split(', '))
-      for j in xrange(arity):
-        self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,lhs,rhs,j,'O','M')])
-        self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
-
+      if self.style == 'IORNN':
+        for j in xrange(arity):
+          self.newMatrix((cat,lhs,rhs,j,'O','M'),self[(cat,lhs,rhs,j,'O','M')])
+          self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
+      if self.style == 'RAE':
+        cat = 'reconstruction'
+        self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
+        self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
       return
@@ -147,8 +153,7 @@ class Theta(dict):
         return self[fakeKey]
         break
     else:
-      print key, 'not in theta (missing).'
-      return None
+      raise KeyError(str(key)+' not in theta (missing).')
 
   def __iadd__(self, other):
     for key in self:
@@ -254,15 +259,18 @@ class WordMatrix(dict):
     dkey,dval = default
     if dkey not in self.voc: raise AttributeError("'default' must be in the vocabulary")
     self.default = dkey
-    self[self.default] = dval
+    dict.__setitem__(self, self.default, dval)
     self.update(dicItems)
 
   def __setitem__(self, key,val):
-    if key in self.voc: dict.__setitem__(self, key, val)
-    else: dict.__setitem__(self, self.default, val)
+    if self.default not in self: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
+    if key in self.voc:
+      super(WordMatrix, self).__setitem__(key, val)
+      #except: sys.exit()
+    else: super(WordMatrix, self).__setitem__(self.default, val)
 
   def __missing__(self, key):
-    if key == self.default: raise KeyError("Default not yet in the vocabulary")#return None
+    if key == self.default: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
     if key in self.voc:
       self[key] = np.zeros_like(self[self.default])
       return self[key]
@@ -284,7 +292,7 @@ class WordMatrix(dict):
       else: self[key] += val
 
 def generalizeKey(key):
-  if key[0] == 'composition':
+  if key[0] == 'composition' or key[0] == 'reconstruction':
     lhs = key[1]
     rhs = key[2]
     generalizedHead = '#X#'
