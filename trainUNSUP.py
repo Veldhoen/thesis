@@ -1,5 +1,4 @@
 import argparse
-import core.myRAE as myRAE
 import core.myTheta as myTheta
 import core.trainingRoutines as training
 from collections import defaultdict, Counter
@@ -61,7 +60,7 @@ def initializeTheta(args,vocabulary, grammar,maxArity):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('RAE', dims, grammar, V, vocabulary)
+    theta = myTheta.Theta('IORNN', dims, grammar, V, vocabulary)
 
   theta.printDims()
   return theta
@@ -69,10 +68,16 @@ def initializeTheta(args,vocabulary, grammar,maxArity):
 def main(args):
   print 'Start (part of) experiment '+ args['experiment']
 
+  kind = args['kind']
+  if kind not in [ 'IO', 'RAE']:
+    raise KeyError('not a valid kind (IO/RAE):'+kind)
+
   source = args['sourceTrain']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksTrain = [f for f in files if 'RAES' in f]
+    if kind == 'IO': treebanksTrain = [f for f in files if 'IORNNS' in f]
+    elif kind == 'RAE': treebanksTrain = [f for f in files if 'RAES' in f]
+
     vocabularies = [f for f in files if 'VOC.pik' in f]
     grammars = [f for f in files if 'RULES.pik' in f]
   else:
@@ -82,7 +87,8 @@ def main(args):
   source = args['sourceValid']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    treebanksValid = [f for f in files if 'RAES' in f]
+    if kind == 'IO': treebanksValid = [f for f in files if 'IORNNS' in f]
+    elif kind == 'RAE': treebanksValid = [f for f in files if 'RAES' in f]
     vocabularies.extend([f for f in files if 'VOC.pik' in f])
     grammars.extend([f for f in files if 'RULES.pik' in f])
   else:
@@ -103,7 +109,6 @@ def main(args):
     sys.exit()
 
   vocabulary = getVocabulary(vocabularies)
-
   style =args['grammar'][0]
   grammar = getGrammar(style, grammars)
   maxArity=6
@@ -114,8 +119,10 @@ def main(args):
   cores = max(1,args['cores']-1) # keep one core free for optimal efficiency
 
 
-  if len(args['grammar'])>1: hyperParams['nRules']=args['grammar'][1]
-  else: hyperParams['nRules']=200
+
+  hyperParams['nRules']=args['grammar'][1]
+  hyperParams['startAt']=args['grammar'][2]
+
 
 
   print 'Hyper parameters:'
@@ -137,7 +144,6 @@ def main(args):
 
   tTreebank = training.Treebank(treebanksTrain,maxArity)
   vTreebank = training.Treebank(treebanksValid[:1],maxArity)
-  print vTreebank.files
 
 
   training.storeTheta(theta, os.path.join(outDir,'initialTheta.pik'))
@@ -166,19 +172,23 @@ class ValidateGrammar(argparse.Action):
     if kind not in valid_subjects:
       raise ValueError('invalid grammar-option {s!r}'.format(s=kind))
 
-    if len(values)==2:
+    if len(values)>1:
       n = int(values[1])
     else: n = 0
     if len(values)>2:
+      startAt=int(values[2])
+    else: startAt = 10
+    if len(values)>3:
       print '-g grammar options',values[2:], 'are ignored'
 #    kind, n = values
 
-    Credits = ('Credits', 'subject required')
-    setattr(args, self.dest, (kind,n))
+    setattr(args, self.dest, (kind,n,startAt))
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Train IORNN on a treebank')
+  parser = argparse.ArgumentParser(description='Train RAE/ IORNN unsupervised on a treebank')
+  parser.add_argument('-k','--kind', type=str, help='File with pickled embeddings', required=True)
+
   # data:
   parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)
   parser.add_argument('-st','--sourceTrain', type=str, help='Directory with pickled treebank(s), grammar(s) and vocabulary(s) for training', required=True)
