@@ -77,7 +77,8 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
   est = evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores)
   print '\tEstimated performance:', est
 
-  for i in range(10,40,1): # slowy increase sentence length
+
+  for i in range(hyperParams['startAt'],40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
     tData = [e for e in examples if len(e.scoreNodes)<=i]
     if len(tData)<2:

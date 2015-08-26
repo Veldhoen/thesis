@@ -80,6 +80,7 @@ class Theta(dict):
           cat = 'reconstruction'
           self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
           self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+          cat = 'composition'
 
   def specializeRules(self,n=200):
     print 'Theta, specializing composition parameters for rules'
@@ -97,6 +98,7 @@ class Theta(dict):
         cat = 'reconstruction'
         self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
         self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+        cat = 'composition'
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
       return
@@ -116,7 +118,6 @@ class Theta(dict):
       if historicalGradient is not None:
         histgrad = historicalGradient[key]
         if type(self[key]) == np.ndarray:
-          oldh = np.copy(histgrad)
           histgrad+= np.multiply(grad,grad)
           try: self[key] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
           except RuntimeWarning: raise NameError("invalid sqrt of histgrad? "+str(key))

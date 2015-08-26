@@ -113,8 +113,10 @@ def main(args):
   cores = max(1,args['cores']-1) # keep one core free for optimal efficiency
 
 
-  if len(args['grammar'])>1: hyperParams['nRules']=args['grammar'][1]
-  else: hyperParams['nRules']=200
+
+  hyperParams['nRules']=args['grammar'][1]
+  hyperParams['startAt']=args['grammar'][2]
+
 
 
   print 'Hyper parameters:'
@@ -164,14 +166,17 @@ class ValidateGrammar(argparse.Action):
     if kind not in valid_subjects:
       raise ValueError('invalid grammar-option {s!r}'.format(s=kind))
 
-    if len(values)==2:
+    if len(values)>1:
       n = int(values[1])
     else: n = 0
     if len(values)>2:
+      startAt=int(values[2])
+    else: startAt = 10
+    if len(values)>3:
       print '-g grammar options',values[2:], 'are ignored'
 #    kind, n = values
 
-    setattr(args, self.dest, (kind,n))
+    setattr(args, self.dest, (kind,n,startAt))
 
 
 if __name__ == "__main__":
