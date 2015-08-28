@@ -80,13 +80,13 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
 
   for i in range(hyperParams['startAt'],40,1): # slowy increase sentence length
     examples = tTreebank.getExamples()
-    tData = [e for e in examples if len(e.scoreNodes)<=i]
+    tData = [e for e in examples if e.length()<=i]
     if len(tData)<2:
       print 'skip iteration with sentences up to length',i,'(too few examples)'
       continue
     else: print 'creating training set with sentences up to length',i
     while len(tData)<len(examples):
-      tData.extend([e for e in tTreebank.getExamples() if len(e.scoreNodes)<=i])
+      tData.extend([e for e in tTreebank.getExamples() if e.length()<=i])
     tData = tData[:len(examples)]
 
     print '\tIteration with sentences up to length',i,'('+str(len(tData))+' examples)'

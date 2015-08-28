@@ -102,12 +102,21 @@ def nodeError(node):
   try: return sum(errors)/len(errors)
   except: return 0
 
+def nodeLength(node):
+  if isinstance(node,Leaf): return 1
+  else: return sum([nodeLength(n) for n in node.inputs])
+
+
 class RAE():
   def __init__(self, nltkTree):
     self.root = this2RAE(nltkTree)
+    self.length = len(nltkTree.leaves())
 
   def activate(self,theta):
     self.root.forward(theta, True, True)
+
+  def length(self):
+    return nodeLength(self.root)
 
   def train(self,theta, gradient, activate=True, target=None): #rain(self,theta,delta = None, gradient= None):
     if activate: self.activate(theta)

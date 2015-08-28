@@ -106,6 +106,10 @@ class IORNN():
     self.rootO.nonlin = 'identity'
     self.scoreNodes = findScoreNodes(self.rootO)
 
+
+  def length(self):
+    return len(self.scoreNodes)
+
   def __str__(self):
     return str(self.rootI)
 
