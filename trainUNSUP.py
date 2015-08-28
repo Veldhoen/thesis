@@ -34,7 +34,7 @@ def getGrammar(option, grammars):
           rules[lhs][rhs]+= count
   return rules
 
-def initializeTheta(args,vocabulary, grammar,maxArity):
+def initializeTheta(kind,args,vocabulary, grammar,maxArity):
   print 'Initializing theta.'
   if args['pars']:
     with open(args['pars'], 'rb') as f:
@@ -60,7 +60,7 @@ def initializeTheta(args,vocabulary, grammar,maxArity):
     if not dims['inside']:  dims['inside'] = dims['word']
     if not dims['outside']:  dims['outside'] = dims['word']
     dims['nwords']=len(vocabulary)
-    theta = myTheta.Theta('IORNN', dims, grammar, V, vocabulary)
+    theta = myTheta.Theta(kind, dims, grammar, V, vocabulary)
 
   theta.printDims()
   return theta
@@ -69,13 +69,13 @@ def main(args):
   print 'Start (part of) experiment '+ args['experiment']
 
   kind = args['kind']
-  if kind not in [ 'IO', 'RAE']:
-    raise KeyError('not a valid kind (IO/RAE):'+kind)
+  if kind not in [ 'IORNN', 'RAE']:
+    raise KeyError('not a valid kind (IORNN/RAE):'+kind)
 
   source = args['sourceTrain']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    if kind == 'IO': treebanksTrain = [f for f in files if 'IORNNS' in f]
+    if kind == 'IORNN': treebanksTrain = [f for f in files if 'IORNNS' in f]
     elif kind == 'RAE': treebanksTrain = [f for f in files if 'RAES' in f]
 
     vocabularies = [f for f in files if 'VOC.pik' in f]
@@ -87,7 +87,7 @@ def main(args):
   source = args['sourceValid']
   if os.path.isdir(source):
     files = [f for f in [os.path.join(source,f) for f in os.listdir(source)] if os.path.isfile(f)]
-    if kind == 'IO': treebanksValid = [f for f in files if 'IORNNS' in f]
+    if kind == 'IORNN': treebanksValid = [f for f in files if 'IORNNS' in f]
     elif kind == 'RAE': treebanksValid = [f for f in files if 'RAES' in f]
     vocabularies.extend([f for f in files if 'VOC.pik' in f])
     grammars.extend([f for f in files if 'RULES.pik' in f])
@@ -113,7 +113,7 @@ def main(args):
   grammar = getGrammar(style, grammars)
   maxArity=6
 
-  theta=initializeTheta(args,vocabulary, grammar,maxArity)
+  theta=initializeTheta(kind, args,vocabulary, grammar,maxArity)
 
   hyperParams = dict((k, args[k]) for k in ['nEpochs','bSize','lambda','alpha'])
   cores = max(1,args['cores']-1) # keep one core free for optimal efficiency
