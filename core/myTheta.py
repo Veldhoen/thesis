@@ -97,7 +97,7 @@ class Theta(dict):
       if self.style == 'RAE':
         cat = 'reconstruction'
         self.newMatrix((cat,lhs,rhs,'M'),self[(cat,lhs,rhs,'M')])
-        self.newMatrix((cat,lhs,rhs,'B'),self[(cat,lhs,rhs,'M')])
+        self.newMatrix((cat,lhs,rhs,'B'),self[(cat,lhs,rhs,'B')])
         cat = 'composition'
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
