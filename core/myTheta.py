@@ -78,8 +78,8 @@ class Theta(dict):
             self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,'#X#',rhs,j,'O','B')])
         if self.style == 'RAE':
           cat = 'reconstruction'
-          self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
-          self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+          self.newMatrix((cat,lhs,rhs,'M'),self[(cat,'#X#',rhs,'M')])
+          self.newMatrix((cat,lhs,rhs,'B'),self[(cat,'#X#',rhs,'B')])
           cat = 'composition'
 
   def specializeRules(self,n=200):
@@ -96,8 +96,8 @@ class Theta(dict):
           self.newMatrix((cat,lhs,rhs,j,'O','B'),self[(cat,lhs,rhs,j,'O','B')])
       if self.style == 'RAE':
         cat = 'reconstruction'
-        self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
-        self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+        self.newMatrix((cat,lhs,rhs,'M'),self[(cat,lhs,rhs,'M')])
+        self.newMatrix((cat,lhs,rhs,'B'),self[(cat,lhs,rhs,'M')])
         cat = 'composition'
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
