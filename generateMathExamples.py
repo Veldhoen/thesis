@@ -42,7 +42,7 @@ def bigTree(length):
 
 
 class Treebank():
-  def getExamples(dontBother):
+  def getExamples(self):
     nws = []
     for i in range(1000):
       tree = bigTree(random.randint(1,5))
@@ -56,7 +56,7 @@ if __name__ == '__main__':
   voc= range(0,25)
   voc.append('UNKNOWN')
   voc.extend(operators)
-  theta = myTheta.Theta('IORNN', dims, grammar, embeddings = None, vocabulary= voc)
+  theta2 = myTheta.Theta('IORNN', dims, grammar, embeddings = None, vocabulary= voc)
 
   theta.specializeHeads()
   hyperParams = {'nEpochs':5,'lambda':0.00001,'alpha':0.01,'bSize':50}
