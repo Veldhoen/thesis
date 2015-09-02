@@ -270,6 +270,11 @@ class WordMatrix(dict):
       #except: sys.exit()
     else: super(WordMatrix, self).__setitem__(self.default, val)
 
+  def erase(self):
+    for key in self.keys():
+      if key == self.default: continue
+      else: del self[key]
+
   def __missing__(self, key):
     if key == self.default: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
     if key in self.voc:
