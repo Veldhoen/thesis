@@ -1,6 +1,7 @@
 import random
 import nltk
 import core.myIORNN as myIORNN
+import core.myRAE as myRAE
 import core.myTheta as myTheta
 import core.trainingRoutines as trainingRoutines
 import math
@@ -59,17 +60,26 @@ def randomEmbeddings(voc):
     embeddings.append(np.array([float(c) for c in e]))
   return embeddings
 
-class Treebank():       
-  def __init__(self,voc):
+class Treebank():
+  def __init__(self,voc, kind):
     self.voc = voc
+    self.kind = kind
   def getExamples(self, n=1000):
     nws = []
     for i in range(n):
       tree = bigTree(random.randint(1,5),self.voc)
-      nws.append(myIORNN.IORNN(tree))
+      if self.kind == 'IORNN': nws.append(myIORNN.IORNN(tree))
+      elif self.kind == 'RAE': nws.append(myRAE.RAE(tree))
     return nws
 
-if __name__ == '__main__':
+def main(args):
+  outDir = args[0]
+  specialize = args[1]=='wS'
+  fixWords = args[2]=='fE'
+  kind = args[3]
+  if kind not in ['RAE', 'IORNN']:
+    print 'invalid kind:', kind
+    sys.exit()
 
   grammar = {'plus':{('digit, operator, digit'):5},'minus':{('digit, operator, digit'):5},'is':{'digit, digit':5}}
 
@@ -82,9 +92,12 @@ if __name__ == '__main__':
   d = len(embeddings[0])
   print 'dimensionality:', d
   dims = {'inside':d,'outside':d,'word':d, 'maxArity':3}
-  theta = myTheta.Theta('IORNN', dims, grammar, embeddings = embeddings, vocabulary= voc)
+  theta = myTheta.Theta(kind, dims, grammar, embeddings = embeddings, vocabulary= voc)
 
-  theta.specializeHeads()
-  hyperParams = {'nEpochs':5,'lambda':0.0001,'alpha':0.01,'bSize':50,'fixWords':True}
-  outDir = 'models/testMath'
-  trainingRoutines.plainTrain(Treebank(voc), Treebank(voc), hyperParams, True, theta, outDir)
+  if specialize: theta.specializeHeads()
+  hyperParams = {'nEpochs':5,'lambda':0.0001,'alpha':0.01,'bSize':50,'fixWords':fixWords}
+
+  trainingRoutines.plainTrain(Treebank(voc,kind), Treebank(voc,kind), hyperParams, True, theta, outDir)
+
+if __name__ == '__main__':
+  main(sys.argv[1:])
