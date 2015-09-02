@@ -37,7 +37,7 @@ sentences = SI1+SI2+ST1+ST2
 
 
 if __name__ == '__main__':
-  dims = {'inside':5,'outside':5,'word':5, 'maxArity':3}
+  dims = {'inside':5,'outside':5,'word':5, 'maxArity':2}
   grammar = {'plus':{('digit, operator, digit'):5},'minus':{('digit, operator, digit'):5},'is':{'digit, digit':5}}
 
   voc= dets + nouns + [w+'s' for w in nouns] + iverbs + [w+'s' for w in iverbs] + tverbs + [w+'s' for w in tverbs]
