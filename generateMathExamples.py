@@ -85,6 +85,6 @@ if __name__ == '__main__':
   theta = myTheta.Theta('IORNN', dims, grammar, embeddings = embeddings, vocabulary= voc)
 
   theta.specializeHeads()
-  hyperParams = {'nEpochs':5,'lambda':0.00001,'alpha':0.01,'bSize':50,'fixWords':True}
+  hyperParams = {'nEpochs':5,'lambda':0.0001,'alpha':0.01,'bSize':50,'fixWords':True}
   outDir = 'models/testMath'
   trainingRoutines.plainTrain(Treebank(voc), Treebank(voc), hyperParams, True, theta, outDir)
