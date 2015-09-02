@@ -29,7 +29,7 @@ class Treebank():
     random.shuffle(self.files)
     self.it = iter(self.files)
 
-def evaluateBit(theta, testData, q, sample=1):
+def evaluateBit(theta, testData, q, sample):
   if len(testData)==0:
     q.put(None)
   else:
@@ -168,6 +168,11 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 
 
 def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
+  try: 
+    fixWords = hyperParams['fixEmb']
+    assert isinstance(words,boolean)
+  except: fixWords = False
+
 
   mgr = Manager()
   ns= mgr.Namespace()
@@ -187,7 +192,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
       trainPs.append('')  # But do put a placeholder in the queue
     else:
       for j in xrange(cores):
-        p = Process(name='minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q))
+        p = Process(name='minibatch'+str(batch)+'-'+str(j), target=trainBatch, args=(ns, minibatch[j*s:(j+1)*s],q,fixWords))
         trainPs.append(p)
         p.start()
 
@@ -196,8 +201,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
     for j in xrange(len(trainPs)):
       (grad, error) = q.get()
       if grad is None: continue
-      if adagrad: theta.add2Theta(grad,hyperParams['alpha'],histGrad)
-      else: theta.update(grad,hyperParams['alpha'])
+      theta.add2Theta(grad,hyperParams['alpha'],histGrad)
       errors.append(error)
 
     # make sure all worker processes have finished and are killed
@@ -214,7 +218,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
   return sum(avErrors)/len(avErrors)
 
 
-def trainBatch(ns, examples, q=None):
+def trainBatch(ns, examples, q=None, fixWords = False):
   lambdaL2 = ns.lamb
   if len(examples)>0:
     grads = ns.theta.gradient()
@@ -222,6 +226,7 @@ def trainBatch(ns, examples, q=None):
     for nw in examples:
       derror = nw.train(ns.theta,grads)
       error+= derror
+      if fixWords: grads[('word',)].erase()
     grads /= len(examples)
     q.put((grads, error/len(examples)))
   else:
