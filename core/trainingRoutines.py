@@ -168,9 +168,7 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 
 
 def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
-  try: 
-    fixWords = hyperParams['fixEmb']
-    assert isinstance(words,boolean)
+  try: fixWords = hyperParams['fixEmb']
   except: fixWords = False
 
 
@@ -188,7 +186,7 @@ def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
     q = Queue()
 
     if cores<2:
-      trainBatch(ns, minibatch,q) #don't start a subprocess
+      trainBatch(ns, minibatch,q, fixWords) #don't start a subprocess
       trainPs.append('')  # But do put a placeholder in the queue
     else:
       for j in xrange(cores):
