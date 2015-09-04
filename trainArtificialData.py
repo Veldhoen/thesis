@@ -9,6 +9,7 @@ import numpy as np
 import sys, argparse, os
 
 
+
 class mathExpression(Tree):
   def __init__(self,length, operators):
     if length < 1: print 'whatup?'
@@ -19,7 +20,7 @@ class mathExpression(Tree):
       right = length - left
       children = [mathExpression(l,operators) for l in [left,right]]
       operator = random.choice(operators)
-      children.insert(1,nltk.Tree('operator',[operator]))
+      children.insert(1,Tree('operator',[operator]))
       Tree.__init__(self,operator,children)
   def solve(self):
     if self.height()==2:
@@ -29,6 +30,7 @@ class mathExpression(Tree):
         sys.exit()
     else:
       children = [c.solve() for c in [self[0],self[2]]]
+      if None in children: return None
       operator = self.label()
       if operator== 'plus':
         return children[0]+children[1]
@@ -37,10 +39,11 @@ class mathExpression(Tree):
       elif operator== 'times':
         return children[0]*children[1]
       elif operator== 'div':
-        try: return children[0]/children[1]
-        except: return 1000000
+        try: return children[0]//children[1] # floor division
+        except: return None
       else:
         raise Exception('Cannot deal with operator '+str(operator))
+
 
 class mathTree(Tree):
   def __init__(self,length,voc,operators):
@@ -49,15 +52,25 @@ class mathTree(Tree):
       tree =mathExpression(length,operators)
       answer =Tree('digit',[str(tree.solve())])
       Tree.__init__(self,'is', [tree,answer])
+  def corrupt(self,voc, operators):
+    answer = self[1][0]
+    candidate = answer
+    voc = [w for w in voc if w not in operators]
+    while candidate==answer:
+      candidate = random.choice(voc)
+    self[1][0] = candidate
+  def uncorrupt(self):
+    self[1][0]=str(self[0].solve())
 
 def randomOrthEmbeddings(voc):
-  d = math.log(len(voc),2)
+  d = int(math.ceil(math.log(len(voc)+1,2)))
   embeddings = []
   random.shuffle(voc)           #random order, no structure in the embeddings
   for i in range(1,len(voc)+1): #don't use the binary encoding of zero, as it is not orthogonal to anything!
     e = bin(i)[2:]
-    e = '0'*(int(math.ceil(d))-len(e))+e
+    e = '0'*(d-len(e))+e
     embeddings.append(np.array([float(c) for c in e]))
+
   return embeddings
 
 
@@ -112,8 +125,8 @@ class mathTreebank():
     if complexity == 'complex': self.operators.extend(['times','div'])
 
     self.grammar = {'plus':{('digit, operator, digit'):5},'minus':{('digit, operator, digit'):5},'is':{'digit, digit':5}}
-    self.voc= [str(i) for i in range(-29,29)]
-  #  voc= [str(i) for i in range(-60,60)]
+#    self.voc= [str(i) for i in range(-29,29)]
+    self.voc= [str(i) for i in range(-60,60)]
     self.voc.append('is')
     self.voc.append('UNKNOWN')
     self.voc.extend(self.operators)
@@ -132,6 +145,17 @@ class mathTreebank():
       elif self.kind == 'RAE': nws.append(myRAE.RAE(tree))
     return nws
 
+  def getLabeledExamples(self, n=1000):
+    nws = []
+    for i in range(n):
+      tree = mathTree(random.randint(1,5),self.voc,self.operators)
+      if random.randint(0,1) == 1: 
+        label = 'F'
+        tree.corrupt(self.voc, self.operators)
+      else: label = 'T'
+      if self.kind == 'IORNN': nws.append((myIORNN.IORNN(tree)),label)
+      elif self.kind == 'RAE': nws.append((myRAE.RAE(tree)),label)
+    return nws
 
 def main(args):
 
@@ -175,6 +199,6 @@ if __name__ == "__main__":
   parser.add_argument('-s','--specialize', type=mybool, help='Whether the parameter are specialized for rule head(True/False)', required=True)
   parser.add_argument('-f','--fixEmb', type=mybool, help='Whether the embeddings must be kept fixed (True/False)', required=True)
   parser.add_argument('-orth','--orthogonal', type=mybool, help='Whether the embeddings must be initialized orthogonal', required=True)
-  parser.add_argument('-c','--complexity', type=str, choices = ['simple','complex'], help='Type of artithmetics (simple/complex)', required=False)
+  parser.add_argument('-c','--complexity', type=str, choices = ['simple','complex'],  default = 'simple', help='Type of artithmetics (simple/complex)', required=False)
   args = vars(parser.parse_args())
   main(args)
