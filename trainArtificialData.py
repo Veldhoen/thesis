@@ -51,7 +51,7 @@ class mathTree(Tree):
     while answer[0] not in voc:
       tree =mathExpression(length,operators)
       answer =Tree('digit',[str(tree.solve())])
-      Tree.__init__(self,'is', [tree,answer])
+      Tree.__init__(self,'is', [tree,Tree('operator',['is']),answer])
   def corrupt(self,voc, operators):
     answer = self[1][0]
     candidate = answer
@@ -86,13 +86,13 @@ class txtTreebank():
 
     NP1 = [Tree('NP',[DPs[0],Tree('N',[noun])]) for noun in nouns]
     NP2 = [Tree('NP',[DPs[1],Tree('N',[noun+'s'])]) for noun in nouns]
-    
-    
+
+
     IVP1 = [Tree('VP',[Tree('V',[verb+'s'])]) for verb in iverbs]
     IVP2 = [Tree('VP',[Tree('V',[verb])]) for verb in iverbs]
     TVP1 = [Tree('VP',[Tree('V',[verb+'s']),np]) for np in NP1+NP2 for verb in tverbs]
     TVP2 = [Tree('VP',[Tree('V',[verb]),np]) for np in NP1+NP2 for verb in tverbs]
-    
+
     SI1 = [Tree('S',[np,vp]) for np in NP1 for vp in IVP1]
     SI2 = [Tree('S',[np,vp]) for np in NP2 for vp in IVP2]
     ST1 = [Tree('S',[np,vp]) for np in NP1 for vp in TVP1]
@@ -179,8 +179,8 @@ def main(args):
   theta = myTheta.Theta(args['kind'], dims, grammar, embeddings, voc)
 
   if args['specialize']: theta.specializeHeads()
-  hyperParams = {'nEpochs':5,'lambda':0.0001,'alpha':0.01,
-                 'bSize':50,'fixEmb':args['fixEmb']}
+  hyperParams = {'nEpochs':args['nEpochs'],'lambda':args['lambda'] ,'alpha':args['alpha'],
+                 'bSize':args['bSize'],'fixEmb':args['fixEmb']}
 
 
 
@@ -208,5 +208,8 @@ if __name__ == "__main__":
   parser.add_argument('-e','--epochSize', type=int, help='Training examples per epoch', required = True)
   parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs', required = True)
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size', required = False)
+  parser.add_argument('-l','--lambda', type=float, default = 0.00001, help='Regularization parameter lambdaL2', required=False)
+  parser.add_argument('-a','--alpha', type=float, default = 0.01, help='Learning rate parameter alpha', required=False)
+
   args = vars(parser.parse_args())
   main(args)
