@@ -34,7 +34,7 @@ def evaluateBit(theta, testData, q, sample):
     q.put(None)
   else:
     performance = [nw.evaluate(theta,sample) for nw in testData]
-    q.put(sum(performance)/len(performance))
+    q.put(performance)
 
 def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, writeFile=None):
   if len(testData)<1:
@@ -55,7 +55,7 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, wri
     for p in pPs:
       p = myQueue.get()
       if p is None: continue
-      else: performance.append(p)
+      else: performance.extend(p)
 
   else: performance = [nw.evaluate(theta,sample) for nw in testData]
   performance = sum(performance)/len(performance)

@@ -56,7 +56,7 @@ def computeScore(scoreNode,theta,x=None, reset = True):
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
 
   original = wordNode.key  # save original key
-  
+
   if x is None: score = scoreNode.a[0]
   else:
     # locally recompute activations for candidate
@@ -69,7 +69,7 @@ def computeScore(scoreNode,theta,x=None, reset = True):
       activateScoreNW(uNode,wordNode,scoreNode,theta)
   return score, original
 
-def trainWord(scoreNode, theta, gradients, target, vocabulary):
+def trainWord(scoreNode, theta, gradients, target, vocabulary, fixWords = False):
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
   # pick a candidate x different from own index
@@ -83,14 +83,14 @@ def trainWord(scoreNode, theta, gradients, target, vocabulary):
     # backpropagate through observed node
     realScore = scoreNode.a[0]
     delta = -1*scoreNode.ad
-    scoreNode.backprop(theta,delta, gradients)
+    scoreNode.backprop(theta,delta, gradients, addOut = False, moveOn=True, fixWords = fixWords)
 
     # backpropagate through candidate
     wordNode.key = x
     activateScoreNW(uNode,wordNode,scoreNode,theta) # locally recompute activations for candidate
     candidateScore = scoreNode.a[0]
     delta = scoreNode.ad
-    scoreNode.backprop(theta, delta, gradients)
+    scoreNode.backprop(theta, delta, gradients,addOut = False, moveOn=True, fixWords = fixWords)
 
     # restore observed node
     wordNode.key = original

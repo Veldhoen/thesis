@@ -52,11 +52,11 @@ class Node():
         else:
           node.forward(theta, False, True, signal=None)
 
-  def backprop(self,theta, delta, gradient, addOut = False, moveOn=True):
+  def backprop(self,theta, delta, gradient, addOut = False, moveOn=True, fixWords = False):
 #    print 'Node.backprop',self#.cat#, 'a:', self.a.shape,'delta:', delta.shape, 'input:', self.inputsignal.shape
 
     if addOut: #add a delta message from its outputs (e.g., reconstructions)
-      delta += np.concatenate([out.backprop(theta, None, gradient, addOut=True, moveOn=False) for out in self.outputs])
+      delta += np.concatenate([out.backprop(theta, None, gradient, addOut, moveOn=False, fixWords = fixWords) for out in self.outputs])
     M= theta[self.cat+('M',)]
     gradient[self.cat+('M',)]+= np.outer(delta,self.inputsignal)
     gradient[self.cat+('B',)]+=delta
@@ -65,7 +65,7 @@ class Node():
     if moveOn:
       lens = [len(c.a) for c in self.inputs]
       splitter = [sum(lens[:i]) for i in range(len(lens))][1:]
-      [inputNode.backprop(theta, delt, gradient,addOut,moveOn) for inputNode,delt in zip(self.inputs,np.split(deltaB,splitter))]
+      [inputNode.backprop(theta, delt, gradient,addOut, moveOn, fixWords) for inputNode,delt in zip(self.inputs,np.split(deltaB,splitter))]
     else:
       return deltaB
 
@@ -95,8 +95,8 @@ class Leaf(Node):
     if activateOut:
       [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
-  def backprop(self,theta, delta, gradient, addOut = False, moveOn = False):
-    gradient[self.cat][self.key] += delta
+  def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False):
+    if not fixWords: gradient[self.cat][self.key] += delta
 
   def aLen(self,theta):
     return len(theta[self.cat][self.key])
