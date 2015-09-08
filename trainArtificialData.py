@@ -119,7 +119,8 @@ class txtTreebank():
 
 
 class mathTreebank():
-  def __init__(self, kind, complexity):
+  def __init__(self, kind, complexity, n=1000):
+    self.n=n
     self.kind = kind
     self.operators = ['plus','minus']
     if complexity == 'complex': self.operators.extend(['times','div'])
@@ -137,7 +138,8 @@ class mathTreebank():
   def getGrammar(self):
     return self.grammar
 
-  def getExamples(self, n=1000):
+  def getExamples(self,n=0):
+    if n == 0: n = self.n
     nws = []
     for i in range(n):
       tree = mathTree(random.randint(1,5),self.voc,self.operators)
@@ -149,7 +151,7 @@ class mathTreebank():
     nws = []
     for i in range(n):
       tree = mathTree(random.randint(1,5),self.voc,self.operators)
-      if random.randint(0,1) == 1: 
+      if random.randint(0,1) == 1:
         label = 'F'
         tree.corrupt(self.voc, self.operators)
       else: label = 'T'
@@ -159,7 +161,9 @@ class mathTreebank():
 
 def main(args):
 
-  if args['datatype'] == 'math':  tb = mathTreebank(args['kind'], args['complexity'])
+  if args['datatype'] == 'math':  
+    tb = mathTreebank(args['kind'], args['complexity'],args['epochSize'])
+    vtb = mathTreebank(args['kind'], args['complexity'],1000)
   elif args['datatype'] == 'txt': tb = txtTreebank()
   else: sys.exit()
 
@@ -176,14 +180,14 @@ def main(args):
 
   if args['specialize']: theta.specializeHeads()
   hyperParams = {'nEpochs':5,'lambda':0.0001,'alpha':0.01,
-                 'bSize':50,'fixWords':args['fixEmb']}
+                 'bSize':50,'fixEmb':args['fixEmb']}
 
 
 
 
 
   trainingRoutines.storeTheta(theta, os.path.join(args['out'],'initialTheta.pik'))
-  trainingRoutines.plainTrain(tb, tb, hyperParams, True, theta, args['out'])
+  trainingRoutines.plainTrain(tb, vtb, hyperParams, True, theta, args['out'])
 
 def mybool(string):
   if string in ['F', 'f', 'false', 'False']: return False
@@ -200,5 +204,9 @@ if __name__ == "__main__":
   parser.add_argument('-f','--fixEmb', type=mybool, help='Whether the embeddings must be kept fixed (True/False)', required=True)
   parser.add_argument('-orth','--orthogonal', type=mybool, help='Whether the embeddings must be initialized orthogonal', required=True)
   parser.add_argument('-c','--complexity', type=str, choices = ['simple','complex'],  default = 'simple', help='Type of artithmetics (simple/complex)', required=False)
+
+  parser.add_argument('-e','--epochSize', type=int, help='Training examples per epoch', required = True)
+  parser.add_argument('-n','--nEpochs', type=int, help='Number of epochs', required = True)
+  parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size', required = False)
   args = vars(parser.parse_args())
   main(args)
