@@ -67,15 +67,15 @@ def evaluate(theta, testData, q = None, description = '', sample=1, cores=1, wri
         f.write((description,performance))
     q.put((description, performance,confusion))
 
-def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
-  if adagrad: histGrad = theta.gradient()
+def phaseZero(tTreebank, vData, hyperParams, theta, cores,outFile):
+  if hyperParams['ada']: histGrad = theta.gradient()
   else: histGrad = None
   storeTheta(theta, outFile)
   print '\tStart training'
 
   print '\tComputing initial performance ('+str(len(vData))+' examples)...'
   est = evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores)
-  print '\tEstimated performance:', est
+  print '\tInitial training error: - , Estimated initial performance:', est
 
 
   for i in range(hyperParams['startAt'],40,4): # slowy increase sentence length
@@ -90,7 +90,7 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
     tData = tData[:len(examples)]
 
     print '\tIteration with sentences up to length',i,'('+str(len(tData))+' examples)'
-    trainLoss=trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores)
+    trainLoss=trainOnSet(hyperParams, tData, theta, histGrad, cores)
     storeTheta(theta, outFile)
 
     print '\tComputing performance ('+str(len(vData))+' examples)...'
@@ -98,8 +98,8 @@ def phaseZero(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
     print '\tTraining error:', trainLoss, ', Estimated performance:', est
   print '\tEnd of training phase'
 
-def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
-  if adagrad: histGrad = theta.gradient()
+def phase(tTreebank, vData, hyperParams, theta, cores,outFile):
+  if hyperParams['ada']: histGrad = theta.gradient()
   else: histGrad = None
 
   storeTheta(theta, outFile)
@@ -107,13 +107,13 @@ def phase(tTreebank, vData, hyperParams, adagrad, theta, cores,outFile):
 
   print '\tComputing initial performance ('+str(len(vData))+' examples)...'
   est = evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores)
-  print '\tEstimated performance:', est
+  print '\tInitial training error: - , Estimated initial performance:', est
 
 
   for i in xrange(hyperParams['nEpochs']):
     tData = tTreebank.getExamples()
     print '\tIteration',i,'('+str(len(tData))+' examples)'
-    trainLoss=trainOnSet(hyperParams, tData, theta, adagrad, histGrad, cores)
+    trainLoss=trainOnSet(hyperParams, tData, theta, histGrad, cores)
     storeTheta(theta, outFile)
     print '\tComputing performance ('+str(len(vData))+' examples)...'
     est = evaluate(theta, vData, q = None, description = '', sample=0.05, cores=cores)
@@ -129,7 +129,7 @@ def storeTheta(theta, outFile):
   except: True #file did not exist, don't bother
   print '\tWrote theta to file: ',outFile
 
-def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
+def plainTrain(tTreebank, vTreebank, hyperParams, theta, outDir, cores=1):
   cores = max(1,cores-1)     # 1 for main, 3 for real evaluations, rest for multiprocessing in training and intermediate evaluation
   print 'Using', cores,'core(s) for parallel training and evaluation.'
   print 'Starting plain training'
@@ -138,13 +138,13 @@ def plainTrain(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   vData = vTreebank.getExamples()
   vDataBit = random.sample(vData,int(0.3*len(vData)))
 
-  phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
+  phase(tTreebank, vDataBit, hyperParams, theta, cores, outFile)
 
 
 
 
 
-def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=1):
+def beginSmall(tTreebank, vTreebank, hyperParams, theta, outDir, cores=1):
   cores = max(1,cores-1)     # 1 for main
   print 'Using', cores,'cores for parallel training and evaluation.'
 
@@ -154,12 +154,12 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
 #  print 'skip phase 0'
   print 'Phase 0: no grammar specialization'
   outFile = os.path.join(outDir,'phase0.theta.pik')
-  phaseZero(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
+  phaseZero(tTreebank, vDataBit, hyperParams, theta, cores, outFile)
 
   print 'Phase 1: head specialization'
   theta.specializeHeads()
   outFile = os.path.join(outDir,'phase1.theta.pik')
-  phase(tTreebank, vDataBit, hyperParams, adagrad, theta, cores, outFile)
+  phase(tTreebank, vDataBit, hyperParams, theta, cores, outFile)
 
   print 'Phase 2: rule specialization - most frequent', hyperParams['nRules']
   theta.specializeRules(hyperParams['nRules'])
@@ -167,9 +167,10 @@ def beginSmall(tTreebank, vTreebank, hyperParams, adagrad, theta, outDir, cores=
   phase(tTreebank, vData, hyperParams, adagrad, theta, cores, outFile)
 
 
-def trainOnSet(hyperParams, examples, theta, adagrad, histGrad, cores):
+def trainOnSet(hyperParams, examples, theta, histGrad, cores):
   try: fixWords = hyperParams['fixEmb']
   except: fixWords = False
+  adagrad = hyperParams['ada']
 
 
   mgr = Manager()
@@ -222,7 +223,7 @@ def trainBatch(ns, examples, q=None, fixWords = False):
     grads = ns.theta.gradient()
     error = 0
     for nw in examples:
-      derror = nw.train(ns.theta,grads)
+      derror = nw.train(ns.theta,grads,activate=True, target = None, fixWords=fixWords)
       error+= derror
       if fixWords: grads[('word',)].erase()
     grads /= len(examples)

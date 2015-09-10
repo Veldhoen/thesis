@@ -133,11 +133,11 @@ class IORNN():
     self.rootI.forward(theta,activateIn = True, activateOut = False)
     self.rootO.forward(theta,activateIn = False, activateOut = True)
 
-  def train(self, theta, gradient, activate=True, target = None):
+  def train(self, theta, gradient, activate=True, target = None, fixWords=False):
     if activate: self.activate(theta)
     error = 0
     for scoreNode in self.scoreNodes:
-      error += trainWord(scoreNode, theta, gradient, target, theta[('word',)].keys())
+      error += trainWord(scoreNode, theta, gradient, target, theta[('word',)].keys(),fixWords)
     return error/ len(self.scoreNodes)
 
   def error(self,theta, target, activate=True):

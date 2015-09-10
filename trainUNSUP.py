@@ -122,7 +122,8 @@ def main(args):
 
   hyperParams['nRules']=args['grammar'][1]
   hyperParams['startAt']=args['grammar'][2]
-
+  hyperParams['ada'] = True
+  hyperParams['fixEmb'] = args['fix']
 
 
   print 'Hyper parameters:'
@@ -131,10 +132,6 @@ def main(args):
 
 
   print '\tnumber of cores -', cores
-
-  ada = True
-  if ada: print 'Adagrad is on.'
-  else: print 'Adagrad is off.'
 
   outDir = args['out']
   if not os.path.isdir(outDir):
@@ -149,14 +146,18 @@ def main(args):
   training.storeTheta(theta, os.path.join(outDir,'initialTheta.pik'))
   # training...
 
-  if style == 'beginSmall': training.beginSmall(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
-  elif style == 'None': training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+  if style == 'beginSmall': training.beginSmall(tTreebank, vTreebank, hyperParams, theta, outDir, cores)
+  elif style == 'None': training.plainTrain(tTreebank, vTreebank, hyperParams, theta, outDir, cores)
   elif style == 'LHS':
     theta.specializeHeads()
-    training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+    training.plainTrain(tTreebank, vTreebank, hyperParams, theta, outDir, cores)
   elif style == 'Rules':
     theta.specializeRules(hyperParams['nRules'])
-    training.plainTrain(tTreebank, vTreebank, hyperParams, ada, theta, outDir, cores)
+    training.plainTrain(tTreebank, vTreebank, hyperParams, theta, outDir, cores)
+  elif style == 'LHS+Rules':
+    theta.specializeHeads()
+    theta.specializeRules(hyperParams['nRules'])
+    training.plainTrain(tTreebank, vTreebank, hyperParams, theta, outDir, cores)
 
 
 
@@ -167,7 +168,7 @@ def main(args):
 
 class ValidateGrammar(argparse.Action):
   def __call__(self, parser, args, values, option_string=None):
-    valid_subjects = ['None','LHS','Rules','beginSmall']
+    valid_subjects = ['None','LHS','Rules','beginSmall','LHS+Rules']
     kind = values[0]
     if kind not in valid_subjects:
       raise ValueError('invalid grammar-option {s!r}'.format(s=kind))
@@ -183,6 +184,11 @@ class ValidateGrammar(argparse.Action):
 #    kind, n = values
 
     setattr(args, self.dest, (kind,n,startAt))
+
+def mybool(string):
+  if string in ['F', 'f', 'false', 'False']: return False
+  if string in ['T', 't', 'true', 'True']: return True
+  raise Exception('Not a valid choice for arg: '+string)
 
 
 if __name__ == "__main__":
@@ -207,6 +213,7 @@ if __name__ == "__main__":
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
   parser.add_argument('-l','--lambda', type=float, help='Regularization parameter lambdaL2', required=True)
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
+  parser.add_argument('-f','--fix', type=mybool, default = 'F', help='Whether the word embeddings should be fixed', required=False)
   # computation:
   parser.add_argument('-c','--cores', type=int, default=1, help='Number of cores to use for parallel processing', required=False)
   args = vars(parser.parse_args())

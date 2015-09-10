@@ -96,7 +96,10 @@ class Leaf(Node):
       [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False):
-    if not fixWords: gradient[self.cat][self.key] += delta
+    if not fixWords:
+      print 'update word'
+      sys.exit()
+      gradient[self.cat][self.key] += delta
 
   def aLen(self,theta):
     return len(theta[self.cat][self.key])
