@@ -32,36 +32,45 @@ class Theta(dict):
         rulesC[(LHS,RHS)]+=count
     rules = [rule for rule, c in rulesC.most_common()]
     return heads, rules
-  
+
   def installMatrices(self):
-   # set local dimensionality variables
-    din=self.dims['inside']
-    if self.style == 'IORNN':
-      dout=self.dims['outside']
+    if self.style == 'classifier':
+      self.newMatrix(('comparison','M'),None,(self.dims['comparison'],self.dims['arity']*self.dims['din']))
+      self.newMatrix(('classify','M'),None,(self.dims['nClasses'],self.dims['comparison']))
+      self.newMatrix(('comparison','B'),None,(self.dims['comparison'],))
+      self.newMatrix(('classify','B'),None,(self.dims['nClasses'],))
 
-    print '\tCreate composition matrices of all kinds'
-    for arity in xrange(1,self.dims['maxArity']+1):
-      lhs = '#X#'
-      rhs = '('+', '.join(['#X#']*arity)+')'
-      cat ='composition'
-      self.newMatrix((cat,lhs,rhs,'I','M'),None,(din,arity*din))
-      self.newMatrix((cat,lhs,rhs,'I','B'),None,(din,))
-      if self.style == 'RAE':
-        cat = 'reconstruction'
-        self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
-        self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+
+
+    else:
+     # set local dimensionality variables
+      din=self.dims['inside']
       if self.style == 'IORNN':
-        for j in xrange(arity):
-          self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(dout,(arity-1)*din+dout))
-          self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(dout,))
+        dout=self.dims['outside']
 
-    if self.style == 'IORNN':
-      print '\tCreate score matrices'
-      self.newMatrix(('u','M'),None,(dout,din+dout))
-      self.newMatrix(('u','B'),None,(dout,))
-      self.newMatrix(('score','M'),None,(1,dout))
-      self.newMatrix(('score','B'),None,(1,))
-      self.newMatrix(('root',),None,(1,dout))
+      print '\tCreate composition matrices of all kinds'
+      for arity in xrange(1,self.dims['maxArity']+1):
+        lhs = '#X#'
+        rhs = '('+', '.join(['#X#']*arity)+')'
+        cat ='composition'
+        self.newMatrix((cat,lhs,rhs,'I','M'),None,(din,arity*din))
+        self.newMatrix((cat,lhs,rhs,'I','B'),None,(din,))
+        if self.style == 'RAE':
+          cat = 'reconstruction'
+          self.newMatrix((cat,lhs,rhs,'M'),None,(arity*din,din))
+          self.newMatrix((cat,lhs,rhs,'B'),None,(arity*din,))
+        if self.style == 'IORNN':
+          for j in xrange(arity):
+            self.newMatrix((cat,lhs,rhs,j,'O','M'),None,(dout,(arity-1)*din+dout))
+            self.newMatrix((cat,lhs,rhs,j,'O','B'),None,(dout,))
+
+      if self.style == 'IORNN':
+        print '\tCreate score matrices'
+        self.newMatrix(('u','M'),None,(dout,din+dout))
+        self.newMatrix(('u','B'),None,(dout,))
+        self.newMatrix(('score','M'),None,(1,dout))
+        self.newMatrix(('score','B'),None,(1,))
+        self.newMatrix(('root',),None,(1,dout))
 
 
   def specializeHeads(self):
@@ -280,7 +289,8 @@ class WordMatrix(dict):
     if key in self.voc:
       self[key] = np.zeros_like(self[self.default])
       return self[key]
-    else: return self[self.default]
+    else:
+      return self[self.default]
 
   def __reduce__(self):
     return(self.__class__,(self.voc,(self.default,self[self.default]),self.items()))
