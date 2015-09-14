@@ -6,16 +6,27 @@ import core.natlog as natlog
 
 import random
 
+def evaluateAccuracy(classifier,testData,theta):
+  true = 0
+  confusion = defaultdict(Counter)
+  for pairID, (ts, gold_label) in testData.iteritems():
+    if isinstance(ts[0],str): prediction= classifier.predict(theta,[pairID+'A', pairID+'B'], True)
+    else: prediction = classifier.predict(theta,ts, False)
+    confusion[target][prediction] += 1
+    if prediction == target:
+      true +=1
+
 def train(theta, allData, hyperParams):
   batchsize = hyperParams['bSize']
   if hyperParams['ada']: histGrad = theta.gradient()
   else: histGrad = None
   examples = allData['train'].keys()
-  classifier = cl.Classifier(theta.dims['arity'], labels, True)
+  fixed = isinstance(allData['train'].values()[0][0],str)
+  classifier = cl.Classifier(theta.dims['arity'], labels, fixed)
   print '\tComputing performance ('+str(len(allData['dev']))+' examples)...'
   error = 0
   for pairID, (ts, gold_label) in allData['dev'].iteritems():
-    if isinstance(ts[0],str): error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label)
+    if fixed: error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label,True)
     else: error += classifier.evaluate(theta,ts, gold_label, False)
   print '\tInitial training error: -, Estimated performance:', error/len(allData['dev'])
   for epoch in range(5):
@@ -38,7 +49,7 @@ def train(theta, allData, hyperParams):
     print '\tComputing performance ('+str(len(allData['dev']))+' examples)...'
     error = 0
     for pairID, (ts, gold_label) in allData['dev'].iteritems():
-      if isinstance(ts[0],str): error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label)
+      if fixed: error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label)
       else: error += classifier.evaluate(theta,ts, gold_label, False)
     print '\tTraining error:', trainLoss/(nBatches), ', Estimated performance:', error/len(allData['dev'])
 

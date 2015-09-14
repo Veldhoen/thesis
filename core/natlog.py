@@ -15,7 +15,7 @@ def getFromIFile(fromFile):
     i = 0
     for line in f:
       i+=1
-      if i>100: break
+      if i>1000: break
       try: gold_label, s1_parse, s2_parse = line.split('\t')
       except:
         print len( line.split('\t'))

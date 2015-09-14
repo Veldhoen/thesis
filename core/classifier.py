@@ -51,6 +51,10 @@ class Classifier(NN.Node):
     loss = self.error(theta,gold,True)
     return loss
 
+  def predict(self,theta,children, fixed = True, activate = True):
+    self.replaceChildren(children, fixed)
+    if activate: self.forward(theta)
+    return labels[self.a.argmax(axis=0)]
 
 
 
