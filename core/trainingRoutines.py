@@ -112,6 +112,7 @@ def phase(tTreebank, vData, hyperParams, theta, cores,outFile):
 
   for i in xrange(hyperParams['nEpochs']):
     tData = tTreebank.getExamples()
+    while len(tData)==0: tData = tTreebank.getExamples()
     print '\tIteration',i,'('+str(len(tData))+' examples)'
     trainLoss=trainOnSet(hyperParams, tData, theta, histGrad, cores)
     storeTheta(theta, outFile)

@@ -35,7 +35,7 @@ class Theta(dict):
 
   def installMatrices(self):
     if self.style == 'classifier':
-      self.newMatrix(('comparison','M'),None,(self.dims['comparison'],self.dims['arity']*self.dims['din']))
+      self.newMatrix(('comparison','M'),None,(self.dims['comparison'],self.dims['arity']*self.dims['inside']))
       self.newMatrix(('classify','M'),None,(self.dims['nClasses'],self.dims['comparison']))
       self.newMatrix(('comparison','B'),None,(self.dims['comparison'],))
       self.newMatrix(('classify','B'),None,(self.dims['nClasses'],))
