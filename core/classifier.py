@@ -54,7 +54,7 @@ class Classifier(NN.Node):
   def predict(self,theta,children, fixed = True, activate = True):
     self.replaceChildren(children, fixed)
     if activate: self.forward(theta)
-    return labels[self.a.argmax(axis=0)]
+    return self.labels[self.a.argmax(axis=0)]
 
 
 

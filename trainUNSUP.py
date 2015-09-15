@@ -193,7 +193,7 @@ def mybool(string):
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train RAE/ IORNN unsupervised on a treebank')
-  parser.add_argument('-k','--kind', type=str, help='File with pickled embeddings', required=True)
+  parser.add_argument('-k','--kind', type=str, help='kind (IO/RNN)', required=True)
 
   # data:
   parser.add_argument('-exp','--experiment', type=str, help='Identifier of the experiment', required=True)

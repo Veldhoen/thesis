@@ -97,8 +97,6 @@ class Leaf(Node):
 
   def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False):
     if not fixWords:
-      print 'update word'
-      sys.exit()
       gradient[self.cat][self.key] += delta
 
   def aLen(self,theta):

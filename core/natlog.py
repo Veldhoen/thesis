@@ -43,7 +43,7 @@ def install(source):
 
   vocabulary = ['UNKNOWN','all','growl','lt_three','lt_two','mammals','most','move','no','not','not_all','not_most','pets','reptiles','some','swim','three','turtles','two','walk','warthogs']
 
-  dims = {'inside': 5, 'word':5,'maxArity':2,'arity':len(rawdata[0][0])}
+  dims = {'inside': 25, 'word':25,'maxArity':2,'arity':len(rawdata[0][0])}
   theta = myTheta.Theta('RNN', dims, None, None,  vocabulary)
 
   labels = set()
