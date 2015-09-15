@@ -1,34 +1,57 @@
+from __future__ import division
 import core.classifier as cl
 import sys,os
 import core.trainingRoutines as tr
 import core.SNLI as SNLI
 import core.natlog as natlog
-
+from collections import defaultdict, Counter
 import random
 
-def evaluateAccuracy(classifier,testData,theta):
+
+def confusionS(matrix):
+  s = ''
+  for label in labels:
+    s+='\t'+label
+  s+='\n'
+  for t in labels:
+    s+= t
+    for p in labels:
+      s+= '\t'+str(matrix[t][p])
+    s+='\n'
+  return s
+
+
+def evaluate(classifier,testData,theta):
+  error = 0
   true = 0
   confusion = defaultdict(Counter)
+
   for pairID, (ts, gold_label) in testData.iteritems():
-    if isinstance(ts[0],str): prediction= classifier.predict(theta,[pairID+'A', pairID+'B'], True)
-    else: prediction = classifier.predict(theta,ts, False)
-    confusion[target][prediction] += 1
-    if prediction == target:
+    if fixed:
+      error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label, True)
+      prediction= classifier.predict(theta,[pairID+'A', pairID+'B'], True,False)
+    else: 
+      error += classifier.evaluate(theta,ts, gold_label, False)
+      prediction = classifier.predict(theta,ts, False,False)
+    confusion[gold_label][prediction] += 1
+    if prediction == gold_label:
       true +=1
+  accuracy = true/len(testData)
+  loss = error/len(testData)
+  return loss, accuracy, confusion
 
 def train(theta, allData, hyperParams):
   batchsize = hyperParams['bSize']
   if hyperParams['ada']: histGrad = theta.gradient()
   else: histGrad = None
   examples = allData['train'].keys()
-  fixed = isinstance(allData['train'].values()[0][0],str)
   classifier = cl.Classifier(theta.dims['arity'], labels, fixed)
   print '\tComputing performance ('+str(len(allData['dev']))+' examples)...'
   error = 0
-  for pairID, (ts, gold_label) in allData['dev'].iteritems():
-    if fixed: error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label,True)
-    else: error += classifier.evaluate(theta,ts, gold_label, False)
-  print '\tInitial training error: -, Estimated performance:', error/len(allData['dev'])
+  loss, accuracy, confusion =  evaluate(classifier,allData['dev'],theta)
+  print '\tInitial training error: - , Estimated performance:',loss,', Accuracy:',accuracy, ', Confusion:'
+  print confusionS(confusion)
+
   for epoch in range(5):
     print '\tIteration',epoch
     # randomly split the data into parts of batchsize
@@ -48,10 +71,9 @@ def train(theta, allData, hyperParams):
     # evaluate
     print '\tComputing performance ('+str(len(allData['dev']))+' examples)...'
     error = 0
-    for pairID, (ts, gold_label) in allData['dev'].iteritems():
-      if fixed: error += classifier.evaluate(theta,[pairID+'A', pairID+'B'], gold_label)
-      else: error += classifier.evaluate(theta,ts, gold_label, False)
-    print '\tTraining error:', trainLoss/(nBatches), ', Estimated performance:', error/len(allData['dev'])
+    loss, accuracy, confusion =  evaluate(classifier,allData['dev'],theta)
+    print '\tTraining error:', trainLoss/(nBatches), ', Estimated performance:',loss,', Accuracy:',accuracy, ', Confusion:'
+    print confusionS(confusion)
 
 
 
@@ -74,9 +96,12 @@ def main(thetaFile,src, outFile):
     print 'no src:', src
     sys.exit()
   
-  global labels
-#  theta, allData, labels = SNLI.install(thetaFile,src)
+  global labels, fixed
+#  theta, allData, labels = SNLI.install(thetaFile,src)     \
+#  fixed = True
   theta, allData, labels = natlog.install(src)
+  fixed = False
+
   hyperParams={'bSize':50,'lambda': 0.00001,'alpha':0.01,'ada':True}
   train(theta, allData, hyperParams)
   tr.storeTheta(theta, outFile)
