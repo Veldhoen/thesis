@@ -41,5 +41,5 @@ class RNN(Node):
     ars = [self.maxArity(c) for c in node.inputs]
     ars.append(len(node.inputs))
     return max(ars)
-  def __str__(self):
-    return str(self.root)
+#  def __str__(self):
+#    return str(self.root)

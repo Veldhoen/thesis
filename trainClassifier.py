@@ -52,7 +52,7 @@ def train(theta, allData, hyperParams):
   print '\tInitial training error: - , Estimated performance:',loss,', Accuracy:',accuracy, ', Confusion:'
   print confusionS(confusion)
 
-  for epoch in range(5):
+  for epoch in range(hyperParams['nEpochs']):
     print '\tIteration',epoch
     # randomly split the data into parts of batchsize
     random.shuffle(examples)
@@ -83,7 +83,7 @@ def trainBatch(classifier, tData, theta, lambdaL2):
   for pairID, (ts, gold_label) in tData:
     if fixed: classifier.replaceChildren([pairID+'A', pairID+'B'], True)
     else: classifier.replaceChildren(ts, False)
-    error += classifier.train(theta,grads, True, gold_label)
+    error += classifier.train(theta,grads, True, gold_label, False)
   grads /= len(tData)
   return grads, error/len(tData)
 
@@ -113,6 +113,7 @@ def main(args):
 
   hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs']}
   train(theta, allData, hyperParams)
+  
   tr.storeTheta(theta, args['out'])
 
 def mybool(string):

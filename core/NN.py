@@ -71,11 +71,11 @@ class Node():
 
 
   def __str__(self):
-#    if self.cat[-1]=='I': return '('+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+')'
-    if self.cat[-1]=='I': return '('+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+' <'+' '.join([str(out) for out in self.outputs])+'>'+')'
-    if self.cat[-1]=='O': return '['+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+']' #'&'.join([str(c) for c in self.inputs])
-    else: return '<'+self.cat[0]+' '+ ' '.join([str(child) for child in self.inputs])+'> '
-    #return '['+self.cat[0]+' '+ ' '.join([str(child) for child in self.inputs])+']'
+    return '( '+ ' '.join([str(child) for child in self.inputs])+' )'
+#     if self.cat[-1]=='I': return '('+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+' <'+' '.join([str(out) for out in self.outputs])+'>'+')'
+#     if self.cat[-1]=='O': return '['+self.cat[1]+' '+ ' '.join([str(child) for child in self.inputs])+']' #'&'.join([str(c) for c in self.inputs])
+#     else: return '<'+self.cat[0]+' '+ ' '.join([str(child) for child in self.inputs])+'> '
+#     #return '['+self.cat[0]+' '+ ' '.join([str(child) for child in self.inputs])+']'
 
 
 class Leaf(Node):
@@ -96,7 +96,9 @@ class Leaf(Node):
       [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False):
+    if self.key == 'UNKNOWN': print 'node has an unknown key'
     if not fixWords:
+#      print 'update:', self.key
       gradient[self.cat][self.key] += delta
 
   def aLen(self,theta):

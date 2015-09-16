@@ -15,7 +15,7 @@ def getFromIFile(fromFile):
     i = 0
     for line in f:
       i+=1
-      if i>1000: break
+      #if i>1000: break
       try: gold_label, s1_parse, s2_parse = line.split('\t')
       except:
         print len( line.split('\t'))
@@ -41,10 +41,8 @@ def install(source):
 
 
 
-  vocabulary = ['UNKNOWN','all','growl','lt_three','lt_two','mammals','most','move','no','not','not_all','not_most','pets','reptiles','some','swim','three','turtles','two','walk','warthogs']
+  vocabulary = set(['UNKNOWN']) #['UNKNOWN','all','growl','lt_three','lt_two','mammals','most','move','no','not','not_all','not_most','pets','reptiles','some','swim','three','turtles','two','walk','warthogs']
 
-  dims = {'inside': 25, 'word':25,'maxArity':2,'arity':len(rawdata[0][0])}
-  theta = myTheta.Theta('RNN', dims, None, None,  vocabulary)
 
   labels = set()
   data = []
@@ -52,8 +50,12 @@ def install(source):
     parses, gold_label = rawdata[i]
     labels.add(gold_label)
     ts = [ nltk.Tree.fromstring(p.lower()) for p in parses]
+    [vocabulary.update(t.leaves()) for t in ts]
     data.append(([myRNN.RNN(t) for t in ts],gold_label))
-
+  vocabulary = list(vocabulary)
+  dims = {'inside': 25, 'word':25,'maxArity':2,'arity':len(rawdata[0][0])}
+  theta = myTheta.Theta('RNN', dims, None, None,  vocabulary=vocabulary)
+                      #    style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN'])
   random.shuffle(data)
   allData = {}
   p10 = len(data)//10

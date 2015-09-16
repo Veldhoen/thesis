@@ -9,9 +9,9 @@ import numpy as np
 
 
 class Classifier(NN.Node):
-  def __init__(self,children, labels, fixed = True):
+  def __init__(self,children, labels, fixed):
     if fixed: children = [NN.Leaf([],('word',),i) for i in range(children)]
-    comparison = NN.Node(children, [self], ('comparison',),'tanh')
+    comparison = NN.Node(children, [self], ('comparison',),'ReLU')
 #    leafs = [NN.Leaf([comparison],('word',),i) for i in range(n)]
 #    comparison.inputs=leafs
     NN.Node.__init__(self,[comparison], [], ('classify',),'softmax')
@@ -23,11 +23,12 @@ class Classifier(NN.Node):
         self.inputs[0].inputs[i].key = children[i]
     else: self.inputs[0].inputs = children
 
-  def train(self,theta,gradient,activate=True, target = None,fixed = True):
+  def train(self,theta,gradient,activate, target,fixed):
     if activate: self.forward(theta)
+#    print self, target
     delta = np.copy(self.a)
     true = self.labels.index(target)
-    delta[true] = delta[true]-1
+    delta[true] -= 1
     self.backprop(theta, delta, gradient, addOut = False, moveOn=True, fixWords = fixed)
     error = self.error(theta,target,False)
 
@@ -41,7 +42,9 @@ class Classifier(NN.Node):
     if activate: self.forward(theta)
 
     try: err= -np.log(self.a[self.labels.index(target)])
-    except: err= -np.log(0.00000000000001)
+    except: 
+      print self.a
+      err = -np.log(1e-10)
 #    print 'cl.error', self.a, self.labels.index(target), err
     return err
 
@@ -56,7 +59,8 @@ class Classifier(NN.Node):
     if activate: self.forward(theta)
     return self.labels[self.a.argmax(axis=0)]
 
-
+  def __str__(self):
+    return 'classify: '+', '.join([str(ch) for ch in self.inputs[0].inputs])
 
 
 

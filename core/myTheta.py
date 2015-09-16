@@ -19,7 +19,8 @@ class Theta(dict):
     else: default = ('UNKNOWN',embeddings[vocabulary.index('UNKNOWN')])
     self[('word',)] = WordMatrix(vocabulary, default, {})
     for i in range(len(vocabulary)):
-      if embeddings is None: self[('word',)][vocabulary[i]]=np.random.random_sample(self.dims['word'])*.2-.1
+      if embeddings is None:
+        self[('word',)][vocabulary[i]]=np.random.random_sample(self.dims['word'])*.2-.1
       else: self[('word',)][vocabulary[i]]=embeddings[i]
 
   def grammar2rules(self, grammar):
@@ -39,9 +40,6 @@ class Theta(dict):
       self.newMatrix(('classify','M'),None,(self.dims['nClasses'],self.dims['comparison']))
       self.newMatrix(('comparison','B'),None,(self.dims['comparison'],))
       self.newMatrix(('classify','B'),None,(self.dims['nClasses'],))
-
-
-
     else:
      # set local dimensionality variables
       din=self.dims['inside']
@@ -126,19 +124,24 @@ class Theta(dict):
       grad = gradient[key]
       if historicalGradient is not None:
         histgrad = historicalGradient[key]
+
+
+#        historical_grad[name] += np.square(grad[name])
+#       theta[name] = theta[name] - alpha*np.divide(grad[name],np.sqrt(historical_grad[name])+1e-6)
+
         if type(self[key]) == np.ndarray:
-          histgrad+= np.multiply(grad,grad)
-          try: self[key] -=(alpha/(np.sqrt(histgrad)+1e-6))*grad
-          except RuntimeWarning: raise NameError("invalid sqrt of histgrad? "+str(key))
+          histgrad+= np.square(grad)
+          self[key] -= alpha*np.divide(grad,np.sqrt(histgrad)+1e-6)#
         elif type(self[key]) == WordMatrix:
           for word in grad:
-            histgrad[word]+= np.multiply(grad[word],grad[word])
-            self[key][word] -=(alpha/(np.sqrt(histgrad[word])+1e-6))*grad[word]
+            histgrad[word]+= np.square(grad[word])
+            self[key][word] -= alpha*np.divide(grad[word],np.sqrt(histgrad[word])+1e-6)
         else: raise NameError("Cannot update theta")
       else:
         try: self[key] -=alpha*grad
         except:
           for word in grad: self[key][word] -=alpha*grad[word]
+#      print self[('word',)]['UNKNOWN']
 
   def norm(self):
     names = [name for name in self.keys() if name[-1] == 'M']
@@ -270,14 +273,17 @@ class WordMatrix(dict):
     if dkey not in self.voc: raise AttributeError("'default' must be in the vocabulary")
     self.default = dkey
     dict.__setitem__(self, self.default, dval)
+    [dicItems.remove((k,v)) for (k,v) in dicItems if k==dkey]
     self.update(dicItems)
 
   def __setitem__(self, key,val):
     if self.default not in self: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
     if key in self.voc:
-      super(WordMatrix, self).__setitem__(key, val)
+#      if key=='UNKNOWN': print '\tkey is \"UNKNOWN\"!'
+      dict.__setitem__(self,key, val)
       #except: sys.exit()
-    else: super(WordMatrix, self).__setitem__(self.default, val)
+    else:
+      dict.__setitem__(self,self.default, val)
 
   def erase(self):
     for key in self.keys():
@@ -285,11 +291,13 @@ class WordMatrix(dict):
       else: del self[key]
 
   def __missing__(self, key):
+#    print 'WM missing:', key
     if key == self.default: raise KeyError("Default not yet in the vocabulary: "+self.default)#return None
     if key in self.voc:
       self[key] = np.zeros_like(self[self.default])
       return self[key]
     else:
+      print 'WM missing:', key
       return self[self.default]
 
   def __reduce__(self):

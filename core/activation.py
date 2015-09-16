@@ -16,9 +16,9 @@ def activate(vector, nonlinearity):
   elif nonlinearity =='softmax':
     e = np.exp(vector)
     act = e/np.sum(e)
+#    print vector, act
     der = np.ones_like(act)#this is never used
   else:
     print 'no familiar nonlinearity:', nonlinearity,'. Used identity.'
-    act = vector
-    der = np.ones(len(act))
+    act, der = activate(vector, 'identity')
   return act, der
