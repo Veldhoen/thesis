@@ -10,6 +10,7 @@ import numpy as np
 
 class Classifier(NN.Node):
   def __init__(self,children, labels, fixed):
+#    print 'CLassifier.init', children
     if fixed: children = [NN.Leaf([],('word',),i) for i in range(children)]
     comparison = NN.Node(children, [self], ('comparison',),'ReLU')
 #    leafs = [NN.Leaf([comparison],('word',),i) for i in range(n)]
@@ -23,13 +24,15 @@ class Classifier(NN.Node):
         self.inputs[0].inputs[i].key = children[i]
     else: self.inputs[0].inputs = children
 
-  def train(self,theta,gradient,activate, target,fixed):
+  def train(self,theta,gradient,activate, target,fixWords, fixWeights):
+#    print str(self)
     if activate: self.forward(theta)
-#    print self, target
+#    print self.a, self, target
+#    print 'activated'
     delta = np.copy(self.a)
     true = self.labels.index(target)
     delta[true] -= 1
-    self.backprop(theta, delta, gradient, addOut = False, moveOn=True, fixWords = fixed)
+    self.backprop(theta, delta, gradient, addOut = False, moveOn=True, fixWords = fixWords, fixWeights=fixWeights)
     error = self.error(theta,target,False)
 
 #    print 'classifier.train: ',[leaf for leaf in self.inputs[0].inputs],target, ',error:', error
@@ -42,20 +45,23 @@ class Classifier(NN.Node):
     if activate: self.forward(theta)
 
     try: err= -np.log(self.a[self.labels.index(target)])
-    except: 
-      print self.a
+    except:
+     # print self.a
       err = -np.log(1e-10)
 #    print 'cl.error', self.a, self.labels.index(target), err
     return err
 
-  def evaluate(self, theta, children, gold, fixed = True):
+  def evaluate(self, theta, target, sample=1):
+    return self.error(theta,target,True)
+
+  def evaluate2(self, theta, children, gold, fixed = True):
     self.replaceChildren(children, fixed)
 
     loss = self.error(theta,gold,True)
     return loss
 
-  def predict(self,theta,children, fixed = True, activate = True):
-    self.replaceChildren(children, fixed)
+  def predict(self,theta,children=None, fixed = True, activate = True):
+    if children is not None: self.replaceChildren(children, fixed)
     if activate: self.forward(theta)
     return self.labels[self.a.argmax(axis=0)]
 

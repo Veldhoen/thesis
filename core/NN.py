@@ -16,6 +16,7 @@ class Node():
     self.nonlin = nonlinearity
 
   def forward(self,theta, activateIn = True, activateOut = False, signal=None):
+#    print self.inputs
 #    print 'Node.forward',self.cat# #theta[('composition', '#X#', '(#X#, #X#)', 'I', 'M')][0][:3]
     if activateIn:
       [i.forward(theta, activateIn,activateOut) for i in self.inputs]
@@ -40,32 +41,27 @@ class Node():
        self.z = M.dot(self.inputsignal)+b
        self.a, self.ad = activation.activate(self.z, self.nonlin)
     if activateOut:
-#      print 'forward outputs',self.cat
-    #       lens = [int(np.shape(theta[c.cat+('M',)])[1]) for c in self.outputs] #but they are not activated yet!
-#       splitter = [sum(lens[:i]) for i in range(len(lens))][1:]
-#       for node, a, ad in zip(self.outputs, np.split(self.a,splitter), np.split(self.ad,splitter)):
-#         node.forward(a,ad,theta)
-
       for node in self.outputs:
         if node.cat[0]=='reconstruction':
           node.forward(theta, False, False, signal=(self.a,self.ad))
         else:
           node.forward(theta, False, True, signal=None)
 
-  def backprop(self,theta, delta, gradient, addOut = False, moveOn=True, fixWords = False):
-#    print 'Node.backprop',self#.cat#, 'a:', self.a.shape,'delta:', delta.shape, 'input:', self.inputsignal.shape
+  def backprop(self,theta, delta, gradient, addOut = False, moveOn=True, fixWords = False,fixWeights=False):
+#    print 'Node.backprop',fixWords, fixWeights #self#.cat#, 'a:', self.a.shape,'delta:', delta.shape, 'input:', self.inputsignal.shape
 
     if addOut: #add a delta message from its outputs (e.g., reconstructions)
-      delta += np.concatenate([out.backprop(theta, None, gradient, addOut, moveOn=False, fixWords = fixWords) for out in self.outputs])
+      delta += np.concatenate([out.backprop(theta, None, gradient, addOut, moveOn=False, fixWords = fixWords, fixWeights=fixWeights) for out in self.outputs])
     M= theta[self.cat+('M',)]
-    gradient[self.cat+('M',)]+= np.outer(delta,self.inputsignal)
-    gradient[self.cat+('B',)]+=delta
+    if not fixWeights:
+      gradient[self.cat+('M',)]+= np.outer(delta,self.inputsignal)
+      gradient[self.cat+('B',)]+=delta
 
     deltaB =np.multiply(np.transpose(M).dot(delta),self.dinputsignal)
     if moveOn:
       lens = [len(c.a) for c in self.inputs]
       splitter = [sum(lens[:i]) for i in range(len(lens))][1:]
-      [inputNode.backprop(theta, delt, gradient,addOut, moveOn, fixWords) for inputNode,delt in zip(self.inputs,np.split(deltaB,splitter))]
+      [inputNode.backprop(theta, delt, gradient,addOut, moveOn, fixWords, fixWeights) for inputNode,delt in zip(self.inputs,np.split(deltaB,splitter))]
     else:
       return deltaB
 
@@ -88,14 +84,14 @@ class Leaf(Node):
     try: self.z = theta[self.cat][self.key]
 #     try: self.z = theta[self.cat][self.key]
     except:
-      print 'Fail to forward Leaf:', self.cat, self.key
+      print 'Fail to forward Leaf:', self.cat, self.key, type(self.key)
       sys.exit()
 
     self.a, self.ad = activation.activate(self.z,self.nonlin)
     if activateOut:
       [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
-  def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False):
+  def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False,fixWeights=False):
     if self.key == 'UNKNOWN': print 'node has an unknown key'
     if not fixWords:
 #      print 'update:', self.key

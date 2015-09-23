@@ -34,6 +34,14 @@ class Theta(dict):
     rules = [rule for rule, c in rulesC.most_common()]
     return heads, rules
 
+  def extend4Classify(self,nChildren, nClasses,dComparison = 0):
+    if dComparison == 0: dComparison = (nChildren+1)*self.dims['inside']
+    self.newMatrix(('comparison','M'),None,(dComparison,nChildren*self.dims['inside']))
+    self.newMatrix(('classify','M'),None,(nClasses,dComparison))
+    self.newMatrix(('comparison','B'),None,(dComparison,))
+    self.newMatrix(('classify','B'),None,(nClasses,))
+
+
   def installMatrices(self):
     if self.style == 'classifier':
       self.newMatrix(('comparison','M'),None,(self.dims['comparison'],self.dims['arity']*self.dims['inside']))
@@ -106,6 +114,17 @@ class Theta(dict):
         self.newMatrix((cat,lhs,rhs,'M'),self[(cat,lhs,rhs,'M')])
         self.newMatrix((cat,lhs,rhs,'B'),self[(cat,lhs,rhs,'B')])
         cat = 'composition'
+
+  def reset(self, cats):
+    for cat in cats:
+      if isinstance(self[cat],WordMatrix):
+        for word in self[cat].keys():
+          size = self[cat][word].shape
+          self[cat][word] = np.random.random_sample(size)*.2-.1
+      else:
+        size = self[cat].shape
+        self[cat] = np.random.random_sample(size)*.2-.1
+
   def newMatrix(self, name,M= None, size = (0,0)):
     if name in self:
       return
@@ -297,7 +316,7 @@ class WordMatrix(dict):
       self[key] = np.zeros_like(self[self.default])
       return self[key]
     else:
-      print 'WM missing:', key
+#      print 'WM missing:', key
       return self[self.default]
 
   def __reduce__(self):

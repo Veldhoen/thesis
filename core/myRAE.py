@@ -39,22 +39,22 @@ class Reconstruction(Node):
       self.inputsignal, self.dinputsignal = signal
       self.a, self.ad = signal
 
-  def backprop(self, theta, delta, gradient,addOut=True,moveOn=False, fixWords = False):
+  def backprop(self, theta, delta, gradient,addOut=True,moveOn=False, fixWords = False, fixWeights=False):
     if len(self.nodes)>0:
       if addOut:
-        delta = np.concatenate([node.backprop(theta,None,gradient,addOut=True, fixWords = fixWords) for node in self.nodes])
-        deltaB = Node.backprop(self,theta, delta, gradient, addOut = False, moveOn=False, fixWords = fixWords)
+        delta = np.concatenate([node.backprop(theta,None,gradient,addOut=True, fixWords = fixWords,fixWeights=fixWeights) for node in self.nodes])
+        deltaB = Node.backprop(self,theta, delta, gradient, addOut = False, moveOn=False, fixWords = fixWords, fixWeights=fixWeights)
       else: raise RuntimeError('RAE.backprop, addOut is False')
     else:
       # backprop into original to intensify gradient for word matrix
       deltaR =  np.multiply(-(self.original.a-self.a),self.original.ad)
-      self.original.backprop(theta,-1*deltaR,gradient,addOut=False,moveOn=False, fixWords = fixWords)
+      self.original.backprop(theta,-1*deltaR,gradient,addOut=False,moveOn=False, fixWords = fixWords,fixWeights=fixWeights)
       # determine error signal to backprop into the tree
       deltaB = np.multiply(-(self.original.a-self.a),self.ad)
     return deltaB
 
   def reconstructionError(self):
-    if len(self.nodes)>0: 
+    if len(self.nodes)>0:
       return sum([node.reconstructionError() for node in self.nodes])
 
     else:
@@ -119,11 +119,11 @@ class RAE():
   def length(self):
     return nodeLength(self.root)
 
-  def train(self,theta, gradient, activate=True, target=None, fixWords = False): #rain(self,theta,delta = None, gradient= None):
+  def train(self,theta, gradient, activate=True, target=None, fixWords = False,fixWeights=False): #rain(self,theta,delta = None, gradient= None):
     if activate: self.activate(theta)
     if target is None: delta = np.zeros_like(self.root.a)
     else: delta = np.zeros_like(self.root.a)#True # make a delta message!
-    self.root.backprop(theta, delta, gradient, addOut = True, moveOn=True, fixWords = fixWords)
+    self.root.backprop(theta, delta, gradient, addOut = True, moveOn=True, fixWords = fixWords,fixWeights=fixWeights)
     return self.error(theta,None,False)
 
   def error(self,theta,target=None, activate=True):

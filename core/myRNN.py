@@ -19,16 +19,15 @@ def nodeLength(node):
   if isinstance(node,Leaf): return 1
   else: return sum([nodeLength(n) for n in node.inputs])
 
-class RNN(Node):
+class RNN():
   def __init__(self, nltkTree):
-    rnn =this2RNN(nltkTree)
-    Node.__init__(self,rnn.inputs, rnn.outputs, rnn.cat,rnn.nonlin)
+    self.root =this2RNN(nltkTree)
     self.length = len(nltkTree.leaves())
-#  def forward(self,theta, activateIn,activateOut):
-#    self.forward(theta, activateIn,activateOut)
+#   def forward(self,theta, activateIn,activateOut):
+#     self.root.forward(theta, activateIn,activateOut)
   def activate(self,theta):
-    self.forward(theta, True, False)
-    return self.a
+    self.root.forward(theta, True, False)
+    return self.root.a
 
   def length(self):
     try: return self.length
@@ -36,10 +35,14 @@ class RNN(Node):
       self.length= nodeLength(self.root)
       return self.length
 
+
+
+
+
   def maxArity(self,node=None):
     if node is None: node = self
     ars = [self.maxArity(c) for c in node.inputs]
     ars.append(len(node.inputs))
     return max(ars)
-#  def __str__(self):
-#    return str(self.root)
+  def __str__(self):
+    return str(self.root)
