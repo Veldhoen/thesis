@@ -47,7 +47,7 @@ class Reconstruction(Node):
       else: raise RuntimeError('RAE.backprop, addOut is False')
     else:
       # backprop into original to intensify gradient for word matrix
-      deltaR =  np.multiply(-(self.original.a-self.a),self.original.ad)
+      deltaR = -(self.original.a-self.a)# np.multiply(-(self.original.a-self.a),self.original.ad)
       self.original.backprop(theta,-1*deltaR,gradient,addOut=False,moveOn=False, fixWords = fixWords,fixWeights=fixWeights)
       # determine error signal to backprop into the tree
       deltaB = np.multiply(-(self.original.a-self.a),self.ad)

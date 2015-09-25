@@ -47,7 +47,9 @@ def process(rawdata):
     data.append(([myRNN.RNN(t).root for t in ts],gold_label))
   return vocabulary, labels, data
 
-def install(source, kind = 'RNN'):
+def install(source, kind = 'RNN', d=0):
+  if d == 0: d = 16
+
   if not os.path.isdir(source):
       print 'no src:', source
       sys.exit()
@@ -88,7 +90,6 @@ def install(source, kind = 'RNN'):
 
 
   vocabulary = list(vocabulary)
-  d = 16
   dims = {'inside': d, 'word':d,'maxArity':2,'arity':2}
   theta = myTheta.Theta(kind, dims, None, None,  vocabulary=vocabulary)
                       #    style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN'])

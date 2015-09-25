@@ -8,6 +8,54 @@ import os
 import trainArtificialData as ad
 from collections import defaultdict
 
+def grayCode(n):
+  grays=[[0],[1]]
+  while len(grays)<n:
+    pGrays=grays[:]
+    grays=[[0]+gray for gray in pGrays]+[[1]+gray for gray in pGrays[::-1]]
+  for gray in grays:
+    print gray
+  return [np.array(gray) for gray in grays]
+
+
+
+
+class TopNode():
+  def __init__(self, nw,answer):
+    self.root = nw
+    self.answer = answer
+
+  def activate(self,theta):
+    self.root.root.forward(theta,activateIn = True, activateOut = False)
+
+  def train(self, theta, gradient, activate=True, target = None, fixWords=False, fixWeights=False):
+    if target is None: target = self.answer
+    error = self.error(theta, target, activate)
+    prediction = self.root.root.a
+    true = theta[('word',)][target]
+
+    delta = -(true-prediction)
+    gradient[('word',)][target] -= delta
+    delta = np.multiply(delta,self.root.root.ad)
+    self.root.root.backprop(theta,delta,gradient,addOut=False,moveOn=True, fixWords = fixWords,fixWeights=fixWeights)
+    return error
+
+
+  def error(self,theta, target, activate=True):
+    if target is None: target = self.answer
+    if activate: self.activate(theta)
+    prediction = self.root.root.a
+    true = theta[('word',)][target]
+    length = np.linalg.norm(true-prediction)
+    return .5*length*length
+
+  def evaluate(self,theta, target, sample=1):
+    if target is None: target = self.answer
+    return self.error(theta,target,True)
+
+  def __str__(self):
+    return 'TopNode: '+str(self.root)
+
 class mathTreebank():
   def __init__(self, operators, digits, n=1000, lengths=range(1,6)):
     self.lengths = lengths
@@ -42,15 +90,15 @@ class mathTreebank():
 class trainRNNTB():
   def __init__(self, mathTB):
     self.mathTB = mathTB
-    self.n=mathTB.ns
+    self.n=mathTB.n
+    self.labels = [None]
   def getExamples(self,n=0):
     if n==0: n = self.n
     examples = []
     for tree,answer in self.mathTB.getExamples(n):
       nw = myRNN.RNN(tree)
-      
-      classifier = Classifier([nw.root], self.labels, False)
-      examples.append((classifier,str(answer)))
+      classifier = TopNode(nw,str(answer))
+      examples.append((classifier))
     return examples
 
 
@@ -135,31 +183,34 @@ class compareClassifyTB():
 
   def getExamples(self,n=0):
     if n == 0: n = self.n
+    print n
     examples = []
-    x = iter(self.mathTB)
-    try:
-      left, la = x.next()
-      right, ra = x.next()
-    except: return examples
-    if la < ra: label = '<'
-    elif la > ra: label = '>'
-    else: label = '='
-    classifier = Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
-    examples.append((classifier,label))
+    x = iter(self.mathTB.getExamples(2*n))
+
+    while True:
+      try:
+        left, la = x.next()
+        right, ra = x.next()
+      except: return examples
+      if la < ra: label = '<'
+      elif la > ra: label = '>'
+      else: label = '='
+      classifier = Classifier([myRNN.RNN(left).root,myRNN.RNN(right).root], self.labels, False)
+      examples.append((classifier,label))
     return examples
 
-def install(thetaFile, kind='RNN'):
-  operators  = ['plus','minus']#,'times','div']#,'modulo]
-  digits = [str(d) for d in range(0,11)]
-  tb = mathTreebank(operators, digits, n=5000)
+def install(thetaFile, kind='RNN', d=0):
 
+  operators  = ['plus','minus','times','div']#,'modulo]
+  digits = [str(d) for d in range(-10,11)]
+  tb = mathTreebank(operators, digits, n=5000, lengths = range(1,5))
+  if d ==0: d=2
   allData = defaultdict(dict)
   print  'load theta..', thetaFile
   try:
     with open(thetaFile, 'rb') as f:
       theta = pickle.load(f)
   except:
-    d=5
     voc= digits[:]
     voc.extend(operators)
     voc.append('is')
@@ -169,9 +220,17 @@ def install(thetaFile, kind='RNN'):
     theta.specializeHeads()
 
 
-  ttb = resultClassifyTB(tb)
-  dtb = resultClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
+#  ttb =     trainRNNTB(tb)
+#  dtb =     trainRNNTB(mathTreebank(operators, digits, 1000,range(1,5)))
 
-  nChildren =1
+#  ttb = resultClassifyTB(tb)
+#  dtb = resultClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
+
+  ttb = compareClassifyTB(tb)
+  dtb = compareClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
+
+
+
+  nChildren =2
   theta.extend4Classify(nChildren, len(ttb.labels),dComparison = 0)
   return theta, ttb, dtb

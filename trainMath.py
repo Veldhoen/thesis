@@ -6,6 +6,8 @@ import core.natlog as natlog
 import core.trainingRoutines as tr
 import argparse
 
+
+
 def confusionS(matrix,labels):
   if True:#len(labels)<15:
     s = ''
@@ -49,10 +51,10 @@ def evaluate(ttb,theta):
 
 
 def main(args):
-  hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs']}
+  hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs','fixEmb','fixW']}
 
-  if args['kind'] == 'math': theta, ttb, dtb = math.install(args['pars'], kind='RNN')
-  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind='RNN')
+  if args['kind'] == 'math': theta, ttb, dtb = math.install(args['pars'], kind='RNN',d=args['word'])
+  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind='RNN',d=args['word'])
   tr.plainTrain(ttb, dtb, hyperParams, theta, args['outDir'], args['cores'])
   print 'evaluation on held-out data:'
   loss, accuracy, confusion=evaluate(dtb, theta)
@@ -79,9 +81,7 @@ if __name__ == "__main__":
   parser.add_argument('-o','--outDir', type=str, help='Output dir to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, default='', help='File with pickled theta', required=False)
   # network hyperparameters:
-  parser.add_argument('-din','--inside', type=int, help='Dimensionality of inside representations', required=False)
-  parser.add_argument('-dwrd','--word', type=int, help='Dimensionality of leaves (word nodes)', required=False)
-  parser.add_argument('-dout','--outside', type=int, help='Dimensionality of outside representations', required=False)
+  parser.add_argument('-dwrd','--word', type=int, default = 0, help='Dimensionality of leaves (word nodes)', required=False)
   # training hyperparameters:
   parser.add_argument('-n','--nEpochs', type=int, help='Maximal number of epochs to train per phase', required=True)
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
@@ -89,6 +89,9 @@ if __name__ == "__main__":
   parser.add_argument('-a','--alpha', type=float, help='Learning rate parameter alpha', required=True)
   parser.add_argument('-ada','--ada', type=mybool, help='Whether adagrad is used', required=True)
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
+  parser.add_argument('-fw','--fixEmb', type=mybool, default=False, help='Whether the word embeddings are fixed', required=False)
+  parser.add_argument('-fc','--fixW', type=mybool, default=False, help='Whether the composition function is fixed', required=False)
+
   args = vars(parser.parse_args())
 
   main(args)

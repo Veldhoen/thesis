@@ -24,6 +24,11 @@ class Classifier(NN.Node):
         self.inputs[0].inputs[i].key = children[i]
     else: self.inputs[0].inputs = children
 
+  def backprop(self, theta, delta, gradient, addOut = False, moveOn=False, fixWords = False,fixWeights=False):
+    if fixWeights: #ignore fixWeights for the classifier weights
+      NN.Node.backprop(self,theta, delta, gradient, addOut = addOut, moveOn=False, fixWords = True,fixWeights=False)
+    NN.Node.backprop(self,theta, delta, gradient, addOut = addOut, moveOn=moveOn, fixWords = fixWords,fixWeights=fixWeights)
+
   def train(self,theta,gradient,activate, target,fixWords, fixWeights):
 #    print str(self)
     if activate: self.forward(theta)
