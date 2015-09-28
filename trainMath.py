@@ -51,10 +51,16 @@ def evaluate(ttb,theta):
 
 
 def main(args):
+
+  print args
   hyperParams={k:args[k] for k in ['bSize','lambda','alpha','ada','nEpochs','fixEmb','fixW']}
 
+  if args['additive'] and not args['fixW']:
+    print 'initializing with additive composition, but then train the function: nonsens, abort'
+    sys.exit()
+
   if args['kind'] == 'math': theta, ttb, dtb = math.install(args['pars'], kind='RNN',d=args['word'])
-  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind='RNN',d=args['word'])
+  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind='RNN',d=args['word'],additive=args['additive'])
   tr.plainTrain(ttb, dtb, hyperParams, theta, args['outDir'], args['cores'])
   print 'evaluation on held-out data:'
   loss, accuracy, confusion=evaluate(dtb, theta)
@@ -91,6 +97,7 @@ if __name__ == "__main__":
   parser.add_argument('-c','--cores', type=int, default=1,help='The number of parallel processes', required=False)
   parser.add_argument('-fw','--fixEmb', type=mybool, default=False, help='Whether the word embeddings are fixed', required=False)
   parser.add_argument('-fc','--fixW', type=mybool, default=False, help='Whether the composition function is fixed', required=False)
+  parser.add_argument('-add','--additive', type=mybool, default=False, help='Whether the composition function is additive', required=False)
 
   args = vars(parser.parse_args())
 

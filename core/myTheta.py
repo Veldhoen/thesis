@@ -34,6 +34,14 @@ class Theta(dict):
     rules = [rule for rule, c in rulesC.most_common()]
     return heads, rules
 
+  def additiveComposition(self):
+    d= self.dims['inside']
+    for key in self.keys():
+      if key[0]=='composition':
+        arity = len(key[2].split(', '))
+        if key[-1]=='M': self[key]=np.concatenate([np.identity(d)]*arity,1)
+        if key[-1]=='B': self[key]=np.zeros_like(self[key])
+
   def extend4Classify(self,nChildren, nClasses,dComparison = 0):
     if dComparison == 0: dComparison = (nChildren+1)*self.dims['inside']
     self.newMatrix(('comparison','M'),None,(dComparison,nChildren*self.dims['inside']))

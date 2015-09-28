@@ -7,6 +7,8 @@ import random
 import os
 import myRNN
 
+
+
 class natlogTB():
   def __init__(self,data,labels):
     self.labels = labels
@@ -35,7 +37,7 @@ def getFromIFile(fromFile):
       data.append((parses, gold_label))
   return data
 
-def process(rawdata):
+def process(rawdata,activation):
   vocabulary = set(['UNKNOWN'])
   labels = set()
   data = []
@@ -44,15 +46,18 @@ def process(rawdata):
     labels.add(gold_label)
     ts = [ nltk.Tree.fromstring(p.lower()) for p in parses]
     [vocabulary.update(t.leaves()) for t in ts]
-    data.append(([myRNN.RNN(t).root for t in ts],gold_label))
+    data.append(([myRNN.RNN(t, activation).root for t in ts],gold_label))
   return vocabulary, labels, data
 
-def install(source, kind = 'RNN', d=0):
+def install(source, kind = 'RNN', d=0, additive = False):
+  print 'additive:', additive
+
   if d == 0: d = 16
 
   if not os.path.isdir(source):
       print 'no src:', source
       sys.exit()
+
 
 
   if os.path.isdir(source):
@@ -62,23 +67,29 @@ def install(source, kind = 'RNN', d=0):
   vocabulary = set(['UNKNOWN'])
   labels = set()
 
+  if additive: activation = 'identity'
+  else: activation = 'tanh'
+
   if len(toOpen)>2:
-    data = []
+    trainData = []
+    testData =[]
+
     for f in toOpen:
-      voc, lab, dat = process(getFromIFile(f))
+      voc, lab, dat = process(getFromIFile(f), activation)
       vocabulary.update(voc)
       labels.update(lab)
-      data.extend(dat)
+      random.shuffle(dat)
+      p10 = len(dat)//20
+      trainData.extend(dat[:p10*17])
+      testData.extend(dat[p10*17:])
     labels=list(labels)
-    p10 = len(data)//10
-    random.shuffle(data)
-    ttb = natlogTB(data[:p10*8],labels)
-    dtb = natlogTB(data[p10*8:],labels)
+    ttb = natlogTB(trainData,labels)
+    dtb = natlogTB(testData,labels)
   else:
     data = []
     for f in sorted(toOpen):
       print f
-      voc, lab, dat = process(getFromIFile(f))
+      voc, lab, dat = process(getFromIFile(f), activation)
       vocabulary.update(voc)
       labels.update(lab)
       data.append(dat)
@@ -93,7 +104,7 @@ def install(source, kind = 'RNN', d=0):
   dims = {'inside': d, 'word':d,'maxArity':2,'arity':2}
   theta = myTheta.Theta(kind, dims, None, None,  vocabulary=vocabulary)
                       #    style, dims, grammar, embeddings = None,  vocabulary = ['UNKNOWN'])
-
+  if additive: theta.additiveComposition()
 #   allData = {}
 #   p10 = len(data)//10
 #   allData['train']=dict(zip(range(p10*8),data[:p10*8]))

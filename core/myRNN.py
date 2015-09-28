@@ -5,12 +5,12 @@ import sys
 import numpy as np
 
 
-def this2RNN(nltkTree):
+def this2RNN(nltkTree, activation):
   if nltkTree.height()>2:
     lhs = nltkTree.label()
     rhs = '('+ ', '.join([child.label() for child in nltkTree])+')'
-    children = [this2RNN(t) for t in nltkTree]
-    rnn = Node(children, [], ('composition',lhs,rhs,'I'), 'tanh')
+    children = [this2RNN(t, activation) for t in nltkTree]
+    rnn = Node(children, [], ('composition',lhs,rhs,'I'), activation)
   else:
     rnn = Leaf([],('word',), key=nltkTree[0],nonlinearity='identity')
   return rnn
@@ -20,11 +20,9 @@ def nodeLength(node):
   else: return sum([nodeLength(n) for n in node.inputs])
 
 class RNN():
-  def __init__(self, nltkTree):
-    self.root =this2RNN(nltkTree)
+  def __init__(self, nltkTree, activation='tanh'):
+    self.root =this2RNN(nltkTree, activation)
     self.length = len(nltkTree.leaves())
-#   def forward(self,theta, activateIn,activateOut):
-#     self.root.forward(theta, activateIn,activateOut)
   def activate(self,theta):
     self.root.forward(theta, True, False)
     return self.root.a
