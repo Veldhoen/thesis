@@ -10,12 +10,12 @@ from collections import defaultdict
 
 def grayCode(n):
   grays=[[0],[1]]
-  while len(grays)<n:
+  while len(grays)<n+1:
     pGrays=grays[:]
     grays=[[0]+gray for gray in pGrays]+[[1]+gray for gray in pGrays[::-1]]
   for gray in grays:
     print gray
-  return [np.array(gray) for gray in grays]
+  return [np.array(gray) for gray in grays[1:]] # skip the first one: [0,0,0,0,0]
 
 
 
@@ -204,7 +204,7 @@ def install(thetaFile, kind='RNN', d=0):
   operators  = ['plus','minus','times','div']#,'modulo]
   digits = [str(d) for d in range(-10,11)]
   tb = mathTreebank(operators, digits, n=5000, lengths = range(1,5))
-  if d ==0: d=2
+  initWordsBin = d ==0
   allData = defaultdict(dict)
   print  'load theta..', thetaFile
   try:
@@ -215,8 +215,14 @@ def install(thetaFile, kind='RNN', d=0):
     voc.extend(operators)
     voc.append('is')
     voc.append('UNKNOWN')
+    if initWordsBin:
+      embeddings = grayCode(len(digits))
+      d = len(embeddings[0])
+      embeddings.extend([np.random.random_sample(d)*.2-.1 for op in operators+['is','UNKNOWN']])
+    else: embeddings = None
+
     dims = {'inside':d,'outside':d,'word':d, 'maxArity':3}
-    theta = myTheta.Theta(kind, dims, tb.grammar, None, voc)
+    theta = myTheta.Theta(kind, dims, tb.grammar, embeddings, voc)
     theta.specializeHeads()
 
 

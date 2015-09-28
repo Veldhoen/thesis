@@ -87,7 +87,7 @@ if __name__ == "__main__":
   parser.add_argument('-o','--outDir', type=str, help='Output dir to store pickled theta', required=True)
   parser.add_argument('-p','--pars', type=str, default='', help='File with pickled theta', required=False)
   # network hyperparameters:
-  parser.add_argument('-dwrd','--word', type=int, default = 0, help='Dimensionality of leaves (word nodes)', required=False)
+  parser.add_argument('-dwrd','--word', type=int, default = 0, help='Dimensionality of leaves (word nodes)', required=True)
   # training hyperparameters:
   parser.add_argument('-n','--nEpochs', type=int, help='Maximal number of epochs to train per phase', required=True)
   parser.add_argument('-b','--bSize', type=int, default = 50, help='Batch size for minibatch training', required=False)
