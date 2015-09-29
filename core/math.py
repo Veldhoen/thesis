@@ -83,8 +83,9 @@ class mathTreebank():
       l =random.choice(self.lengths)
       tree = mathExpression(l,operators, digits)
       answer = tree.solve()
-      if str(answer) not in self.digits: continue
-      else: examples.append((tree,answer))
+#      if str(answer) not in self.digits: continue
+#      else: 
+      examples.append((tree,answer))
     return examples
 
 class trainRNNTB():
@@ -202,9 +203,12 @@ class compareClassifyTB():
 def install(thetaFile, kind='RNN', d=0):
 
   operators  = ['plus','minus','times','div']#,'modulo]
-  digits = [str(d) for d in range(-10,11)]
+  digits = [str(i) for i in range(-10,11)]
   tb = mathTreebank(operators, digits, n=5000, lengths = range(1,5))
+  print d
+  sys.exit()
   initWordsBin = d ==0
+  print 'initialize words with Gray code'
   allData = defaultdict(dict)
   print  'load theta..', thetaFile
   try:
