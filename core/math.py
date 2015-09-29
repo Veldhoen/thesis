@@ -9,12 +9,10 @@ import trainArtificialData as ad
 from collections import defaultdict
 
 def grayCode(n):
-  grays=[[0],[1]]
+  grays=[[0.0],[1.0]]
   while len(grays)<n+1:
     pGrays=grays[:]
-    grays=[[0]+gray for gray in pGrays]+[[1]+gray for gray in pGrays[::-1]]
-  for gray in grays:
-    print gray
+    grays=[[0.0]+gray for gray in pGrays]+[[1.0]+gray for gray in pGrays[::-1]]
   return [np.array(gray) for gray in grays[1:]] # skip the first one: [0,0,0,0,0]
 
 
@@ -205,8 +203,7 @@ def install(thetaFile, kind='RNN', d=0):
   operators  = ['plus','minus','times','div']#,'modulo]
   digits = [str(i) for i in range(-10,11)]
   tb = mathTreebank(operators, digits, n=5000, lengths = range(1,5))
-  print d
-  sys.exit()
+  print 'dimensionality:', d
   initWordsBin = d ==0
   print 'initialize words with Gray code'
   allData = defaultdict(dict)
