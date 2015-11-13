@@ -59,16 +59,20 @@ def main(args):
     print 'initializing with additive composition, but then train the function: nonsens, abort'
     sys.exit()
 
-  if args['kind'] == 'math': theta, ttb, dtb = math.install(args['pars'], kind='RNN',d=args['word'])
-  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind='RNN',d=args['word'],additive=args['additive'])
+  if args['kind'] == 'math': theta, ttb, dtb = math.install(args['pars'], kind=args['model'],d=args['word'])
+  elif args['kind'] == 'natlog': theta, ttb, dtb = natlog.install(args['src'], kind=args['model'],d=args['word'],additive=args['additive'])
   tr.plainTrain(ttb, dtb, hyperParams, theta, args['outDir'], args['cores'])
-  print 'evaluation on held-out data:'
-  loss, accuracy, confusion=evaluate(dtb, theta)
-  print 'evaluation on train data:'
-  loss, accuracy, confusion=evaluate(ttb, theta)
+  
+  
+  if args['model']== 'RNN':
+    print 'evaluation on held-out data:'
+    loss, accuracy, confusion=evaluate(dtb, theta)
+    print 'evaluation on train data:'
+    loss, accuracy, confusion=evaluate(ttb, theta)
 
-
-
+  if args['model']== 'IORNN':
+    for nw in dtb.getExamples():
+      nw.evaluate(theta, target=None, sample=1, verbose = True)
 
 def mybool(string):
   if string in ['F', 'f', 'false', 'False']: return False
