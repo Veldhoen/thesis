@@ -3,6 +3,9 @@ from NN import Node, Leaf
 import random
 import sys
 import numpy as np
+from rankedVoc import voc
+
+from operator import itemgetter
 
 def this2Nodes(nltkTree):
   if nltkTree.height()>2:
@@ -69,28 +72,42 @@ def computeScore(scoreNode,theta,x=None, reset = True):
       activateScoreNW(uNode,wordNode,scoreNode,theta)
   return score, original
 
-def trainWord(scoreNode, theta, gradients, target, vocabulary, fixWords = False):
+#def evaluateWord(scoreNode,theta
+
+def trainWord(scoreNode, theta, gradients, target, fixWords = False,fixWeights=False):
   uNode = scoreNode.inputs[0]
   wordNode = [node for node in uNode.inputs if node.cat==('word',)][0]
   # pick a candidate x different from own index
   original = wordNode.key
   if target is None:
-    x = original
-    while x == original:  x = random.choice(vocabulary)
+    if len(theta[('word',)].keys())<50:
+      operators = [word for word in theta[('word',)].keys() if word in ['plus','minus','times','div','modulo','is']]
+      digits = [word for word in theta[('word',)].keys() if word not in ['plus','minus','times','div','modulo','is']]
+      if original in operators: vocbit = operators
+      else: vocbit = digits
+    else:
+      try: i = voc.index(original)
+      except:
+        print 'original not in voc:', original
+        i=len(voc)//2
+      vocbit = voc[max(0,i-10):i+10]
+    x=original
+    while x==original: x = random.choice(vocbit)
   else: x = target
 
+#  print 'training IORNN. Observed:', original,'candidate:',x
   if True: #error>1: # if the candidate scores too high: backpropagate error
     # backpropagate through observed node
     realScore = scoreNode.a[0]
     delta = -1*scoreNode.ad
-    scoreNode.backprop(theta,delta, gradients, addOut = False, moveOn=True, fixWords = fixWords)
+    scoreNode.backprop(theta,delta, gradients, addOut = False, moveOn=True, fixWords = fixWords,fixWeights=fixWeights)
 
     # backpropagate through candidate
     wordNode.key = x
     activateScoreNW(uNode,wordNode,scoreNode,theta) # locally recompute activations for candidate
     candidateScore = scoreNode.a[0]
     delta = scoreNode.ad
-    scoreNode.backprop(theta, delta, gradients,addOut = False, moveOn=True, fixWords = fixWords)
+    scoreNode.backprop(theta, delta, gradients,addOut = False, moveOn=True, fixWords = fixWords,fixWeights=fixWeights)
 
     # restore observed node
     wordNode.key = original
@@ -105,7 +122,6 @@ class IORNN():
     self.rootO.key=0
     self.rootO.nonlin = 'identity'
     self.scoreNodes = findScoreNodes(self.rootO)
-
 
   def length(self):
     return len(self.scoreNodes)
@@ -133,11 +149,11 @@ class IORNN():
     self.rootI.forward(theta,activateIn = True, activateOut = False)
     self.rootO.forward(theta,activateIn = False, activateOut = True)
 
-  def train(self, theta, gradient, activate=True, target = None, fixWords=False):
+  def train(self, theta, gradient, activate=True, target = None, fixWords=False,fixWeights=False):
     if activate: self.activate(theta)
     error = 0
     for scoreNode in self.scoreNodes:
-      error += trainWord(scoreNode, theta, gradient, target, theta[('word',)].keys(),fixWords)
+      error += trainWord(scoreNode, theta, gradient, target, fixWords,fixWeights)
     return error/ len(self.scoreNodes)
 
   def error(self,theta, target, activate=True):
@@ -149,8 +165,13 @@ class IORNN():
      errors.append(max(0,1-originalscore+candidatescore))
     return sum(errors)
 
-  def evaluate(self,theta, sample=1):
+
+  def evaluate(self,theta, target=None, sample=1, verbose = False):
+    if verbose: print self
     vocabulary = theta[('word',)].keys()
+    if len(vocabulary)>50: vocabulary = voc
+    else: sample = 1
+
     if sample <1 and sample>0:
       vocabulary = random.sample(vocabulary, int(sample*len(vocabulary)))
       for word in self.words():
@@ -166,5 +187,13 @@ class IORNN():
       ranking = np.array(scores).argsort()[::-1].argsort()
       rank = ranking[vocabulary.index(results[0][1])]
       ranks+= rank
+      if verbose:
+        index, score = max(enumerate(scores), key=itemgetter(1))
+        ranked=''
+        for i in np.array(scores).argsort()[::-1][:50]:
+          ranked+=vocabulary[i]+','#,scores[index]
+        print 'Observed:', results[0][1], 'at rank', rank,'Best fit:',vocabulary[index], score
+        print ranked
+
     return ranks/(len(vocabulary)*len(self.scoreNodes))
 
