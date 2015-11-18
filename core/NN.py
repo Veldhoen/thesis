@@ -92,7 +92,7 @@ class Leaf(Node):
       [i.forward(theta, False,activateOut) for i in self.outputs] #self.outputs.forward(theta, activateIn,activateOut)
 
   def backprop(self,theta, delta, gradient, addOut = False, moveOn = False, fixWords = False,fixWeights=False):
-    if self.key == 'UNKNOWN': print 'node has an unknown key'
+#    if self.key == 'UNKNOWN': print 'node has an unknown key'
     if not fixWords:
 #      print 'update:', self.key
       gradient[self.cat][self.key] += delta

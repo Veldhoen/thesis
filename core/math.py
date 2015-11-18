@@ -59,7 +59,7 @@ class mathTreebank():
     self.lengths = lengths
     self.n=n
     self.operators = operators
-    self.grammar = {operator:{'(digit, '+operator+', digit)':5} for operator in self.operators}
+    self.grammar = {operator:{'(digit, '+operator+', digit)':5} for operator in self.operators+['is']}
     self.digits = [str(i) for i in digits]
     self.voc= self.digits[:]
 #    self.voc.append('is')
@@ -81,8 +81,8 @@ class mathTreebank():
       l =random.choice(self.lengths)
       tree = mathExpression(l,operators, digits)
       answer = tree.solve()
-#      if str(answer) not in self.digits: continue
-#      else: 
+      if answer is None: continue
+      if str(answer) not in self.digits: continue
       examples.append((tree,answer))
     return examples
 
@@ -100,6 +100,20 @@ class trainRNNTB():
       examples.append((classifier))
     return examples
 
+class trainIORNNTB():
+  def __init__(self, mathTB):
+    self.mathTB = mathTB
+    self.n=mathTB.n
+    self.labels = [None]
+  def getExamples(self,n=0, operators = [],digits=[]):
+    if n==0: n = self.n
+    examples = []
+    for t,answer in self.mathTB.getExamples(n, operators, digits):
+      tree = Tree('is',[t,Tree('operator',['is']), Tree('digit',[str(answer)])])
+      nw = myIORNN.IORNN(tree)
+      examples.append((nw,None))
+#    print examples
+    return examples
 
 
 class mathExpression(Tree):
@@ -200,12 +214,13 @@ class compareClassifyTB():
 
 def install(thetaFile, kind='RNN', d=0):
 
-  operators  = ['plus','minus','times','div']#,'modulo]
+  operators  = ['plus','minus']#,'times','div']#,'modulo]
   digits = [str(i) for i in range(-10,11)]
-  tb = mathTreebank(operators, digits, n=5000, lengths = range(1,5))
+  tb = mathTreebank(operators, digits, n=5000, lengths = [1,2,4,6])
+  tb2= mathTreebank(operators, digits, n=50, lengths = [3,5,7])
   print 'dimensionality:', d
   initWordsBin = d ==0
-  print 'initialize words with Gray code'
+  if initWordsBin: print 'initialize words with Gray code'
   allData = defaultdict(dict)
   print  'load theta..', thetaFile
   try:
@@ -225,19 +240,21 @@ def install(thetaFile, kind='RNN', d=0):
     dims = {'inside':d,'outside':d,'word':d, 'maxArity':3}
     theta = myTheta.Theta(kind, dims, tb.grammar, embeddings, voc)
     theta.specializeHeads()
+  print kind
+  if kind == 'RNN':
+  #  ttb =     trainRNNTB(tb)
+  #  dtb =     trainRNNTB(mathTreebank(operators, digits, 1000,range(1,5)))
 
+  #  ttb = resultClassifyTB(tb)
+  #  dtb = resultClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
 
-#  ttb =     trainRNNTB(tb)
-#  dtb =     trainRNNTB(mathTreebank(operators, digits, 1000,range(1,5)))
+    ttb = compareClassifyTB(tb)
+    dtb = compareClassifyTB(tb2)
+    nChildren =2
+    theta.extend4Classify(nChildren, len(ttb.labels),dComparison = 0)
 
-#  ttb = resultClassifyTB(tb)
-#  dtb = resultClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
+  else:
+    ttb = trainIORNNTB(tb)
+    dtb = trainIORNNTB(tb2)
 
-  ttb = compareClassifyTB(tb)
-  dtb = compareClassifyTB(mathTreebank(operators, digits, 1000,range(1,8)))
-
-
-
-  nChildren =2
-  theta.extend4Classify(nChildren, len(ttb.labels),dComparison = 0)
   return theta, ttb, dtb
