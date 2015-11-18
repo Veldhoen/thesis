@@ -42,9 +42,11 @@ def evaluateBit(theta, testData, q, sample):
       performance = []
       true = 0
       for (nw,target) in testData:
-        performance.append(nw.evaluate(theta,target,sample))
-        prediction = nw.predict(theta,None, False,False)
-        if prediction == target: true +=1
+        performance.append(nw.evaluate(theta,target,sample, True))
+        try:
+          prediction = nw.predict(theta,None, False,False)
+          if prediction == target: true +=1
+        except: continue
       print 'accuracy:', true/len(testData)
       q.put(performance)
 
@@ -255,7 +257,7 @@ def trainOnSet(hyperParams, examples, theta, histGrad, cores):
     except:
       avError = 0
       print 'batch size zero!'
-    if batch % 100 == 0:
+    if batch % 25 == 0:
       print '\t\tBatch', batch, ', average error:',avError , ', theta norm:', theta.norm()
     avErrors.append(avError)
   return sum(avErrors)/len(avErrors)
