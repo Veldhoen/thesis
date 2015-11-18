@@ -2,6 +2,10 @@ import core.myTheta as myTheta
 from nltk import Tree
 import core.myIORNN as myIORNN
 import core.myRAE as myRAE
+import core.classifier as classifier
+import core.SNLI as SNLI
+import core.natlog as natlog
+import core.math as math
 import numpy as np
 from scipy import sparse
 import sys
@@ -70,7 +74,7 @@ def gradientCheck(theta, network, target=None):
     if np.array_equal(gr,ngr): diff = 0
     else: diff = np.linalg.norm(ngr-gr)/(np.linalg.norm(ngr)+np.linalg.norm(gr))
     print 'Difference '+str(name)+' :', diff
-    if diff>0.001:
+    if False:#diff>0.001:
       print '    ','gr\t\tngr\t\td'
       for i in range(len(gr)):
         if gr[i]==0 and ngr[i]==0: v = str(0)
@@ -82,7 +86,7 @@ def gradientCheck(theta, network, target=None):
   print 'Difference overall:', np.linalg.norm(numgradflat-gradflat)/(np.linalg.norm(numgradflat)+np.linalg.norm(gradflat))
 
 def checkIORNN():
-  theta = myTheta.Theta('IORNN', dims,gram,None,voc)
+  theta = myTheta.Theta('IORNN', dims, gram, None,  voc)
   nw = myIORNN.IORNN(tree)
 
   gradientCheck(theta, nw, 'dogs')
@@ -93,41 +97,84 @@ def checkIORNN():
   gradientCheck(theta, nw, 'dogs')
 
 def checkRAE():
-  theta = myTheta.Theta('RAE', dims,gram,None,voc)
+  theta = myTheta.Theta('RAE', dims, gram, None,  voc)
+#  theta = myTheta.Theta('RAE', dims,gram,None,voc)
   nw = myRAE.RAE(tree)
-
-#  gradientCheck(theta, nw)
+#  print nw
+  gradientCheck(theta, nw)
 #   theta.specializeHeads()
 #  nw.activate(theta)
-  gradientCheck(theta, nw)
+#  grad = theta.gradient()
+#  nw.train(theta, grad, activate=True, target=None)
+#  gradientCheck(theta, nw)
 #   theta.specializeRules()
 #   gradientCheck(theta, nw)
 
 
+def checkClassifier():
+
+  thetaFile = 'models/AE/010/plainTrain.theta.pik'
+  snlisrc =  'C:/Users/Sara/AI/thesisData/snli_1.0/'
+  theta, allData, labels = SNLI.install(thetaFile,snlisrc)
+
+  nlsrc = 'C:/Users/Sara/AI/thesisData/vector-entailment-Winter2015-R1/vector-entailment-W15-R1/grammars/data/'
+
+  theta, allData, labels = natlog.install(nlsrc)
+#   allData, embeddings, vocabulary,labels = classifier.install(thetaFile)
+#   dims = {'comparison':75}
+#   dims['din']=len(embeddings[0])
+#   dims['nClasses']=len(labels)
+
+  trees,target = allData['train'].values()[0]
+#   n = len(trees)
+#   dims['arity'] = n
+#   theta = myTheta.Theta('classifier', dims, None, embeddings,  vocabulary)
+#   print 'create nw'
+  nw = classifier.Classifier(len(trees), labels)
+  key = allData['train'].keys()[0]
+  nw.replaceChildren(trees,False)
+#  nw.replaceChildren([key+'A',key+'B'],True)
+  gradientCheck(theta, nw, allData['train'][key][1])
+
+def checkMath():
+  theta, ttb, dtb = math.install('')
+  nw,target = ttb.getExamples()[0]
+  print nw, target
+  gradientCheck(theta, nw, target)
+
+
 voc = ['UNKNOWN','most','large', 'hippos','bark','chase','dogs']
-#voc = ['UNKNOWN','most']
+# #voc = ['UNKNOWN','most']
 gram = {'S':{'(NP, VP)':2},'NP':{'(Q, N)':2,'(Q, A, N)':1}}
-#  gram = ['S->(NP,VP)']
-heads = ['NP']
-#gram = {}
-#  heads = []
-
-#  voc = ['UNK','most','hippos']
+# #  gram = ['S->(NP,VP)']
+# heads = ['NP']
+# #gram = {}
+# #  heads = []
+#
+# #  voc = ['UNK','most','hippos']
 d = 3
-dims = {'inside':d,'outside':d,'word':d,'nwords':len(voc)}
-
-#s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
-s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
-#s = '(Top (S (NP (Q most) (N hippos)) (VP (VP (V chase)) (N dogs))))'
-#s = '(Top (S (NP (Q most) (N hippos)) (VP (V bark))))'
-s = '(NP (Q most) (A big) (N hippos))'
-#s = '(TOP (NP (Q most) (N hippos)))'
-#s = '(NP (Q most) (N hippos))'
-#s = '(Top (Q most))'
-#s = '(Q most)'
+dims = {'inside':d,'outside':d,'word':d,'nwords':len(voc),'maxArity':2}
+#
+# #s = '(S (NP (Q most) (N hippos)) (VP (V chase) (NP (A big) (N dogs))))'
+#s='(S (NP (Q most) (A big) (N hippos)) (VP (V bark)))'
+# s = '(S (NP (Q most) (N (A big) (N hippos))) (VP (V chase) (NP (A big) (N dogs))))'
+# #s = '(Top (S (NP (Q most) (N hippos)) (VP (VP (V chase)) (N dogs))))'
+s = '(Top (S (NP (Q most) (N hippos)) (VP (V bark))))'
+# #s='(S (NP (Q most) (N hippos)) (V bark))'
+# #s='(Top (S (Q most) (N hippos) (V bark)))'
+# #s='(Top (NP (Q most) (N hippos)))'
+# #s = '(NP (Q most) (N hippos) (N hippos))'
+# #s = '(NP (Q most) (A big) (N hippos))'
+# #s = '(TOP (NP (Q most) (N hippos)))'
+# #s = '(NP (Q most) (N hippos))'
+# #s = '(Top (N hippos))'
+# #s = '(Top (NP (N hippos)))'
+# #s = '(Q most)'
 tree = Tree.fromstring(s)
-print tree
-print tree.productions()
+# print tree
+# print tree.productions()
 
 #checkIORNN()
-checkRAE()
+#checkRAE()
+#checkClassifier()
+checkMath()
