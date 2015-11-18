@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict, Counter
 
 import core.myIORNN as myIORNN
+import core.myRAE as myRAE
 
 
 def sennaLeaves(tree,sennaVoc):
@@ -111,11 +112,13 @@ def getRAEs(source,outDir, sennaVoc):
       for line in f:
         if counter>1000: break     # remove this line when not creating a sample
         try:
+
           tree = nltk.tree.Tree.fromstring(line)
           if len(tree.leaves())<10: continue
           sennaLeaves(tree,sennaVoc)
 #          print tree.leaves()
- #         nws.append(myIORNN.IORNN(tree))
+          nws.append(myRAE.RAE(tree))
+#          print 'transformation to RAE succeeded.'#, line
         except:
           print 'transformation to RAE failed.'#, line
           continue
@@ -155,7 +158,7 @@ def sennaproof(word,sennaVoc):
     digit = True
     bits = re.split(',|\.',word)
     for b in bits:
-      if not b.isdigit(): digit is False
+      if not b.isdigit(): digit = False
     if digit: return '0'
     else: return word+'-UNK'
 
